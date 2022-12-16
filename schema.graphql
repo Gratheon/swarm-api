@@ -1,0 +1,168 @@
+scalar Upload
+scalar DateTime
+scalar JSON
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+"The query type, represents all of the entry points into our object graph"
+type Query {
+  hive(id: ID!): Hive
+  apiary(id: ID!): Apiary
+  apiaries: [Apiary]
+  inspection(inspectionId: ID!): Inspection
+}
+
+"The mutation type, represents all updates we can make to our data"
+type Mutation {
+  addApiary(apiary: ApiaryInput!): Apiary
+  updateApiary(id: ID!, apiary: ApiaryInput!): Apiary
+	deactivateApiary(id: ID!): Boolean
+
+  addHive(hive: HiveInput!): Hive
+  updateHive(hive: HiveUpdateInput!): Hive
+  deactivateHive(id: ID!): Boolean
+
+  addInspection(inspection: InspectionInput!): Inspection
+}
+
+input ApiaryInput {
+  name: String!
+  lat: String
+  lng: String
+}
+
+type Apiary {
+  id: ID!
+  name: String
+  hives: [Hive]
+  location: String
+  lat: String
+  lng: String
+}
+
+input HiveInput {
+  apiaryId: ID!
+  name: String!
+  boxCount: Int!
+  frameCount: Int!
+  colors: [String]
+}
+
+input HiveUpdateInput {
+  id: ID!
+  name: String
+	notes: String
+  boxes: [BoxInput]
+  family: FamilyInput
+}
+
+type Hive @key(fields: "id") {
+  id: ID!
+  name: String
+	notes: String
+  boxCount: Int!
+  boxes: [Box]
+  family: Family
+  inspections(limit: Int): [Inspection]
+}
+
+input FamilyInput{
+  id: ID
+  race: String
+  added: String
+}
+
+input BoxInput{
+  id: ID
+  position: Int!
+  color: String
+  type: BoxType!
+  frames: [FrameInput]
+  "ignored, added for frontend ease"
+  hiveId: Int
+  family: FamilyInput
+}
+
+
+type Family{
+  id: ID!
+  race: String
+  added: String
+}
+
+type Inspection {
+  id: ID!
+  data: JSON!
+  added: DateTime!
+}
+
+input InspectionInput{
+  hiveId: Int!
+  data: JSON!
+}
+
+type Box{
+  id: ID
+  position: Int
+  color: String
+  type: BoxType!
+  frames: [Frame]
+}
+
+input FrameInput{
+  id: ID
+  position: Int!
+  type: FrameType!
+  leftSide: FrameSideInput
+  rightSide: FrameSideInput
+  "ignored, added for frontend ease"
+  boxIndex: Int
+  "ignored, added for frontend ease"
+  hiveId: Int
+}
+
+type Frame{
+  id: ID
+  position: Int!
+  type: FrameType!
+  leftSide: FrameSide,
+  rightSide: FrameSide
+}
+
+enum BoxType {
+  DEEP
+  SUPER
+}
+enum FrameType {
+  VOID
+  FOUNDATION
+  EMPTY_COMB
+  PARTITION
+  FEEDER
+}
+
+input FrameSideInput{
+  id: ID
+  broodPercent: Int
+  cappedBroodPercent: Int
+  droneBroodPercent: Int
+  pollenPercent: Int
+  honeyPercent: Int
+  queenDetected: Boolean!
+}
+
+type FrameSide @key(fields: "id") {
+  id: ID
+  broodPercent: Int
+  cappedBroodPercent: Int
+  droneBroodPercent: Int
+  pollenPercent: Int
+  honeyPercent: Int
+  queenDetected: Boolean!
+
+	workerCount: Int
+	droneCount: Int
+}

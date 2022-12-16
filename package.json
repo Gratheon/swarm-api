@@ -1,0 +1,22 @@
+{
+  "name": "swarm-api",
+  "version": "1.0.0",
+  "description": "Cloud service to manage smart hive data.",
+  "main": "index.js",
+  "scripts": {
+    "deploy:cleanup": "ssh root@gratheon.com 'pkill swarm-api.bin &'",
+    "deploy:copy": "scp -r ./swarm-api.bin root@gratheon.com:/www/swarm-api/",
+    "deploy:run": "ssh root@gratheon.com 'bash /www/swarm-api/restart.sh'",
+    "deploy": "npm run build && npm run deploy:cleanup && npm run deploy:copy && npm run deploy:run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/gratheon/swarm-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gratheon/swarm-api/issues"
+  },
+  "homepage": "https://github.com/gratheon/swarm-api#readme"
+}
