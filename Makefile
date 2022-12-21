@@ -1,10 +1,9 @@
 start:
 	make build && COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml up --build -d
-run:
-	docker-compose up -d
+develop:
 	git rev-parse --short HEAD > .version
-	go run github.com/99designs/gqlgen generate
-	ENV_ID=dev go run *.go
+#	go run github.com/99designs/gqlgen generate
+	NATIVE=1 ENV_ID=dev go run *.go
 
 update:
 	go get -u all

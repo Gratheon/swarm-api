@@ -27,6 +27,9 @@ func main() {
 	log.Print("Initializing logger");
 	logrusInstance := logger.InitLogging()
 
+	log.Print("Initializing redis")
+	graph.InitRedis()
+
 	log.Print("Initializing router")
 	router := chi.NewRouter()
 

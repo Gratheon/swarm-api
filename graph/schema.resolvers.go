@@ -101,19 +101,39 @@ func (r *hiveResolver) Inspections(ctx context.Context, obj *model.Hive, limit *
 // AddApiary is the resolver for the addApiary field.
 func (r *mutationResolver) AddApiary(ctx context.Context, apiary model.ApiaryInput) (*model.Apiary, error) {
 	uid := ctx.Value("userID").(string)
-	return (&model.Apiary{
+	createdApiary, err := (&model.Apiary{
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Create(apiary)
+
+	if err != nil {
+		logger.LogError(err)
+		return nil, err;
+	}
+	
+	PublishEvent("apiary", createdApiary);
+
+	return createdApiary, err
 }
 
 // UpdateApiary is the resolver for the updateApiary field.
 func (r *mutationResolver) UpdateApiary(ctx context.Context, id string, apiary model.ApiaryInput) (*model.Apiary, error) {
 	uid := ctx.Value("userID").(string)
-	return (&model.Apiary{
+	updatedApiary, err := (&model.Apiary{
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Update(id, apiary)
+
+	logger.LogInfo("apiary updated");
+	if err != nil {
+		logger.LogError(err)
+		return nil, err;
+	}
+
+	logger.LogInfo("publishing event");
+	PublishEvent("apiary", &updatedApiary);
+
+	return updatedApiary, err
 }
 
 // DeactivateApiary is the resolver for the deactivateApiary field.

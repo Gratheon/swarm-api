@@ -11,13 +11,12 @@ import (
 type Apiary struct {
 	Db       *sqlx.DB
 	ID       int     `json:"id"`
-	UserID   string  `db:"user_id"`
+	UserID   string  `json:"user_id" db:"user_id"`
 	Name     *string `json:"name"`
 	Location *string `json:"location"`
-	Active   *bool   `db:"active"`
+	Active   *bool   `json:"active" db:"active"`
 	Lat      *string `json:"lat" db:"lat"`
 	Lng      *string `json:"lng" db:"lng"`
-	//Hives    []*Hive `json:"hives"`
 }
 
 func (Apiary) IsEntity() {}
