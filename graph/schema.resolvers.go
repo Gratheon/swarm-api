@@ -111,7 +111,7 @@ func (r *mutationResolver) AddApiary(ctx context.Context, apiary model.ApiaryInp
 		return nil, err;
 	}
 	
-	PublishEvent("apiary", createdApiary);
+	PublishEvent(uid + ".apiary", createdApiary);
 
 	return createdApiary, err
 }
@@ -124,14 +124,12 @@ func (r *mutationResolver) UpdateApiary(ctx context.Context, id string, apiary m
 		UserID: uid,
 	}).Update(id, apiary)
 
-	logger.LogInfo("apiary updated");
 	if err != nil {
 		logger.LogError(err)
 		return nil, err;
 	}
 
-	logger.LogInfo("publishing event");
-	PublishEvent("apiary", &updatedApiary);
+	PublishEvent(uid + ".apiary", &updatedApiary);
 
 	return updatedApiary, err
 }

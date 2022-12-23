@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
     "github.com/go-redis/redis/v8"
+	"gitlab.com/gratheon/swarm-api/logger"
 )
 
 type Payload struct {
@@ -33,7 +34,7 @@ func PublishEvent(channel string, data interface{}){
 	}
 	payloadJSON, _ := json.Marshal(data)
 	
-	fmt.Printf("redis publish %v", payloadJSON)
+	logger.LogInfo("publishing event to channel "+channel);
 
 	err := client.Publish(ctx, channel, payloadJSON).Err()
 
