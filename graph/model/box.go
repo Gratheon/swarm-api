@@ -128,12 +128,11 @@ func (r *Box) Update(id *string, position int, color *string, active int) error 
 	tx := r.Db.MustBegin()
 
 	_, err := tx.NamedExec(
-		"UPDATE boxes SET position = :position, color = :color, active = :active WHERE id=:id AND user_id=:userID",
+		"UPDATE boxes SET position = :position, color = :color WHERE id=:id AND user_id=:userID",
 		map[string]interface{}{
 			"id":       id,
 			"position": position,
 			"color":    color,
-			"active":   active,
 			"userID":   r.UserID,
 		},
 	)

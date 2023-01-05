@@ -118,10 +118,12 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AddApiary        func(childComplexity int, apiary model.ApiaryInput) int
 		AddBox           func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
+		AddFrame         func(childComplexity int, boxID string, typeArg string, position int) int
 		AddHive          func(childComplexity int, hive model.HiveInput) int
 		AddInspection    func(childComplexity int, inspection model.InspectionInput) int
 		DeactivateApiary func(childComplexity int, id string) int
 		DeactivateBox    func(childComplexity int, id string) int
+		DeactivateFrame  func(childComplexity int, id string) int
 		DeactivateHive   func(childComplexity int, id string) int
 		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
 		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
@@ -174,6 +176,8 @@ type MutationResolver interface {
 	DeactivateHive(ctx context.Context, id string) (*bool, error)
 	AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error)
 	DeactivateBox(ctx context.Context, id string) (*bool, error)
+	AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error)
+	DeactivateFrame(ctx context.Context, id string) (*bool, error)
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
 }
 type QueryResolver interface {
@@ -517,6 +521,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AddBox(childComplexity, args["hiveId"].(string), args["position"].(int), args["color"].(*string), args["type"].(model.BoxType)), true
 
+	case "Mutation.addFrame":
+		if e.complexity.Mutation.AddFrame == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addFrame_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddFrame(childComplexity, args["boxId"].(string), args["type"].(string), args["position"].(int)), true
+
 	case "Mutation.addHive":
 		if e.complexity.Mutation.AddHive == nil {
 			break
@@ -564,6 +580,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeactivateBox(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deactivateFrame":
+		if e.complexity.Mutation.DeactivateFrame == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deactivateFrame_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeactivateFrame(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deactivateHive":
 		if e.complexity.Mutation.DeactivateHive == nil {
@@ -775,6 +803,9 @@ type Mutation {
 
   addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
   deactivateBox(id: ID!): Boolean
+
+  addFrame(boxId: ID!, type: String!, position: Int!): Frame!
+  deactivateFrame(id: ID!): Boolean
 
   addInspection(inspection: InspectionInput!): Inspection
 }
@@ -1058,6 +1089,39 @@ func (ec *executionContext) field_Mutation_addBox_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_addFrame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["boxId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boxId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["boxId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["type"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["type"] = arg1
+	var arg2 int
+	if tmp, ok := rawArgs["position"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("position"))
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["position"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addHive_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1104,6 +1168,21 @@ func (ec *executionContext) field_Mutation_deactivateApiary_args(ctx context.Con
 }
 
 func (ec *executionContext) field_Mutation_deactivateBox_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deactivateFrame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -3614,6 +3693,125 @@ func (ec *executionContext) fieldContext_Mutation_deactivateBox(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deactivateBox_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_addFrame(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_addFrame(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddFrame(rctx, fc.Args["boxId"].(string), fc.Args["type"].(string), fc.Args["position"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Frame)
+	fc.Result = res
+	return ec.marshalNFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addFrame(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Frame_id(ctx, field)
+			case "position":
+				return ec.fieldContext_Frame_position(ctx, field)
+			case "type":
+				return ec.fieldContext_Frame_type(ctx, field)
+			case "leftSide":
+				return ec.fieldContext_Frame_leftSide(ctx, field)
+			case "rightSide":
+				return ec.fieldContext_Frame_rightSide(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Frame", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addFrame_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deactivateFrame(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deactivateFrame(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeactivateFrame(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deactivateFrame(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deactivateFrame_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -7086,6 +7284,21 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 				return ec._Mutation_deactivateBox(ctx, field)
 			})
 
+		case "addFrame":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addFrame(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deactivateFrame":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deactivateFrame(ctx, field)
+			})
+
 		case "addInspection":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -7671,6 +7884,20 @@ func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNFrame2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v model.Frame) graphql.Marshaler {
+	return ec._Frame(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v *model.Frame) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Frame(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNFrameSide2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v model.FrameSide) graphql.Marshaler {

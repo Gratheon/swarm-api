@@ -17,6 +17,7 @@ type Frame struct {
 	RightID   *int       `json:"right" db:"right_id"`
 	LeftSide  *FrameSide `json:"left" `
 	RightSide *FrameSide `json:"right"`
+	Active   int     `db:"active"`
 }
 
 func (r *Frame) SetUp() {
@@ -29,7 +30,7 @@ func (r *Frame) SetUp() {
   'position' int unsigned DEFAULT NULL,
   'left_id' int unsigned DEFAULT NULL,
   'right_id' int unsigned DEFAULT NULL,
-  'is_deleted' int DEFAULT NULL,
+  'active' tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY ('id'),
   KEY 'box_id' ('box_id'),
   KEY 'left_id' ('left_id'),
@@ -43,6 +44,17 @@ func (r *Frame) SetUp() {
 	// exec the schema or fail; multi-statement Exec behavior varies between
 	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
 	r.Db.MustExec(schema)
+}
+
+func (r *Frame) Get(id int64) (*Frame, error) {
+	frame := Frame{}
+	err := r.Db.Get(&frame,
+		`SELECT * 
+		FROM frames
+		WHERE id=? AND user_id=? AND active=1
+		LIMIT 1`, id, r.UserID)
+
+	return &frame, err
 }
 
 func (r *Frame) CreateFramesForBox(boxID *string, frameCount int) error {
@@ -125,7 +137,6 @@ func (r *Frame) Update(frameID *string, boxID *string, position int) (*int64, er
 	_, err := r.Db.NamedExec(
 		`UPDATE frames 
 		SET box_id=:boxID,
-		    is_deleted = null,
         	position=:position
 		WHERE id=:id AND user_id=:userID`,
 		map[string]interface{}{
@@ -146,7 +157,7 @@ func (r *Frame) Update(frameID *string, boxID *string, position int) (*int64, er
 func (r *Frame) DeactivateFrames(boxId *string) error {
 	_, err := r.Db.NamedExec(
 		`UPDATE frames 
-		SET is_deleted = 1
+		SET active = 0
 		WHERE box_id=:boxID AND user_id=:userID`,
 		map[string]interface{}{
 			"boxID":  boxId,
@@ -162,8 +173,31 @@ func (r *Frame) ListByBox(boxId *string) ([]*Frame, error) {
 	err := r.Db.Select(&frames,
 		`SELECT id, position, left_id, right_id, type
 	FROM frames
-	WHERE frames.box_id =? AND user_id=? AND is_deleted IS NULL
+	WHERE frames.box_id =? AND user_id=? AND active=1
 	ORDER BY position`, boxId, r.UserID)
 
 	return frames, err
+}
+
+func (r *Frame) Deactivate(id string) (*bool, error) {
+	success := true
+	tx := r.Db.MustBegin()
+
+	_, err := tx.NamedExec(
+		`UPDATE frames 
+		SET active = 0
+		WHERE id=:id AND user_id=:userID`,
+		map[string]interface{}{
+			"id":  id,
+			"userID": r.UserID,
+		},
+	)
+
+	err = tx.Commit()
+
+	if err != nil {
+		success = false
+	}
+
+	return &success, err
 }

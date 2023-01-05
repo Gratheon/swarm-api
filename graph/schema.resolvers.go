@@ -199,10 +199,10 @@ func (r *mutationResolver) UpdateHive(ctx context.Context, hive model.HiveUpdate
 		UserID: uid,
 	}
 
-	frameModel := &model.Frame{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}
+	// frameModel := &model.Frame{
+	// 	Db:     r.Resolver.Db,
+	// 	UserID: uid,
+	// }
 
 	familyID := _upsertFamily(r.Resolver.Db, uid, hive)
 
@@ -218,101 +218,101 @@ func (r *mutationResolver) UpdateHive(ctx context.Context, hive model.HiveUpdate
 		logger.LogError(err)
 	}
 
-	for _, box := range hive.Boxes {
-		if box.ID == nil {
-			box.ID, err = boxModel.Create(hive.ID, box.Position, box.Color, box.Type)
+	// for _, box := range hive.Boxes {
+	// 	if box.ID == nil {
+	// 		box.ID, err = boxModel.Create(hive.ID, box.Position, box.Color, box.Type)
 
-			if err != nil {
-				logger.LogError(err)
-			}
-		} else {
-			err = boxModel.Update(box.ID, box.Position, box.Color, 1)
+	// 		if err != nil {
+	// 			logger.LogError(err)
+	// 		}
+	// 	} else {
+	// 		err = boxModel.Update(box.ID, box.Position, box.Color, 1)
 
-			if err != nil {
-				logger.LogError(err)
-			}
+	// 		if err != nil {
+	// 			logger.LogError(err)
+	// 		}
 
-			// in case some frame was removed, need to deactivate all
-			// then activate only posted
-			err = frameModel.DeactivateFrames(box.ID)
-		}
-		if err != nil {
-			logger.LogError(err)
-		}
+	// 		// in case some frame was removed, need to deactivate all
+	// 		// then activate only posted
+	// 		err = frameModel.DeactivateFrames(box.ID)
+	// 	}
+	// 	if err != nil {
+	// 		logger.LogError(err)
+	// 	}
 
-		for _, frame := range box.Frames {
-			if frameModel.IsFrameWithSides(frame.Type) {
-				var rightFile *string = nil
-				var leftFile *string = nil
+	// 	for _, frame := range box.Frames {
+	// 		if frameModel.IsFrameWithSides(frame.Type) {
+	// 			var rightFile *string = nil
+	// 			var leftFile *string = nil
 
-				leftSide := &model.FrameSide{
-					Db:                 r.Db,
-					UserID:             uid,
-					FileID:             leftFile,
-					BroodPercent:       frame.LeftSide.BroodPercent,
-					CappedBroodPercent: frame.LeftSide.CappedBroodPercent,
-					DroneBroodPercent:  frame.LeftSide.DroneBroodPercent,
-					HoneyPercent:       frame.LeftSide.HoneyPercent,
-					PollenPercent:      frame.LeftSide.PollenPercent,
-					QueenDetected:      frame.LeftSide.QueenDetected,
-				}
-				rightSide := &model.FrameSide{
-					Db:                 r.Db,
-					UserID:             uid,
-					FileID:             rightFile,
-					BroodPercent:       frame.RightSide.BroodPercent,
-					CappedBroodPercent: frame.RightSide.CappedBroodPercent,
-					DroneBroodPercent:  frame.RightSide.DroneBroodPercent,
-					HoneyPercent:       frame.RightSide.HoneyPercent,
-					PollenPercent:      frame.RightSide.PollenPercent,
-					QueenDetected:      frame.RightSide.QueenDetected,
-				}
+	// 			leftSide := &model.FrameSide{
+	// 				Db:                 r.Db,
+	// 				UserID:             uid,
+	// 				FileID:             leftFile,
+	// 				BroodPercent:       frame.LeftSide.BroodPercent,
+	// 				CappedBroodPercent: frame.LeftSide.CappedBroodPercent,
+	// 				DroneBroodPercent:  frame.LeftSide.DroneBroodPercent,
+	// 				HoneyPercent:       frame.LeftSide.HoneyPercent,
+	// 				PollenPercent:      frame.LeftSide.PollenPercent,
+	// 				QueenDetected:      frame.LeftSide.QueenDetected,
+	// 			}
+	// 			rightSide := &model.FrameSide{
+	// 				Db:                 r.Db,
+	// 				UserID:             uid,
+	// 				FileID:             rightFile,
+	// 				BroodPercent:       frame.RightSide.BroodPercent,
+	// 				CappedBroodPercent: frame.RightSide.CappedBroodPercent,
+	// 				DroneBroodPercent:  frame.RightSide.DroneBroodPercent,
+	// 				HoneyPercent:       frame.RightSide.HoneyPercent,
+	// 				PollenPercent:      frame.RightSide.PollenPercent,
+	// 				QueenDetected:      frame.RightSide.QueenDetected,
+	// 			}
 
-				if frame.ID == nil {
-					leftID, err := leftSide.CreateSide(leftSide)
+	// 			if frame.ID == nil {
+	// 				leftID, err := leftSide.CreateSide(leftSide)
 
-					if err != nil {
-						return nil, err
-					}
+	// 				if err != nil {
+	// 					return nil, err
+	// 				}
 
-					rightID, err := rightSide.CreateSide(rightSide)
+	// 				rightID, err := rightSide.CreateSide(rightSide)
 
-					if err != nil {
-						return nil, err
-					}
-					_, err = frameModel.Create(box.ID, frame.Position, frame.Type, leftID, rightID)
-				} else {
-					leftSide.ID = frame.LeftSide.ID
-					rightSide.ID = frame.RightSide.ID
+	// 				if err != nil {
+	// 					return nil, err
+	// 				}
+	// 				_, err = frameModel.Create(box.ID, frame.Position, frame.Type, leftID, rightID)
+	// 			} else {
+	// 				leftSide.ID = frame.LeftSide.ID
+	// 				rightSide.ID = frame.RightSide.ID
 
-					_, err = leftSide.UpdateSide(leftSide)
+	// 				_, err = leftSide.UpdateSide(leftSide)
 
-					if err != nil {
-						return nil, err
-					}
+	// 				if err != nil {
+	// 					return nil, err
+	// 				}
 
-					_, err = rightSide.UpdateSide(rightSide)
+	// 				_, err = rightSide.UpdateSide(rightSide)
 
-					if err != nil {
-						return nil, err
-					}
+	// 				if err != nil {
+	// 					return nil, err
+	// 				}
 
-					_, err = frameModel.Update(frame.ID, box.ID, frame.Position)
-				}
-			} else {
-				if frame.ID == nil {
-					_, err = frameModel.Create(box.ID, frame.Position, frame.Type, nil, nil)
-				} else {
-					_, err = frameModel.Update(frame.ID, box.ID, frame.Position)
-				}
-			}
+	// 				_, err = frameModel.Update(frame.ID, box.ID, frame.Position)
+	// 			}
+	// 		} else {
+	// 			if frame.ID == nil {
+	// 				_, err = frameModel.Create(box.ID, frame.Position, frame.Type, nil, nil)
+	// 			} else {
+	// 				_, err = frameModel.Update(frame.ID, box.ID, frame.Position)
+	// 			}
+	// 		}
 
-			if err != nil {
-				logger.LogError(err)
-			}
+	// 		if err != nil {
+	// 			logger.LogError(err)
+	// 		}
 
-		}
-	}
+	// 	}
+	// }
 
 	return hiveModel.Get(hive.ID)
 }
@@ -348,6 +348,64 @@ func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position i
 func (r *mutationResolver) DeactivateBox(ctx context.Context, id string) (*bool, error) {
 	uid := ctx.Value("userID").(string)
 	return (&model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Deactivate(id)
+}
+
+// AddFrame is the resolver for the addFrame field.
+func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error) {
+	uid := ctx.Value("userID").(string)
+
+	frameModel := &model.Frame{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	if frameModel.IsFrameWithSides(model.FrameType(typeArg)) {
+		leftSide := &model.FrameSide{
+			Db:     r.Resolver.Db,
+			UserID: uid,
+		}
+		rightSide := &model.FrameSide{
+			Db:     r.Resolver.Db,
+			UserID: uid,
+		}
+
+		leftID, err := leftSide.CreateSide(leftSide)
+
+		if err != nil {
+			return nil, err
+		}
+
+		rightID, err := rightSide.CreateSide(rightSide)
+
+		if err != nil {
+			return nil, err
+		}
+
+		frameId, err := frameModel.Create(&boxID, position, model.FrameType(typeArg), leftID, rightID)
+
+		if err != nil {
+			logger.LogError(err)
+		}
+
+		return frameModel.Get(*frameId)
+	} else {
+		frameId, err := frameModel.Create(&boxID, position, model.FrameType(typeArg), nil, nil)
+
+		if err != nil {
+			logger.LogError(err)
+		}
+
+		return frameModel.Get(*frameId)
+	}
+}
+
+// DeactivateFrame is the resolver for the deactivateFrame field.
+func (r *mutationResolver) DeactivateFrame(ctx context.Context, id string) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Frame{
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Deactivate(id)

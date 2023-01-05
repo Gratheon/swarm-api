@@ -28,6 +28,9 @@ type Mutation {
   addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
   deactivateBox(id: ID!): Boolean
 
+  addFrame(boxId: ID!, type: String!, position: Int!): Frame!
+  deactivateFrame(id: ID!): Boolean
+
   addInspection(inspection: InspectionInput!): Inspection
 }
 
