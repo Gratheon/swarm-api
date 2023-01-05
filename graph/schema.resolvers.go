@@ -108,10 +108,10 @@ func (r *mutationResolver) AddApiary(ctx context.Context, apiary model.ApiaryInp
 
 	if err != nil {
 		logger.LogError(err)
-		return nil, err;
+		return nil, err
 	}
-	
-	PublishEvent(uid + ".apiary", createdApiary);
+
+	PublishEvent(uid+".apiary", createdApiary)
 
 	return createdApiary, err
 }
@@ -126,10 +126,10 @@ func (r *mutationResolver) UpdateApiary(ctx context.Context, id string, apiary m
 
 	if err != nil {
 		logger.LogError(err)
-		return nil, err;
+		return nil, err
 	}
 
-	PublishEvent(uid + ".apiary", &updatedApiary);
+	PublishEvent(uid+".apiary", &updatedApiary)
 
 	return updatedApiary, err
 }
@@ -326,6 +326,24 @@ func (r *mutationResolver) DeactivateHive(ctx context.Context, id string) (*bool
 	}).Deactivate(id)
 }
 
+// AddBox is the resolver for the addBox field.
+func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error) {
+	uid := ctx.Value("userID").(string)
+	
+	boxModel := &model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	boxID, err := boxModel.Create(hiveID, position, color, typeArg)
+
+	if err != nil {
+		logger.LogError(err)
+	}
+
+	return boxModel.Get(*boxID)
+}
+
 // AddInspection is the resolver for the addInspection field.
 func (r *mutationResolver) AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error) {
 	uid := ctx.Value("userID").(string)
@@ -413,7 +431,6 @@ type queryResolver struct{ *Resolver }
 //  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
-
 func (r *apiaryResolver) Lat(ctx context.Context, obj *model.Apiary) (*string, error) {
 	return obj.Lat, nil
 }

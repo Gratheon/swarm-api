@@ -36,6 +36,18 @@ func (r *Box) SetUp() {
 	r.Db.MustExec(schema)
 }
 
+
+func (r *Box) Get(id string) (*Box, error) {
+	box := Box{}
+	err := r.Db.Get(&box,
+		`SELECT * 
+		FROM boxes
+		WHERE id=? AND user_id=? AND active=1
+		LIMIT 1`, id, r.UserID)
+
+	return &box, err
+}
+
 func (r *Box) CreateByHiveId(hiveId string, boxCount int, colors []*string) error {
 	tx := r.Db.MustBegin()
 
