@@ -121,6 +121,7 @@ type ComplexityRoot struct {
 		AddHive          func(childComplexity int, hive model.HiveInput) int
 		AddInspection    func(childComplexity int, inspection model.InspectionInput) int
 		DeactivateApiary func(childComplexity int, id string) int
+		DeactivateBox    func(childComplexity int, id string) int
 		DeactivateHive   func(childComplexity int, id string) int
 		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
 		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
@@ -172,6 +173,7 @@ type MutationResolver interface {
 	UpdateHive(ctx context.Context, hive model.HiveUpdateInput) (*model.Hive, error)
 	DeactivateHive(ctx context.Context, id string) (*bool, error)
 	AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error)
+	DeactivateBox(ctx context.Context, id string) (*bool, error)
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
 }
 type QueryResolver interface {
@@ -551,6 +553,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeactivateApiary(childComplexity, args["id"].(string)), true
 
+	case "Mutation.deactivateBox":
+		if e.complexity.Mutation.DeactivateBox == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deactivateBox_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeactivateBox(childComplexity, args["id"].(string)), true
+
 	case "Mutation.deactivateHive":
 		if e.complexity.Mutation.DeactivateHive == nil {
 			break
@@ -760,6 +774,7 @@ type Mutation {
   deactivateHive(id: ID!): Boolean
 
   addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
+  deactivateBox(id: ID!): Boolean
 
   addInspection(inspection: InspectionInput!): Inspection
 }
@@ -1074,6 +1089,21 @@ func (ec *executionContext) field_Mutation_addInspection_args(ctx context.Contex
 }
 
 func (ec *executionContext) field_Mutation_deactivateApiary_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deactivateBox_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -3532,6 +3562,58 @@ func (ec *executionContext) fieldContext_Mutation_addBox(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_addBox_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deactivateBox(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deactivateBox(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeactivateBox(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deactivateBox(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deactivateBox_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -6998,6 +7080,12 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "deactivateBox":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deactivateBox(ctx, field)
+			})
+
 		case "addInspection":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {

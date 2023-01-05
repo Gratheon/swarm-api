@@ -329,7 +329,7 @@ func (r *mutationResolver) DeactivateHive(ctx context.Context, id string) (*bool
 // AddBox is the resolver for the addBox field.
 func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error) {
 	uid := ctx.Value("userID").(string)
-	
+
 	boxModel := &model.Box{
 		Db:     r.Resolver.Db,
 		UserID: uid,
@@ -342,6 +342,15 @@ func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position i
 	}
 
 	return boxModel.Get(*boxID)
+}
+
+// DeactivateBox is the resolver for the deactivateBox field.
+func (r *mutationResolver) DeactivateBox(ctx context.Context, id string) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Deactivate(id)
 }
 
 // AddInspection is the resolver for the addInspection field.

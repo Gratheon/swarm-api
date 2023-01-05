@@ -159,3 +159,24 @@ func (r *Box) DeactivateByHive(id string) error {
 	}
 	return tx.Commit()
 }
+
+
+func (r *Box) Deactivate(id string) (*bool, error) {
+	success := true
+	tx := r.Db.MustBegin()
+
+	_, err := tx.NamedExec(
+		"UPDATE boxes SET active=0 WHERE id=:id AND user_id=:userID",
+		map[string]interface{}{
+			"id":     id,
+			"userID": r.UserID,
+		},
+	)
+	err = tx.Commit()
+
+	if err != nil {
+		success = false
+	}
+
+	return &success, err
+}
