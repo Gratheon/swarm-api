@@ -125,6 +125,7 @@ type ComplexityRoot struct {
 		DeactivateBox    func(childComplexity int, id string) int
 		DeactivateFrame  func(childComplexity int, id string) int
 		DeactivateHive   func(childComplexity int, id string) int
+		SwapBoxPositions func(childComplexity int, id string, id2 string) int
 		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
 		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
 	}
@@ -176,6 +177,7 @@ type MutationResolver interface {
 	DeactivateHive(ctx context.Context, id string) (*bool, error)
 	AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error)
 	DeactivateBox(ctx context.Context, id string) (*bool, error)
+	SwapBoxPositions(ctx context.Context, id string, id2 string) (*bool, error)
 	AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error)
 	DeactivateFrame(ctx context.Context, id string) (*bool, error)
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
@@ -605,6 +607,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeactivateHive(childComplexity, args["id"].(string)), true
 
+	case "Mutation.swapBoxPositions":
+		if e.complexity.Mutation.SwapBoxPositions == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_swapBoxPositions_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SwapBoxPositions(childComplexity, args["id"].(string), args["id2"].(string)), true
+
 	case "Mutation.updateApiary":
 		if e.complexity.Mutation.UpdateApiary == nil {
 			break
@@ -803,6 +817,7 @@ type Mutation {
 
   addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
   deactivateBox(id: ID!): Boolean
+  swapBoxPositions(id: ID!, id2: ID!): Boolean
 
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
   deactivateFrame(id: ID!): Boolean
@@ -1209,6 +1224,30 @@ func (ec *executionContext) field_Mutation_deactivateHive_args(ctx context.Conte
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_swapBoxPositions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["id2"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id2"))
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id2"] = arg1
 	return args, nil
 }
 
@@ -3693,6 +3732,58 @@ func (ec *executionContext) fieldContext_Mutation_deactivateBox(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deactivateBox_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_swapBoxPositions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_swapBoxPositions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SwapBoxPositions(rctx, fc.Args["id"].(string), fc.Args["id2"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_swapBoxPositions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_swapBoxPositions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -7282,6 +7373,12 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deactivateBox(ctx, field)
+			})
+
+		case "swapBoxPositions":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_swapBoxPositions(ctx, field)
 			})
 
 		case "addFrame":

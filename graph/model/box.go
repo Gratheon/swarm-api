@@ -124,7 +124,32 @@ func (r *Box) Count(hiveId string) (int, error) {
 	return count, nil
 }
 
-func (r *Box) Update(id *string, position int, color *string, active int) error {
+func (r *Box) SwapBoxPositions(box1ID string, box2ID string) (*bool, error ){
+	ok := true
+	box1,_ := r.Get(box1ID)
+	box2,_ := r.Get(box2ID)
+
+	tmpPosition := *box1.Position;
+	box1.Position = box2.Position;
+	box2.Position = &tmpPosition;
+
+	upd1:=r.Update(box1.ID, *box1.Position, box1.Color)
+
+	if(upd1!=nil){
+		ok=false
+		return &ok, upd1;
+	}
+	upd2:=r.Update(box2.ID, *box2.Position, box2.Color)
+	
+	if(upd2!=nil){
+		ok=false
+		return &ok, upd2;
+	}
+
+	return &ok, nil
+}
+
+func (r *Box) Update(id *string, position int, color *string) error {
 	tx := r.Db.MustBegin()
 
 	_, err := tx.NamedExec(
@@ -142,23 +167,6 @@ func (r *Box) Update(id *string, position int, color *string, active int) error 
 	}
 	return tx.Commit()
 }
-
-func (r *Box) DeactivateByHive(id string) error {
-	tx := r.Db.MustBegin()
-
-	_, err := tx.NamedExec(
-		"UPDATE boxes SET active=0 WHERE hive_id=:id AND user_id=:userID",
-		map[string]interface{}{
-			"id":     id,
-			"userID": r.UserID,
-		},
-	)
-	if err != nil {
-		return err
-	}
-	return tx.Commit()
-}
-
 
 func (r *Box) Deactivate(id string) (*bool, error) {
 	success := true

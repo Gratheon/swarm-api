@@ -194,16 +194,6 @@ func (r *mutationResolver) UpdateHive(ctx context.Context, hive model.HiveUpdate
 		UserID: uid,
 	}
 
-	boxModel := &model.Box{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}
-
-	// frameModel := &model.Frame{
-	// 	Db:     r.Resolver.Db,
-	// 	UserID: uid,
-	// }
-
 	familyID := _upsertFamily(r.Resolver.Db, uid, hive)
 
 	err := hiveModel.Update(hive.ID, hive.Name, hive.Notes, familyID)
@@ -211,108 +201,6 @@ func (r *mutationResolver) UpdateHive(ctx context.Context, hive model.HiveUpdate
 	if err != nil {
 		logger.LogError(err)
 	}
-
-	err = boxModel.DeactivateByHive(hive.ID)
-
-	if err != nil {
-		logger.LogError(err)
-	}
-
-	// for _, box := range hive.Boxes {
-	// 	if box.ID == nil {
-	// 		box.ID, err = boxModel.Create(hive.ID, box.Position, box.Color, box.Type)
-
-	// 		if err != nil {
-	// 			logger.LogError(err)
-	// 		}
-	// 	} else {
-	// 		err = boxModel.Update(box.ID, box.Position, box.Color, 1)
-
-	// 		if err != nil {
-	// 			logger.LogError(err)
-	// 		}
-
-	// 		// in case some frame was removed, need to deactivate all
-	// 		// then activate only posted
-	// 		err = frameModel.DeactivateFrames(box.ID)
-	// 	}
-	// 	if err != nil {
-	// 		logger.LogError(err)
-	// 	}
-
-	// 	for _, frame := range box.Frames {
-	// 		if frameModel.IsFrameWithSides(frame.Type) {
-	// 			var rightFile *string = nil
-	// 			var leftFile *string = nil
-
-	// 			leftSide := &model.FrameSide{
-	// 				Db:                 r.Db,
-	// 				UserID:             uid,
-	// 				FileID:             leftFile,
-	// 				BroodPercent:       frame.LeftSide.BroodPercent,
-	// 				CappedBroodPercent: frame.LeftSide.CappedBroodPercent,
-	// 				DroneBroodPercent:  frame.LeftSide.DroneBroodPercent,
-	// 				HoneyPercent:       frame.LeftSide.HoneyPercent,
-	// 				PollenPercent:      frame.LeftSide.PollenPercent,
-	// 				QueenDetected:      frame.LeftSide.QueenDetected,
-	// 			}
-	// 			rightSide := &model.FrameSide{
-	// 				Db:                 r.Db,
-	// 				UserID:             uid,
-	// 				FileID:             rightFile,
-	// 				BroodPercent:       frame.RightSide.BroodPercent,
-	// 				CappedBroodPercent: frame.RightSide.CappedBroodPercent,
-	// 				DroneBroodPercent:  frame.RightSide.DroneBroodPercent,
-	// 				HoneyPercent:       frame.RightSide.HoneyPercent,
-	// 				PollenPercent:      frame.RightSide.PollenPercent,
-	// 				QueenDetected:      frame.RightSide.QueenDetected,
-	// 			}
-
-	// 			if frame.ID == nil {
-	// 				leftID, err := leftSide.CreateSide(leftSide)
-
-	// 				if err != nil {
-	// 					return nil, err
-	// 				}
-
-	// 				rightID, err := rightSide.CreateSide(rightSide)
-
-	// 				if err != nil {
-	// 					return nil, err
-	// 				}
-	// 				_, err = frameModel.Create(box.ID, frame.Position, frame.Type, leftID, rightID)
-	// 			} else {
-	// 				leftSide.ID = frame.LeftSide.ID
-	// 				rightSide.ID = frame.RightSide.ID
-
-	// 				_, err = leftSide.UpdateSide(leftSide)
-
-	// 				if err != nil {
-	// 					return nil, err
-	// 				}
-
-	// 				_, err = rightSide.UpdateSide(rightSide)
-
-	// 				if err != nil {
-	// 					return nil, err
-	// 				}
-
-	// 				_, err = frameModel.Update(frame.ID, box.ID, frame.Position)
-	// 			}
-	// 		} else {
-	// 			if frame.ID == nil {
-	// 				_, err = frameModel.Create(box.ID, frame.Position, frame.Type, nil, nil)
-	// 			} else {
-	// 				_, err = frameModel.Update(frame.ID, box.ID, frame.Position)
-	// 			}
-	// 		}
-
-	// 		if err != nil {
-	// 			logger.LogError(err)
-	// 		}
-
-	// 	}
-	// }
 
 	return hiveModel.Get(hive.ID)
 }
@@ -351,6 +239,15 @@ func (r *mutationResolver) DeactivateBox(ctx context.Context, id string) (*bool,
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Deactivate(id)
+}
+
+// SwapBoxPositions is the resolver for the swapBoxPositions field.
+func (r *mutationResolver) SwapBoxPositions(ctx context.Context, id string, id2 string) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).SwapBoxPositions(id, id2)
 }
 
 // AddFrame is the resolver for the addFrame field.
