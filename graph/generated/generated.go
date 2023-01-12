@@ -127,6 +127,7 @@ type ComplexityRoot struct {
 		DeactivateHive   func(childComplexity int, id string) int
 		SwapBoxPositions func(childComplexity int, id string, id2 string) int
 		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
+		UpdateFrameSide  func(childComplexity int, frameSide model.FrameSideInput) int
 		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
 	}
 
@@ -180,6 +181,7 @@ type MutationResolver interface {
 	SwapBoxPositions(ctx context.Context, id string, id2 string) (*bool, error)
 	AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error)
 	DeactivateFrame(ctx context.Context, id string) (*bool, error)
+	UpdateFrameSide(ctx context.Context, frameSide model.FrameSideInput) (bool, error)
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
 }
 type QueryResolver interface {
@@ -631,6 +633,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateApiary(childComplexity, args["id"].(string), args["apiary"].(model.ApiaryInput)), true
 
+	case "Mutation.updateFrameSide":
+		if e.complexity.Mutation.UpdateFrameSide == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateFrameSide_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateFrameSide(childComplexity, args["frameSide"].(model.FrameSideInput)), true
+
 	case "Mutation.updateHive":
 		if e.complexity.Mutation.UpdateHive == nil {
 			break
@@ -822,6 +836,8 @@ type Mutation {
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
   deactivateFrame(id: ID!): Boolean
 
+  updateFrameSide(frameSide: FrameSideInput!): Boolean!
+
   addInspection(inspection: InspectionInput!): Inspection
 }
 
@@ -852,7 +868,6 @@ input HiveUpdateInput {
   id: ID!
   name: String
 	notes: String
-  boxes: [BoxInput]
   family: FamilyInput
 }
 
@@ -877,12 +892,10 @@ input BoxInput{
   position: Int!
   color: String
   type: BoxType!
-  frames: [FrameInput]
   "ignored, added for frontend ease"
   hiveId: Int
   family: FamilyInput
 }
-
 
 type Family{
   id: ID!
@@ -913,8 +926,6 @@ input FrameInput{
   id: ID
   position: Int!
   type: FrameType!
-  leftSide: FrameSideInput
-  rightSide: FrameSideInput
   "ignored, added for frontend ease"
   boxIndex: Int
   "ignored, added for frontend ease"
@@ -942,7 +953,7 @@ enum FrameType {
 }
 
 input FrameSideInput{
-  id: ID
+  id: ID!
   broodPercent: Int
   cappedBroodPercent: Int
   droneBroodPercent: Int
@@ -1272,6 +1283,21 @@ func (ec *executionContext) field_Mutation_updateApiary_args(ctx context.Context
 		}
 	}
 	args["apiary"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateFrameSide_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.FrameSideInput
+	if tmp, ok := rawArgs["frameSide"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frameSide"))
+		arg0, err = ec.unmarshalNFrameSideInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["frameSide"] = arg0
 	return args, nil
 }
 
@@ -3909,6 +3935,61 @@ func (ec *executionContext) fieldContext_Mutation_deactivateFrame(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateFrameSide(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateFrameSide(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateFrameSide(rctx, fc.Args["frameSide"].(model.FrameSideInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateFrameSide(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateFrameSide_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_addInspection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_addInspection(ctx, field)
 	if err != nil {
@@ -6315,7 +6396,7 @@ func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj inte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "position", "color", "type", "frames", "hiveId", "family"}
+	fieldsInOrder := [...]string{"id", "position", "color", "type", "hiveId", "family"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6351,14 +6432,6 @@ func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj inte
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
 			it.Type, err = ec.unmarshalNBoxType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "frames":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frames"))
-			it.Frames, err = ec.unmarshalOFrameInput2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6435,7 +6508,7 @@ func (ec *executionContext) unmarshalInputFrameInput(ctx context.Context, obj in
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "position", "type", "leftSide", "rightSide", "boxIndex", "hiveId"}
+	fieldsInOrder := [...]string{"id", "position", "type", "boxIndex", "hiveId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6463,22 +6536,6 @@ func (ec *executionContext) unmarshalInputFrameInput(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
 			it.Type, err = ec.unmarshalNFrameType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "leftSide":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leftSide"))
-			it.LeftSide, err = ec.unmarshalOFrameSideInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "rightSide":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rightSide"))
-			it.RightSide, err = ec.unmarshalOFrameSideInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6522,7 +6579,7 @@ func (ec *executionContext) unmarshalInputFrameSideInput(ctx context.Context, ob
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalOID2ᚖstring(ctx, v)
+			it.ID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6647,7 +6704,7 @@ func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "name", "notes", "boxes", "family"}
+	fieldsInOrder := [...]string{"id", "name", "notes", "family"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6675,14 +6732,6 @@ func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notes"))
 			it.Notes, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "boxes":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boxes"))
-			it.Boxes, err = ec.unmarshalOBoxInput2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7396,6 +7445,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 				return ec._Mutation_deactivateFrame(ctx, field)
 			})
 
+		case "updateFrameSide":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateFrameSide(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "addInspection":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -8011,6 +8069,11 @@ func (ec *executionContext) marshalNFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarm
 	return ec._FrameSide(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNFrameSideInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx context.Context, v interface{}) (model.FrameSideInput, error) {
+	res, err := ec.unmarshalInputFrameSideInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFrameType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx context.Context, v interface{}) (model.FrameType, error) {
 	var res model.FrameType
 	err := res.UnmarshalGQL(v)
@@ -8610,34 +8673,6 @@ func (ec *executionContext) marshalOBox2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapi
 	return ec._Box(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOBoxInput2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxInput(ctx context.Context, v interface{}) ([]*model.BoxInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
-	var err error
-	res := make([]*model.BoxInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOBoxInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalOBoxInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxInput(ctx context.Context, v interface{}) (*model.BoxInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputBoxInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) marshalOFamily2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx context.Context, sel ast.SelectionSet, v *model.Family) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -8701,47 +8736,11 @@ func (ec *executionContext) marshalOFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑa
 	return ec._Frame(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOFrameInput2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameInput(ctx context.Context, v interface{}) ([]*model.FrameInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
-	var err error
-	res := make([]*model.FrameInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOFrameInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalOFrameInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameInput(ctx context.Context, v interface{}) (*model.FrameInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputFrameInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) marshalOFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v *model.FrameSide) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._FrameSide(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOFrameSideInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx context.Context, v interface{}) (*model.FrameSideInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputFrameSideInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOHive2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v []*model.Hive) graphql.Marshaler {

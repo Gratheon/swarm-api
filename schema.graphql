@@ -32,6 +32,8 @@ type Mutation {
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
   deactivateFrame(id: ID!): Boolean
 
+  updateFrameSide(frameSide: FrameSideInput!): Boolean!
+
   addInspection(inspection: InspectionInput!): Inspection
 }
 
@@ -62,7 +64,6 @@ input HiveUpdateInput {
   id: ID!
   name: String
 	notes: String
-  boxes: [BoxInput]
   family: FamilyInput
 }
 
@@ -87,12 +88,10 @@ input BoxInput{
   position: Int!
   color: String
   type: BoxType!
-  frames: [FrameInput]
   "ignored, added for frontend ease"
   hiveId: Int
   family: FamilyInput
 }
-
 
 type Family{
   id: ID!
@@ -123,8 +122,6 @@ input FrameInput{
   id: ID
   position: Int!
   type: FrameType!
-  leftSide: FrameSideInput
-  rightSide: FrameSideInput
   "ignored, added for frontend ease"
   boxIndex: Int
   "ignored, added for frontend ease"
@@ -152,7 +149,7 @@ enum FrameType {
 }
 
 input FrameSideInput{
-  id: ID
+  id: ID!
   broodPercent: Int
   cappedBroodPercent: Int
   droneBroodPercent: Int

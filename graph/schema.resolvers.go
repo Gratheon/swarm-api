@@ -308,6 +308,17 @@ func (r *mutationResolver) DeactivateFrame(ctx context.Context, id string) (*boo
 	}).Deactivate(id)
 }
 
+// UpdateFrameSide is the resolver for the updateFrameSide field.
+func (r *mutationResolver) UpdateFrameSide(ctx context.Context, frameSide model.FrameSideInput) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	frameSideModel := &model.FrameSide{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	return frameSideModel.UpdateSide(frameSide)
+}
+
 // AddInspection is the resolver for the addInspection field.
 func (r *mutationResolver) AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error) {
 	uid := ctx.Value("userID").(string)

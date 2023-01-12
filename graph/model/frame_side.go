@@ -2,6 +2,7 @@ package model
 
 import (
 	"strings"
+	"strconv"
 
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/gratheon/swarm-api/logger"
@@ -101,8 +102,31 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 	return &id, err
 }
 
-func (r *FrameSide) UpdateSide(frame *FrameSide) (*int64, error) {
-	result, err := r.Db.NamedExec(
+func (r *FrameSide) UpdateSide(frame FrameSideInput) (bool, error) {
+	ok := false
+
+	id, err := strconv.Atoi(frame.ID)
+	if(err!=nil){
+		return ok, err
+	}
+
+	exFrameSide, err := r.Get(&id);
+
+	if(err!=nil){
+		return ok, err
+	}
+
+	exFrameSide.BroodPercent = frame.BroodPercent
+	exFrameSide.CappedBroodPercent = frame.CappedBroodPercent
+	exFrameSide.DroneBroodPercent = frame.DroneBroodPercent
+	exFrameSide.PollenPercent = frame.PollenPercent
+	exFrameSide.HoneyPercent = frame.HoneyPercent
+
+	exFrameSide.QueenDetected = frame.QueenDetected
+	//exFrameSide.WorkerCount = exFrameSide.WorkerCount
+	//exFrameSide.DroneCount = exFrameSide.DroneCount
+
+	_, err = r.Db.NamedExec(
 		`UPDATE frames_sides SET
 		  file_id = :fileID,
 		  pollen = :pollen,
@@ -113,13 +137,15 @@ func (r *FrameSide) UpdateSide(frame *FrameSide) (*int64, error) {
           queen_detected = :queen_detected
 		WHERE id = :id AND user_id=:userID`,
 		map[string]interface{}{
-			"fileID":         frame.FileID,
-			"pollen":         frame.PollenPercent,
-			"honey":          frame.HoneyPercent,
-			"drone_brood":    frame.DroneBroodPercent,
-			"capped_brood":   frame.CappedBroodPercent,
-			"brood":          frame.BroodPercent,
-			"queen_detected": frame.QueenDetected,
+			"fileID":         exFrameSide.FileID,
+
+			"pollen":         exFrameSide.PollenPercent,
+			"honey":          exFrameSide.HoneyPercent,
+			"drone_brood":    exFrameSide.DroneBroodPercent,
+			"capped_brood":   exFrameSide.CappedBroodPercent,
+			"brood":          exFrameSide.BroodPercent,
+
+			"queen_detected": exFrameSide.QueenDetected,
 			"id":             frame.ID,
 			"userID":         r.UserID,
 		},
@@ -127,10 +153,9 @@ func (r *FrameSide) UpdateSide(frame *FrameSide) (*int64, error) {
 
 	if err != nil {
 		logger.LogError(err)
-		return nil, err
+		return ok, err
 	}
 
-	id, err := result.LastInsertId()
-
-	return &id, err
+	ok=true
+	return ok, err
 }

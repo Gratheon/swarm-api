@@ -15,11 +15,10 @@ type ApiaryInput struct {
 }
 
 type BoxInput struct {
-	ID       *string       `json:"id"`
-	Position int           `json:"position"`
-	Color    *string       `json:"color"`
-	Type     BoxType       `json:"type"`
-	Frames   []*FrameInput `json:"frames"`
+	ID       *string `json:"id"`
+	Position int     `json:"position"`
+	Color    *string `json:"color"`
+	Type     BoxType `json:"type"`
 	// ignored, added for frontend ease
 	HiveID *int         `json:"hiveId"`
 	Family *FamilyInput `json:"family"`
@@ -32,11 +31,9 @@ type FamilyInput struct {
 }
 
 type FrameInput struct {
-	ID        *string         `json:"id"`
-	Position  int             `json:"position"`
-	Type      FrameType       `json:"type"`
-	LeftSide  *FrameSideInput `json:"leftSide"`
-	RightSide *FrameSideInput `json:"rightSide"`
+	ID       *string   `json:"id"`
+	Position int       `json:"position"`
+	Type     FrameType `json:"type"`
 	// ignored, added for frontend ease
 	BoxIndex *int `json:"boxIndex"`
 	// ignored, added for frontend ease
@@ -44,13 +41,13 @@ type FrameInput struct {
 }
 
 type FrameSideInput struct {
-	ID                 *string `json:"id"`
-	BroodPercent       *int    `json:"broodPercent"`
-	CappedBroodPercent *int    `json:"cappedBroodPercent"`
-	DroneBroodPercent  *int    `json:"droneBroodPercent"`
-	PollenPercent      *int    `json:"pollenPercent"`
-	HoneyPercent       *int    `json:"honeyPercent"`
-	QueenDetected      bool    `json:"queenDetected"`
+	ID                 string `json:"id"`
+	BroodPercent       *int   `json:"broodPercent"`
+	CappedBroodPercent *int   `json:"cappedBroodPercent"`
+	DroneBroodPercent  *int   `json:"droneBroodPercent"`
+	PollenPercent      *int   `json:"pollenPercent"`
+	HoneyPercent       *int   `json:"honeyPercent"`
+	QueenDetected      bool   `json:"queenDetected"`
 }
 
 type HiveInput struct {
@@ -65,7 +62,6 @@ type HiveUpdateInput struct {
 	ID     string       `json:"id"`
 	Name   *string      `json:"name"`
 	Notes  *string      `json:"notes"`
-	Boxes  []*BoxInput  `json:"boxes"`
 	Family *FamilyInput `json:"family"`
 }
 
