@@ -52,8 +52,6 @@ models:
         resolver: true
   Box:
     model: gitlab.com/gratheon/swarm-api/graph/model.Box
-  File:
-    model: gitlab.com/gratheon/swarm-api/graph/model.File
   Frame:
     model: gitlab.com/gratheon/swarm-api/graph/model.Frame
     fields:

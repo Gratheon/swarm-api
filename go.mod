@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/99designs/gqlgen v0.17.20
-	github.com/aws/aws-sdk-go v1.44.107
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bugsnag/bugsnag-go v2.1.2+incompatible
 	github.com/bugsnag/panicwrap v1.3.4 // indirect

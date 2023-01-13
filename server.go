@@ -61,7 +61,6 @@ func main() {
 	(&model.Box{Db: rootResolver.Db}).SetUp()
 	(&model.FrameSide{Db: rootResolver.Db}).SetUp()
 	(&model.Frame{Db: rootResolver.Db}).SetUp()
-	(&model.File{Db: rootResolver.Db}).SetUp()
 	(&model.Family{Db: rootResolver.Db}).SetUp()
 	(&model.Inspection{Db: rootResolver.Db}).SetUp()
 

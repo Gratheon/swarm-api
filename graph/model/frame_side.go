@@ -12,7 +12,6 @@ type FrameSide struct {
 	Db                 *sqlx.DB
 	ID                 *string `json:"id" db:"id"`
 	UserID             string  `db:"user_id"`
-	FileID             *string `db:"file_id"`
 	BroodPercent       *int    `json:"broodPercent" db:"brood"`
 	CappedBroodPercent *int    `json:"cappedBroodPercent" db:"capped_brood"`
 	DroneBroodPercent  *int    `json:"droneBroodPercent" db:"drone_brood"`
@@ -30,16 +29,13 @@ func (r *FrameSide) SetUp() {
 		CREATE TABLE IF NOT EXISTS 'frames_sides' (
 		  'id' int unsigned NOT NULL AUTO_INCREMENT,
 		  'user_id' int unsigned NOT NULL,
-		  'file_id' int unsigned DEFAULT NULL,
 		  'brood' int DEFAULT NULL,
 		  'capped_brood' int DEFAULT NULL,
 		  'drone_brood' int DEFAULT NULL,
 		  'pollen' int DEFAULT NULL,
 		  'honey' int DEFAULT NULL,
 		  'queen_detected' tinyint(1) NOT NULL DEFAULT 0,
-		  KEY 'file_id' ('file_id'),
-		  PRIMARY KEY ('id'),
-		  CONSTRAINT 'frames_sides_ibfk_1' FOREIGN KEY ('file_id') REFERENCES 'files' ('id')
+		  PRIMARY KEY ('id')
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 		`, "'", "`", -1)
 
@@ -128,7 +124,6 @@ func (r *FrameSide) UpdateSide(frame FrameSideInput) (bool, error) {
 
 	_, err = r.Db.NamedExec(
 		`UPDATE frames_sides SET
-		  file_id = :fileID,
 		  pollen = :pollen,
 		  honey = :honey,
 		  drone_brood = :drone_brood,
@@ -137,8 +132,6 @@ func (r *FrameSide) UpdateSide(frame FrameSideInput) (bool, error) {
           queen_detected = :queen_detected
 		WHERE id = :id AND user_id=:userID`,
 		map[string]interface{}{
-			"fileID":         exFrameSide.FileID,
-
 			"pollen":         exFrameSide.PollenPercent,
 			"honey":          exFrameSide.HoneyPercent,
 			"drone_brood":    exFrameSide.DroneBroodPercent,
