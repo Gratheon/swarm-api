@@ -82,3 +82,21 @@ func (r *Family) Update(id *string, race *string, added *string) (*int64, error)
 
 	return nil, err
 }
+
+func (r *Family) Upsert(uid string, hive HiveUpdateInput) (*string, error) {
+	if hive.Family == nil {
+		return nil, nil
+	}
+
+	FamilyID := hive.Family.ID
+	if hive.Family.ID != nil {
+		_, err := r.Update(FamilyID, hive.Family.Race, hive.Family.Added)
+
+		if err != nil {
+			return nil, err
+		}	
+	} else {
+		FamilyID, _ = r.Create(hive.Family.Race, hive.Family.Added)
+	}
+	return FamilyID, nil
+}

@@ -26,6 +26,7 @@ type Mutation {
   deactivateHive(id: ID!): Boolean
 
   addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
+  updateBoxColor(id: ID!, color: String): Boolean!
   deactivateBox(id: ID!): Boolean
   swapBoxPositions(id: ID!, id2: ID!): Boolean
 

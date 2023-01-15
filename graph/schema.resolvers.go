@@ -194,9 +194,17 @@ func (r *mutationResolver) UpdateHive(ctx context.Context, hive model.HiveUpdate
 		UserID: uid,
 	}
 
-	familyID := _upsertFamily(r.Resolver.Db, uid, hive)
+	familyModel := &model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
 
-	err := hiveModel.Update(hive.ID, hive.Name, hive.Notes, familyID)
+	familyID, err := familyModel.Upsert(uid, hive)
+	if err != nil {
+		logger.LogError(err)
+	}
+
+	err = hiveModel.Update(hive.ID, hive.Name, hive.Notes, familyID)
 
 	if err != nil {
 		logger.LogError(err)
@@ -230,6 +238,25 @@ func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position i
 	}
 
 	return boxModel.Get(*boxID)
+}
+
+// UpdateBoxColor is the resolver for the updateBoxColor field.
+func (r *mutationResolver) UpdateBoxColor(ctx context.Context, id string, color *string) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	boxModel := &model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	box, err := boxModel.Get(id)
+
+	if err != nil {
+		logger.LogError(err)
+	}
+
+	box.Color = color
+
+	return boxModel.Update(box.ID, *box.Position, box.Color)
 }
 
 // DeactivateBox is the resolver for the deactivateBox field.

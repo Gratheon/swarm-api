@@ -133,13 +133,13 @@ func (r *Box) SwapBoxPositions(box1ID string, box2ID string) (*bool, error ){
 	box1.Position = box2.Position;
 	box2.Position = &tmpPosition;
 
-	upd1:=r.Update(box1.ID, *box1.Position, box1.Color)
+	_, upd1:=r.Update(box1.ID, *box1.Position, box1.Color)
 
 	if(upd1!=nil){
 		ok=false
 		return &ok, upd1;
 	}
-	upd2:=r.Update(box2.ID, *box2.Position, box2.Color)
+	_, upd2:=r.Update(box2.ID, *box2.Position, box2.Color)
 	
 	if(upd2!=nil){
 		ok=false
@@ -149,7 +149,7 @@ func (r *Box) SwapBoxPositions(box1ID string, box2ID string) (*bool, error ){
 	return &ok, nil
 }
 
-func (r *Box) Update(id *string, position int, color *string) error {
+func (r *Box) Update(id *string, position int, color *string) (bool, error) {
 	tx := r.Db.MustBegin()
 
 	_, err := tx.NamedExec(
@@ -163,9 +163,16 @@ func (r *Box) Update(id *string, position int, color *string) error {
 	)
 
 	if err != nil {
-		return err
+		return false, err
 	}
-	return tx.Commit()
+
+	err = tx.Commit()
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *Box) Deactivate(id string) (*bool, error) {

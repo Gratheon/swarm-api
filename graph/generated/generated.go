@@ -127,6 +127,7 @@ type ComplexityRoot struct {
 		DeactivateHive   func(childComplexity int, id string) int
 		SwapBoxPositions func(childComplexity int, id string, id2 string) int
 		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
+		UpdateBoxColor   func(childComplexity int, id string, color *string) int
 		UpdateFrameSide  func(childComplexity int, frameSide model.FrameSideInput) int
 		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
 	}
@@ -177,6 +178,7 @@ type MutationResolver interface {
 	UpdateHive(ctx context.Context, hive model.HiveUpdateInput) (*model.Hive, error)
 	DeactivateHive(ctx context.Context, id string) (*bool, error)
 	AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error)
+	UpdateBoxColor(ctx context.Context, id string, color *string) (bool, error)
 	DeactivateBox(ctx context.Context, id string) (*bool, error)
 	SwapBoxPositions(ctx context.Context, id string, id2 string) (*bool, error)
 	AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error)
@@ -633,6 +635,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateApiary(childComplexity, args["id"].(string), args["apiary"].(model.ApiaryInput)), true
 
+	case "Mutation.updateBoxColor":
+		if e.complexity.Mutation.UpdateBoxColor == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateBoxColor_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateBoxColor(childComplexity, args["id"].(string), args["color"].(*string)), true
+
 	case "Mutation.updateFrameSide":
 		if e.complexity.Mutation.UpdateFrameSide == nil {
 			break
@@ -830,6 +844,7 @@ type Mutation {
   deactivateHive(id: ID!): Boolean
 
   addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
+  updateBoxColor(id: ID!, color: String): Boolean!
   deactivateBox(id: ID!): Boolean
   swapBoxPositions(id: ID!, id2: ID!): Boolean
 
@@ -1283,6 +1298,30 @@ func (ec *executionContext) field_Mutation_updateApiary_args(ctx context.Context
 		}
 	}
 	args["apiary"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateBoxColor_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["color"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("color"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["color"] = arg1
 	return args, nil
 }
 
@@ -3706,6 +3745,61 @@ func (ec *executionContext) fieldContext_Mutation_addBox(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_addBox_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateBoxColor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateBoxColor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateBoxColor(rctx, fc.Args["id"].(string), fc.Args["color"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateBoxColor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateBoxColor_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -7413,6 +7507,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_addBox(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateBoxColor":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateBoxColor(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
