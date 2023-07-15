@@ -153,7 +153,7 @@ input FrameSideInput{
   id: ID!
   broodPercent: Int
   cappedBroodPercent: Int
-  droneBroodPercent: Int
+  eggsPercent: Int
   pollenPercent: Int
   honeyPercent: Int
   queenDetected: Boolean!
@@ -163,7 +163,7 @@ type FrameSide @key(fields: "id") {
   id: ID
   broodPercent: Int
   cappedBroodPercent: Int
-  droneBroodPercent: Int
+  eggsPercent: Int
   pollenPercent: Int
   honeyPercent: Int
   queenDetected: Boolean!

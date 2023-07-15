@@ -14,9 +14,9 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/99designs/gqlgen/plugin/federation/fedruntime"
+	"github.com/Gratheon/swarm-api/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
-	"gitlab.com/gratheon/swarm-api/graph/model"
 )
 
 // region    ************************** generated!.gotpl **************************
@@ -90,8 +90,8 @@ type ComplexityRoot struct {
 	FrameSide struct {
 		BroodPercent       func(childComplexity int) int
 		CappedBroodPercent func(childComplexity int) int
-		DroneBroodPercent  func(childComplexity int) int
 		DroneCount         func(childComplexity int) int
+		EggsPercent        func(childComplexity int) int
 		HoneyPercent       func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		PollenPercent      func(childComplexity int) int
@@ -379,19 +379,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.FrameSide.CappedBroodPercent(childComplexity), true
 
-	case "FrameSide.droneBroodPercent":
-		if e.complexity.FrameSide.DroneBroodPercent == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.DroneBroodPercent(childComplexity), true
-
 	case "FrameSide.droneCount":
 		if e.complexity.FrameSide.DroneCount == nil {
 			break
 		}
 
 		return e.complexity.FrameSide.DroneCount(childComplexity), true
+
+	case "FrameSide.eggsPercent":
+		if e.complexity.FrameSide.EggsPercent == nil {
+			break
+		}
+
+		return e.complexity.FrameSide.EggsPercent(childComplexity), true
 
 	case "FrameSide.honeyPercent":
 		if e.complexity.FrameSide.HoneyPercent == nil {
@@ -971,7 +971,7 @@ input FrameSideInput{
   id: ID!
   broodPercent: Int
   cappedBroodPercent: Int
-  droneBroodPercent: Int
+  eggsPercent: Int
   pollenPercent: Int
   honeyPercent: Int
   queenDetected: Boolean!
@@ -981,7 +981,7 @@ type FrameSide @key(fields: "id") {
   id: ID
   broodPercent: Int
   cappedBroodPercent: Int
-  droneBroodPercent: Int
+  eggsPercent: Int
   pollenPercent: Int
   honeyPercent: Int
   queenDetected: Boolean!
@@ -1079,7 +1079,7 @@ func (ec *executionContext) field_Mutation_addApiary_args(ctx context.Context, r
 	var arg0 model.ApiaryInput
 	if tmp, ok := rawArgs["apiary"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiary"))
-		arg0, err = ec.unmarshalNApiaryInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryInput(ctx, tmp)
+		arg0, err = ec.unmarshalNApiaryInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1121,7 +1121,7 @@ func (ec *executionContext) field_Mutation_addBox_args(ctx context.Context, rawA
 	var arg3 model.BoxType
 	if tmp, ok := rawArgs["type"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
-		arg3, err = ec.unmarshalNBoxType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, tmp)
+		arg3, err = ec.unmarshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1169,7 +1169,7 @@ func (ec *executionContext) field_Mutation_addHive_args(ctx context.Context, raw
 	var arg0 model.HiveInput
 	if tmp, ok := rawArgs["hive"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hive"))
-		arg0, err = ec.unmarshalNHiveInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveInput(ctx, tmp)
+		arg0, err = ec.unmarshalNHiveInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1184,7 +1184,7 @@ func (ec *executionContext) field_Mutation_addInspection_args(ctx context.Contex
 	var arg0 model.InspectionInput
 	if tmp, ok := rawArgs["inspection"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("inspection"))
-		arg0, err = ec.unmarshalNInspectionInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspectionInput(ctx, tmp)
+		arg0, err = ec.unmarshalNInspectionInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspectionInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1292,7 +1292,7 @@ func (ec *executionContext) field_Mutation_updateApiary_args(ctx context.Context
 	var arg1 model.ApiaryInput
 	if tmp, ok := rawArgs["apiary"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiary"))
-		arg1, err = ec.unmarshalNApiaryInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryInput(ctx, tmp)
+		arg1, err = ec.unmarshalNApiaryInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1331,7 +1331,7 @@ func (ec *executionContext) field_Mutation_updateFrameSide_args(ctx context.Cont
 	var arg0 model.FrameSideInput
 	if tmp, ok := rawArgs["frameSide"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frameSide"))
-		arg0, err = ec.unmarshalNFrameSideInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx, tmp)
+		arg0, err = ec.unmarshalNFrameSideInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1346,7 +1346,7 @@ func (ec *executionContext) field_Mutation_updateHive_args(ctx context.Context, 
 	var arg0 model.HiveUpdateInput
 	if tmp, ok := rawArgs["hive"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hive"))
-		arg0, err = ec.unmarshalNHiveUpdateInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveUpdateInput(ctx, tmp)
+		arg0, err = ec.unmarshalNHiveUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveUpdateInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1578,7 +1578,7 @@ func (ec *executionContext) _Apiary_hives(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.([]*model.Hive)
 	fc.Result = res
-	return ec.marshalOHive2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
+	return ec.marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Apiary_hives(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1884,7 +1884,7 @@ func (ec *executionContext) _Box_type(ctx context.Context, field graphql.Collect
 	}
 	res := resTmp.(model.BoxType)
 	fc.Result = res
-	return ec.marshalNBoxType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, field.Selections, res)
+	return ec.marshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Box_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1925,7 +1925,7 @@ func (ec *executionContext) _Box_frames(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.([]*model.Frame)
 	fc.Result = res
-	return ec.marshalOFrame2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, field.Selections, res)
+	return ec.marshalOFrame2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Box_frames(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1981,7 +1981,7 @@ func (ec *executionContext) _Entity_findFrameSideByID(ctx context.Context, field
 	}
 	res := resTmp.(*model.FrameSide)
 	fc.Result = res
-	return ec.marshalNFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
+	return ec.marshalNFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Entity_findFrameSideByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1998,8 +1998,8 @@ func (ec *executionContext) fieldContext_Entity_findFrameSideByID(ctx context.Co
 				return ec.fieldContext_FrameSide_broodPercent(ctx, field)
 			case "cappedBroodPercent":
 				return ec.fieldContext_FrameSide_cappedBroodPercent(ctx, field)
-			case "droneBroodPercent":
-				return ec.fieldContext_FrameSide_droneBroodPercent(ctx, field)
+			case "eggsPercent":
+				return ec.fieldContext_FrameSide_eggsPercent(ctx, field)
 			case "pollenPercent":
 				return ec.fieldContext_FrameSide_pollenPercent(ctx, field)
 			case "honeyPercent":
@@ -2056,7 +2056,7 @@ func (ec *executionContext) _Entity_findHiveByID(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.Hive)
 	fc.Result = res
-	return ec.marshalNHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
+	return ec.marshalNHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2338,7 +2338,7 @@ func (ec *executionContext) _Frame_type(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.(model.FrameType)
 	fc.Result = res
-	return ec.marshalNFrameType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx, field.Selections, res)
+	return ec.marshalNFrameType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Frame_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2379,7 +2379,7 @@ func (ec *executionContext) _Frame_leftSide(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.FrameSide)
 	fc.Result = res
-	return ec.marshalOFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
+	return ec.marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Frame_leftSide(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2396,8 +2396,8 @@ func (ec *executionContext) fieldContext_Frame_leftSide(ctx context.Context, fie
 				return ec.fieldContext_FrameSide_broodPercent(ctx, field)
 			case "cappedBroodPercent":
 				return ec.fieldContext_FrameSide_cappedBroodPercent(ctx, field)
-			case "droneBroodPercent":
-				return ec.fieldContext_FrameSide_droneBroodPercent(ctx, field)
+			case "eggsPercent":
+				return ec.fieldContext_FrameSide_eggsPercent(ctx, field)
 			case "pollenPercent":
 				return ec.fieldContext_FrameSide_pollenPercent(ctx, field)
 			case "honeyPercent":
@@ -2440,7 +2440,7 @@ func (ec *executionContext) _Frame_rightSide(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*model.FrameSide)
 	fc.Result = res
-	return ec.marshalOFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
+	return ec.marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Frame_rightSide(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2457,8 +2457,8 @@ func (ec *executionContext) fieldContext_Frame_rightSide(ctx context.Context, fi
 				return ec.fieldContext_FrameSide_broodPercent(ctx, field)
 			case "cappedBroodPercent":
 				return ec.fieldContext_FrameSide_cappedBroodPercent(ctx, field)
-			case "droneBroodPercent":
-				return ec.fieldContext_FrameSide_droneBroodPercent(ctx, field)
+			case "eggsPercent":
+				return ec.fieldContext_FrameSide_eggsPercent(ctx, field)
 			case "pollenPercent":
 				return ec.fieldContext_FrameSide_pollenPercent(ctx, field)
 			case "honeyPercent":
@@ -2599,8 +2599,8 @@ func (ec *executionContext) fieldContext_FrameSide_cappedBroodPercent(ctx contex
 	return fc, nil
 }
 
-func (ec *executionContext) _FrameSide_droneBroodPercent(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_droneBroodPercent(ctx, field)
+func (ec *executionContext) _FrameSide_eggsPercent(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FrameSide_eggsPercent(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2613,7 +2613,7 @@ func (ec *executionContext) _FrameSide_droneBroodPercent(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.DroneBroodPercent, nil
+		return obj.EggsPercent, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2627,7 +2627,7 @@ func (ec *executionContext) _FrameSide_droneBroodPercent(ctx context.Context, fi
 	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_FrameSide_droneBroodPercent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_FrameSide_eggsPercent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FrameSide",
 		Field:      field,
@@ -3043,7 +3043,7 @@ func (ec *executionContext) _Hive_boxes(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.([]*model.Box)
 	fc.Result = res
-	return ec.marshalOBox2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, field.Selections, res)
+	return ec.marshalOBox2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Hive_boxes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3096,7 +3096,7 @@ func (ec *executionContext) _Hive_family(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(*model.Family)
 	fc.Result = res
-	return ec.marshalOFamily2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx, field.Selections, res)
+	return ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Hive_family(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3145,7 +3145,7 @@ func (ec *executionContext) _Hive_inspections(ctx context.Context, field graphql
 	}
 	res := resTmp.([]*model.Inspection)
 	fc.Result = res
-	return ec.marshalOInspection2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
+	return ec.marshalOInspection2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Hive_inspections(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3337,7 +3337,7 @@ func (ec *executionContext) _Mutation_addApiary(ctx context.Context, field graph
 	}
 	res := resTmp.(*model.Apiary)
 	fc.Result = res
-	return ec.marshalOApiary2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
+	return ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_addApiary(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3403,7 +3403,7 @@ func (ec *executionContext) _Mutation_updateApiary(ctx context.Context, field gr
 	}
 	res := resTmp.(*model.Apiary)
 	fc.Result = res
-	return ec.marshalOApiary2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
+	return ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateApiary(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3521,7 +3521,7 @@ func (ec *executionContext) _Mutation_addHive(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.Hive)
 	fc.Result = res
-	return ec.marshalOHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
+	return ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3589,7 +3589,7 @@ func (ec *executionContext) _Mutation_updateHive(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.Hive)
 	fc.Result = res
-	return ec.marshalOHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
+	return ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3712,7 +3712,7 @@ func (ec *executionContext) _Mutation_addBox(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*model.Box)
 	fc.Result = res
-	return ec.marshalNBox2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, field.Selections, res)
+	return ec.marshalNBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_addBox(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3938,7 +3938,7 @@ func (ec *executionContext) _Mutation_addFrame(ctx context.Context, field graphq
 	}
 	res := resTmp.(*model.Frame)
 	fc.Result = res
-	return ec.marshalNFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, field.Selections, res)
+	return ec.marshalNFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_addFrame(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4109,7 +4109,7 @@ func (ec *executionContext) _Mutation_addInspection(ctx context.Context, field g
 	}
 	res := resTmp.(*model.Inspection)
 	fc.Result = res
-	return ec.marshalOInspection2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
+	return ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_addInspection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4169,7 +4169,7 @@ func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.(*model.Hive)
 	fc.Result = res
-	return ec.marshalOHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
+	return ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4237,7 +4237,7 @@ func (ec *executionContext) _Query_apiary(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*model.Apiary)
 	fc.Result = res
-	return ec.marshalOApiary2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
+	return ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_apiary(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4303,7 +4303,7 @@ func (ec *executionContext) _Query_apiaries(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]*model.Apiary)
 	fc.Result = res
-	return ec.marshalOApiary2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
+	return ec.marshalOApiary2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_apiaries(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4358,7 +4358,7 @@ func (ec *executionContext) _Query_inspection(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.Inspection)
 	fc.Result = res
-	return ec.marshalOInspection2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
+	return ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_inspection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6525,7 +6525,7 @@ func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj inte
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
-			it.Type, err = ec.unmarshalNBoxType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, v)
+			it.Type, err = ec.unmarshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6541,7 +6541,7 @@ func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj inte
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("family"))
-			it.Family, err = ec.unmarshalOFamilyInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx, v)
+			it.Family, err = ec.unmarshalOFamilyInput2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6629,7 +6629,7 @@ func (ec *executionContext) unmarshalInputFrameInput(ctx context.Context, obj in
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
-			it.Type, err = ec.unmarshalNFrameType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx, v)
+			it.Type, err = ec.unmarshalNFrameType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6662,7 +6662,7 @@ func (ec *executionContext) unmarshalInputFrameSideInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "broodPercent", "cappedBroodPercent", "droneBroodPercent", "pollenPercent", "honeyPercent", "queenDetected"}
+	fieldsInOrder := [...]string{"id", "broodPercent", "cappedBroodPercent", "eggsPercent", "pollenPercent", "honeyPercent", "queenDetected"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6693,11 +6693,11 @@ func (ec *executionContext) unmarshalInputFrameSideInput(ctx context.Context, ob
 			if err != nil {
 				return it, err
 			}
-		case "droneBroodPercent":
+		case "eggsPercent":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("droneBroodPercent"))
-			it.DroneBroodPercent, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eggsPercent"))
+			it.EggsPercent, err = ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6833,7 +6833,7 @@ func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, o
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("family"))
-			it.Family, err = ec.unmarshalOFamilyInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx, v)
+			it.Family, err = ec.unmarshalOFamilyInput2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7235,9 +7235,9 @@ func (ec *executionContext) _FrameSide(ctx context.Context, sel ast.SelectionSet
 
 			out.Values[i] = ec._FrameSide_cappedBroodPercent(ctx, field, obj)
 
-		case "droneBroodPercent":
+		case "eggsPercent":
 
-			out.Values[i] = ec._FrameSide_droneBroodPercent(ctx, field, obj)
+			out.Values[i] = ec._FrameSide_eggsPercent(ctx, field, obj)
 
 		case "pollenPercent":
 
@@ -8085,7 +8085,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) unmarshalNApiaryInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryInput(ctx context.Context, v interface{}) (model.ApiaryInput, error) {
+func (ec *executionContext) unmarshalNApiaryInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryInput(ctx context.Context, v interface{}) (model.ApiaryInput, error) {
 	res, err := ec.unmarshalInputApiaryInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -8105,11 +8105,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNBox2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v model.Box) graphql.Marshaler {
+func (ec *executionContext) marshalNBox2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v model.Box) graphql.Marshaler {
 	return ec._Box(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNBox2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v *model.Box) graphql.Marshaler {
+func (ec *executionContext) marshalNBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v *model.Box) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -8119,13 +8119,13 @@ func (ec *executionContext) marshalNBox2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapi
 	return ec._Box(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNBoxType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx context.Context, v interface{}) (model.BoxType, error) {
+func (ec *executionContext) unmarshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx context.Context, v interface{}) (model.BoxType, error) {
 	var res model.BoxType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNBoxType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx context.Context, sel ast.SelectionSet, v model.BoxType) graphql.Marshaler {
+func (ec *executionContext) marshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx context.Context, sel ast.SelectionSet, v model.BoxType) graphql.Marshaler {
 	return v
 }
 
@@ -8144,11 +8144,11 @@ func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalNFrame2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v model.Frame) graphql.Marshaler {
+func (ec *executionContext) marshalNFrame2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v model.Frame) graphql.Marshaler {
 	return ec._Frame(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v *model.Frame) graphql.Marshaler {
+func (ec *executionContext) marshalNFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v *model.Frame) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -8158,11 +8158,11 @@ func (ec *executionContext) marshalNFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑa
 	return ec._Frame(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNFrameSide2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v model.FrameSide) graphql.Marshaler {
+func (ec *executionContext) marshalNFrameSide2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v model.FrameSide) graphql.Marshaler {
 	return ec._FrameSide(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v *model.FrameSide) graphql.Marshaler {
+func (ec *executionContext) marshalNFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v *model.FrameSide) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -8172,26 +8172,26 @@ func (ec *executionContext) marshalNFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarm
 	return ec._FrameSide(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNFrameSideInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx context.Context, v interface{}) (model.FrameSideInput, error) {
+func (ec *executionContext) unmarshalNFrameSideInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx context.Context, v interface{}) (model.FrameSideInput, error) {
 	res, err := ec.unmarshalInputFrameSideInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNFrameType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx context.Context, v interface{}) (model.FrameType, error) {
+func (ec *executionContext) unmarshalNFrameType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx context.Context, v interface{}) (model.FrameType, error) {
 	var res model.FrameType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNFrameType2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx context.Context, sel ast.SelectionSet, v model.FrameType) graphql.Marshaler {
+func (ec *executionContext) marshalNFrameType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx context.Context, sel ast.SelectionSet, v model.FrameType) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) marshalNHive2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v model.Hive) graphql.Marshaler {
+func (ec *executionContext) marshalNHive2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v model.Hive) graphql.Marshaler {
 	return ec._Hive(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v *model.Hive) graphql.Marshaler {
+func (ec *executionContext) marshalNHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v *model.Hive) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -8201,12 +8201,12 @@ func (ec *executionContext) marshalNHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑap
 	return ec._Hive(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNHiveInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveInput(ctx context.Context, v interface{}) (model.HiveInput, error) {
+func (ec *executionContext) unmarshalNHiveInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveInput(ctx context.Context, v interface{}) (model.HiveInput, error) {
 	res, err := ec.unmarshalInputHiveInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNHiveUpdateInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveUpdateInput(ctx context.Context, v interface{}) (model.HiveUpdateInput, error) {
+func (ec *executionContext) unmarshalNHiveUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveUpdateInput(ctx context.Context, v interface{}) (model.HiveUpdateInput, error) {
 	res, err := ec.unmarshalInputHiveUpdateInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -8241,7 +8241,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNInspectionInput2gitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspectionInput(ctx context.Context, v interface{}) (model.InspectionInput, error) {
+func (ec *executionContext) unmarshalNInspectionInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspectionInput(ctx context.Context, v interface{}) (model.InspectionInput, error) {
 	res, err := ec.unmarshalInputInspectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -8654,7 +8654,7 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOApiary2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx context.Context, sel ast.SelectionSet, v []*model.Apiary) graphql.Marshaler {
+func (ec *executionContext) marshalOApiary2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx context.Context, sel ast.SelectionSet, v []*model.Apiary) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -8681,7 +8681,7 @@ func (ec *executionContext) marshalOApiary2ᚕᚖgitlabᚗcomᚋgratheonᚋswarm
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOApiary2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, sel, v[i])
+			ret[i] = ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -8695,7 +8695,7 @@ func (ec *executionContext) marshalOApiary2ᚕᚖgitlabᚗcomᚋgratheonᚋswarm
 	return ret
 }
 
-func (ec *executionContext) marshalOApiary2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx context.Context, sel ast.SelectionSet, v *model.Apiary) graphql.Marshaler {
+func (ec *executionContext) marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx context.Context, sel ast.SelectionSet, v *model.Apiary) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -8728,7 +8728,7 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalOBox2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v []*model.Box) graphql.Marshaler {
+func (ec *executionContext) marshalOBox2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v []*model.Box) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -8755,7 +8755,7 @@ func (ec *executionContext) marshalOBox2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOBox2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, sel, v[i])
+			ret[i] = ec.marshalOBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -8769,21 +8769,21 @@ func (ec *executionContext) marshalOBox2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑ
 	return ret
 }
 
-func (ec *executionContext) marshalOBox2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v *model.Box) graphql.Marshaler {
+func (ec *executionContext) marshalOBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx context.Context, sel ast.SelectionSet, v *model.Box) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Box(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOFamily2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx context.Context, sel ast.SelectionSet, v *model.Family) graphql.Marshaler {
+func (ec *executionContext) marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx context.Context, sel ast.SelectionSet, v *model.Family) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Family(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOFamilyInput2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx context.Context, v interface{}) (*model.FamilyInput, error) {
+func (ec *executionContext) unmarshalOFamilyInput2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx context.Context, v interface{}) (*model.FamilyInput, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -8791,7 +8791,7 @@ func (ec *executionContext) unmarshalOFamilyInput2ᚖgitlabᚗcomᚋgratheonᚋs
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOFrame2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v []*model.Frame) graphql.Marshaler {
+func (ec *executionContext) marshalOFrame2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v []*model.Frame) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -8818,7 +8818,7 @@ func (ec *executionContext) marshalOFrame2ᚕᚖgitlabᚗcomᚋgratheonᚋswarm�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, sel, v[i])
+			ret[i] = ec.marshalOFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -8832,21 +8832,21 @@ func (ec *executionContext) marshalOFrame2ᚕᚖgitlabᚗcomᚋgratheonᚋswarm�
 	return ret
 }
 
-func (ec *executionContext) marshalOFrame2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v *model.Frame) graphql.Marshaler {
+func (ec *executionContext) marshalOFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v *model.Frame) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Frame(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOFrameSide2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v *model.FrameSide) graphql.Marshaler {
+func (ec *executionContext) marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx context.Context, sel ast.SelectionSet, v *model.FrameSide) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._FrameSide(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOHive2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v []*model.Hive) graphql.Marshaler {
+func (ec *executionContext) marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v []*model.Hive) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -8873,7 +8873,7 @@ func (ec *executionContext) marshalOHive2ᚕᚖgitlabᚗcomᚋgratheonᚋswarm�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, sel, v[i])
+			ret[i] = ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -8887,7 +8887,7 @@ func (ec *executionContext) marshalOHive2ᚕᚖgitlabᚗcomᚋgratheonᚋswarm�
 	return ret
 }
 
-func (ec *executionContext) marshalOHive2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v *model.Hive) graphql.Marshaler {
+func (ec *executionContext) marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx context.Context, sel ast.SelectionSet, v *model.Hive) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -8920,7 +8920,7 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalOInspection2ᚕᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx context.Context, sel ast.SelectionSet, v []*model.Inspection) graphql.Marshaler {
+func (ec *executionContext) marshalOInspection2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx context.Context, sel ast.SelectionSet, v []*model.Inspection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -8947,7 +8947,7 @@ func (ec *executionContext) marshalOInspection2ᚕᚖgitlabᚗcomᚋgratheonᚋs
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOInspection2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, sel, v[i])
+			ret[i] = ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -8961,7 +8961,7 @@ func (ec *executionContext) marshalOInspection2ᚕᚖgitlabᚗcomᚋgratheonᚋs
 	return ret
 }
 
-func (ec *executionContext) marshalOInspection2ᚖgitlabᚗcomᚋgratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx context.Context, sel ast.SelectionSet, v *model.Inspection) graphql.Marshaler {
+func (ec *executionContext) marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx context.Context, sel ast.SelectionSet, v *model.Inspection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

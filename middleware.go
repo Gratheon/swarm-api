@@ -6,7 +6,7 @@ import (
 	"github.com/bugsnag/bugsnag-go"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/spf13/viper"
-	"gitlab.com/gratheon/swarm-api/logger"
+	"github.com/Gratheon/swarm-api/logger"
 	"net/http"
 )
 

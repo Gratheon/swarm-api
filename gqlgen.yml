@@ -35,7 +35,7 @@ resolver:
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-  - "gitlab.com/gratheon/swarm-api/graph/model"
+  - "github.com/Gratheon/swarm-api/graph/model"
 
 # This section declares type mapping between the GraphQL and go type systems
 #
@@ -44,23 +44,23 @@ autobind:
 # your liking
 models:
   Apiary:
-    model: gitlab.com/gratheon/swarm-api/graph/model.Apiary
+    model: github.com/Gratheon/swarm-api/graph/model.Apiary
   Hive:
-    model: gitlab.com/gratheon/swarm-api/graph/model.Hive
+    model: github.com/Gratheon/swarm-api/graph/model.Hive
     fields:
       boxes:
         resolver: true
   Box:
-    model: gitlab.com/gratheon/swarm-api/graph/model.Box
+    model: github.com/Gratheon/swarm-api/graph/model.Box
   Frame:
-    model: gitlab.com/gratheon/swarm-api/graph/model.Frame
+    model: github.com/Gratheon/swarm-api/graph/model.Frame
     fields:
       leftSide:
         resolver: true
       rightSide:
         resolver: true
   FrameSide:
-    model: gitlab.com/gratheon/swarm-api/graph/model.FrameSide
+    model: github.com/Gratheon/swarm-api/graph/model.FrameSide
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

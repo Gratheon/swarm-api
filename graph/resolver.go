@@ -5,7 +5,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
-	"gitlab.com/gratheon/swarm-api/logger"
+	"github.com/Gratheon/swarm-api/logger"
 )
 
 //go:generate go run github.com/99designs/gqlgen -v

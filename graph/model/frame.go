@@ -64,7 +64,7 @@ func (r *Frame) CreateFramesForBox(boxID *string, frameCount int) error {
 			UserID:             r.UserID,
 			BroodPercent:       nil,
 			CappedBroodPercent: nil,
-			DroneBroodPercent:  nil,
+			EggsPercent:  nil,
 			HoneyPercent:       nil,
 			PollenPercent:      nil,
 		}
@@ -73,7 +73,7 @@ func (r *Frame) CreateFramesForBox(boxID *string, frameCount int) error {
 			UserID:             r.UserID,
 			BroodPercent:       nil,
 			CappedBroodPercent: nil,
-			DroneBroodPercent:  nil,
+			EggsPercent:  nil,
 			HoneyPercent:       nil,
 			PollenPercent:      nil,
 		}

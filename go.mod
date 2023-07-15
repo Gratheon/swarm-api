@@ -1,4 +1,4 @@
-module gitlab.com/gratheon/swarm-api
+module github.com/Gratheon/swarm-api
 
 go 1.16
 
@@ -18,6 +18,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/viper v1.13.0
-	github.com/vektah/gqlparser/v2 v2.5.1
-	golang.org/x/net v0.1.0 // indirect
+	github.com/stretchr/testify v1.8.2 // indirect
+	github.com/vektah/gqlparser/v2 v2.5.4
+	golang.org/x/net v0.10.0 // indirect
 )

@@ -44,7 +44,7 @@ type FrameSideInput struct {
 	ID                 string `json:"id"`
 	BroodPercent       *int   `json:"broodPercent"`
 	CappedBroodPercent *int   `json:"cappedBroodPercent"`
-	DroneBroodPercent  *int   `json:"droneBroodPercent"`
+	EggsPercent        *int   `json:"eggsPercent"`
 	PollenPercent      *int   `json:"pollenPercent"`
 	HoneyPercent       *int   `json:"honeyPercent"`
 	QueenDetected      bool   `json:"queenDetected"`

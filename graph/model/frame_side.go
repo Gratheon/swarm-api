@@ -1,11 +1,11 @@
 package model
 
 import (
-	"strings"
 	"strconv"
+	"strings"
 
+	"github.com/Gratheon/swarm-api/logger"
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/gratheon/swarm-api/logger"
 )
 
 type FrameSide struct {
@@ -14,12 +14,12 @@ type FrameSide struct {
 	UserID             string  `db:"user_id"`
 	BroodPercent       *int    `json:"broodPercent" db:"brood"`
 	CappedBroodPercent *int    `json:"cappedBroodPercent" db:"capped_brood"`
-	DroneBroodPercent  *int    `json:"droneBroodPercent" db:"drone_brood"`
+	EggsPercent        *int    `json:"eggsPercent" db:"eggs"`
 	PollenPercent      *int    `json:"pollenPercent" db:"pollen"`
 	HoneyPercent       *int    `json:"honeyPercent" db:"honey"`
 	QueenDetected      bool    `json:"queenDetected" db:"queen_detected"`
-	WorkerCount      bool    `json:"workerCount" db:"workers"`
-	DroneCount      bool    `json:"droneCount" db:"drones"`
+	WorkerCount        bool    `json:"workerCount" db:"workers"`
+	DroneCount         bool    `json:"droneCount" db:"drones"`
 }
 
 func (FrameSide) IsEntity() {}
@@ -31,7 +31,7 @@ func (r *FrameSide) SetUp() {
 		  'user_id' int unsigned NOT NULL,
 		  'brood' int DEFAULT NULL,
 		  'capped_brood' int DEFAULT NULL,
-		  'drone_brood' int DEFAULT NULL,
+		  'eggs' int DEFAULT NULL,
 		  'pollen' int DEFAULT NULL,
 		  'honey' int DEFAULT NULL,
 		  'queen_detected' tinyint(1) NOT NULL DEFAULT 0,
@@ -81,7 +81,7 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 			"userID":         frame.UserID,
 			"pollen":         frame.PollenPercent,
 			"honey":          frame.HoneyPercent,
-			"drone_brood":    frame.DroneBroodPercent,
+			"eggs":           frame.EggsPercent,
 			"capped_brood":   frame.CappedBroodPercent,
 			"brood":          frame.BroodPercent,
 			"queen_detected": frame.QueenDetected,
@@ -102,42 +102,71 @@ func (r *FrameSide) UpdateSide(frame FrameSideInput) (bool, error) {
 	ok := false
 
 	id, err := strconv.Atoi(frame.ID)
-	if(err!=nil){
+	if err != nil {
 		return ok, err
 	}
 
-	exFrameSide, err := r.Get(&id);
+	exFrameSide, err := r.Get(&id)
 
-	if(err!=nil){
+	if err != nil {
 		return ok, err
 	}
 
 	exFrameSide.BroodPercent = frame.BroodPercent
 	exFrameSide.CappedBroodPercent = frame.CappedBroodPercent
-	exFrameSide.DroneBroodPercent = frame.DroneBroodPercent
+	exFrameSide.EggsPercent = frame.EggsPercent
 	exFrameSide.PollenPercent = frame.PollenPercent
 	exFrameSide.HoneyPercent = frame.HoneyPercent
-
-	exFrameSide.QueenDetected = frame.QueenDetected
-	//exFrameSide.WorkerCount = exFrameSide.WorkerCount
-	//exFrameSide.DroneCount = exFrameSide.DroneCount
 
 	_, err = r.Db.NamedExec(
 		`UPDATE frames_sides SET
 		  pollen = :pollen,
 		  honey = :honey,
-		  drone_brood = :drone_brood,
+		  eggs = :eggs,
 		  capped_brood = :capped_brood,
-		  brood = :brood,
+		  brood = :brood
+		WHERE id = :id AND user_id=:userID`,
+		map[string]interface{}{
+			"pollen":       exFrameSide.PollenPercent,
+			"honey":        exFrameSide.HoneyPercent,
+			"eggs":         exFrameSide.EggsPercent,
+			"capped_brood": exFrameSide.CappedBroodPercent,
+			"brood":        exFrameSide.BroodPercent,
+			"id":           frame.ID,
+			"userID":       r.UserID,
+		},
+	)
+
+	if err != nil {
+		logger.LogError(err)
+		return ok, err
+	}
+
+	ok = true
+	return ok, err
+}
+
+func (r *FrameSide) UpdateQueenState(frame FrameSideInput) (bool, error) {
+	ok := false
+
+	id, err := strconv.Atoi(frame.ID)
+	if err != nil {
+		return ok, err
+	}
+
+	exFrameSide, err := r.Get(&id)
+
+	if err != nil {
+		return ok, err
+	}
+
+	exFrameSide.QueenDetected = frame.QueenDetected
+
+	_, err = r.Db.NamedExec(
+		`UPDATE frames_sides SET
           queen_detected = :queen_detected
 		WHERE id = :id AND user_id=:userID`,
 		map[string]interface{}{
-			"pollen":         exFrameSide.PollenPercent,
-			"honey":          exFrameSide.HoneyPercent,
-			"drone_brood":    exFrameSide.DroneBroodPercent,
-			"capped_brood":   exFrameSide.CappedBroodPercent,
-			"brood":          exFrameSide.BroodPercent,
-
 			"queen_detected": exFrameSide.QueenDetected,
 			"id":             frame.ID,
 			"userID":         r.UserID,
@@ -149,6 +178,6 @@ func (r *FrameSide) UpdateSide(frame FrameSideInput) (bool, error) {
 		return ok, err
 	}
 
-	ok=true
+	ok = true
 	return ok, err
 }

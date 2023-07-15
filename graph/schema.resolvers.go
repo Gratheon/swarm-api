@@ -6,10 +6,12 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strconv"
 
-	"gitlab.com/gratheon/swarm-api/graph/generated"
-	"gitlab.com/gratheon/swarm-api/graph/model"
-	"gitlab.com/gratheon/swarm-api/logger"
+	"github.com/Gratheon/swarm-api/graph/generated"
+	"github.com/Gratheon/swarm-api/graph/model"
+	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/swarm-api/redisPubSub"
 )
 
 // Hives is the resolver for the hives field.
@@ -111,7 +113,7 @@ func (r *mutationResolver) AddApiary(ctx context.Context, apiary model.ApiaryInp
 		return nil, err
 	}
 
-	PublishEvent(uid+".apiary", createdApiary)
+	redisPubSub.PublishEvent(uid, "apiary", strconv.Itoa(createdApiary.ID), "created", createdApiary)
 
 	return createdApiary, err
 }
@@ -129,7 +131,7 @@ func (r *mutationResolver) UpdateApiary(ctx context.Context, id string, apiary m
 		return nil, err
 	}
 
-	PublishEvent(uid+".apiary", &updatedApiary)
+	redisPubSub.PublishEvent(uid, "apiary", id, "updated", updatedApiary)
 
 	return updatedApiary, err
 }
@@ -137,10 +139,13 @@ func (r *mutationResolver) UpdateApiary(ctx context.Context, id string, apiary m
 // DeactivateApiary is the resolver for the deactivateApiary field.
 func (r *mutationResolver) DeactivateApiary(ctx context.Context, id string) (*bool, error) {
 	uid := ctx.Value("userID").(string)
-	return (&model.Apiary{
+	result, err := (&model.Apiary{
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Deactivate(id)
+
+	redisPubSub.PublishEvent(uid, "apiary", id, "deleted", "")
+	return result, err
 }
 
 // AddHive is the resolver for the addHive field.
@@ -343,7 +348,8 @@ func (r *mutationResolver) UpdateFrameSide(ctx context.Context, frameSide model.
 		UserID: uid,
 	}
 
-	return frameSideModel.UpdateSide(frameSide)
+	frameSideModel.UpdateSide(frameSide)
+	return frameSideModel.UpdateQueenState(frameSide)
 }
 
 // AddInspection is the resolver for the addInspection field.

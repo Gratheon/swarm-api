@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"gitlab.com/gratheon/swarm-api/graph/generated"
-	"gitlab.com/gratheon/swarm-api/graph/model"
+	"github.com/Gratheon/swarm-api/graph/generated"
+	"github.com/Gratheon/swarm-api/graph/model"
 )
 
 // FindFrameSideByID is the resolver for the findFrameSideByID field.
@@ -29,9 +29,9 @@ type entityResolver struct{ *Resolver }
 // !!! WARNING !!!
 // The code below was going to be deleted when updating resolvers. It has been copied here so you have
 // one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
 func (r *entityResolver) FindApiaryByID(ctx context.Context, id string) (*model.Apiary, error) {
 	panic(fmt.Errorf("not implemented: FindApiaryByID - findApiaryByID"))
 }
