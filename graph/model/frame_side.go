@@ -64,7 +64,7 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 		  user_id,
 		  pollen,
 		  honey,
-		  drone_brood,
+		  eggs,
 		  capped_brood,
 		  brood,
 		  queen_detected
@@ -72,7 +72,7 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 		    :userID,
 		  	:pollen,
 		  	:honey,
-		  	:drone_brood,
+		  	:eggs,
 		  	:capped_brood,
 		  	:brood,
 		  	:queen_detected
