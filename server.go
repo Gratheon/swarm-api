@@ -10,7 +10,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/Gratheon/swarm-api/graph"
 	"github.com/Gratheon/swarm-api/graph/generated"
-	"github.com/Gratheon/swarm-api/graph/model"
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/Gratheon/swarm-api/redisPubSub"
 	"github.com/go-chi/chi"
@@ -57,15 +56,6 @@ func main() {
 	log.Print("Connecting to DB");
 	rootResolver := &graph.Resolver{}
 	rootResolver.ConnectToDB()
-
-	log.Print("Checking DB structure");
-	(&model.Apiary{Db: rootResolver.Db}).SetUp()
-	(&model.Hive{Db: rootResolver.Db}).SetUp()
-	(&model.Box{Db: rootResolver.Db}).SetUp()
-	(&model.FrameSide{Db: rootResolver.Db}).SetUp()
-	(&model.Frame{Db: rootResolver.Db}).SetUp()
-	(&model.Family{Db: rootResolver.Db}).SetUp()
-	(&model.Inspection{Db: rootResolver.Db}).SetUp()
 
 	log.Print("Listening to redis events")
 	redisPubSub.ListenFrameResourceUpdates(rootResolver.Db)

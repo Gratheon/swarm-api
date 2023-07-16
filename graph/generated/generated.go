@@ -958,6 +958,7 @@ type Frame{
 enum BoxType {
   DEEP
   SUPER
+  GATE
 }
 enum FrameType {
   VOID

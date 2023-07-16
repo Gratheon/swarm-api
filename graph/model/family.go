@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/jmoiron/sqlx"
 	"strconv"
-	"strings"
 )
 
 type Family struct {
@@ -13,22 +12,6 @@ type Family struct {
 	Race        *string       `json:"race" db:"race"`
 	Added       *string        `json:"added" db:"added"`
 	Inspections []*Inspection `json:"inspections"`
-}
-
-func (r *Family) SetUp() {
-	var schema = strings.Replace(
-		`CREATE TABLE IF NOT EXISTS 'families' (
-  	'id' int unsigned NOT NULL AUTO_INCREMENT,
-	'user_id' int DEFAULT NULL,
-	'race' varchar(100) DEFAULT NULL,
-	'added' varchar(4) DEFAULT NULL,
-  PRIMARY KEY ('id')
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-`, "'", "`", -1)
-
-	// exec the schema or fail; multi-statement Exec behavior varies between
-	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
-	r.Db.MustExec(schema)
 }
 
 func (r *Family) GetById(id *int) (*Family, error) {

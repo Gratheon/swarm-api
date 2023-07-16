@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/jmoiron/sqlx"
 	"strconv"
-	"strings"
 )
 
 type Inspection struct {
@@ -13,20 +12,6 @@ type Inspection struct {
 	HiveID string `db:"hive_id"`
 	Data   string `json:"data" db:"data"`
 	Added  string `json:"added" db:"added"`
-}
-
-func (r *Inspection) SetUp() {
-	var schema = strings.Replace(`CREATE TABLE IF NOT EXISTS 'inspections' (
-'id' int unsigned NOT NULL AUTO_INCREMENT,
-'hive_id' int DEFAULT NULL,
-'user_id' int unsigned NOT NULL,
-'data' JSON,
-'added' datetime DEFAULT NULL,
-PRIMARY KEY ('id')
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-`, "'", "`", -1)
-
-	r.Db.MustExec(schema)
 }
 
 func (r *Inspection) Get(ID string) (*Inspection, error) {

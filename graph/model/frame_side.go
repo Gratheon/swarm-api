@@ -2,7 +2,6 @@ package model
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/jmoiron/sqlx"
@@ -23,28 +22,6 @@ type FrameSide struct {
 }
 
 func (FrameSide) IsEntity() {}
-
-func (r *FrameSide) SetUp() {
-	var schema = strings.Replace(`
-		CREATE TABLE IF NOT EXISTS 'frames_sides' (
-		  'id' int unsigned NOT NULL AUTO_INCREMENT,
-		  'user_id' int unsigned NOT NULL,
-		  'brood' int DEFAULT NULL,
-		  'capped_brood' int DEFAULT NULL,
-		  'eggs' int DEFAULT NULL,
-		  'pollen' int DEFAULT NULL,
-		  'honey' int DEFAULT NULL,
-		  'queen_detected' tinyint(1) NOT NULL DEFAULT 0,
-		  PRIMARY KEY ('id')
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-		`, "'", "`", -1)
-
-	// exec the schema or fail; multi-statement Exec behavior varies between
-	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
-	r.Db.MustExec("SET FOREIGN_KEY_CHECKS=0;")
-	r.Db.MustExec(schema)
-	r.Db.MustExec("SET FOREIGN_KEY_CHECKS=1;")
-}
 
 func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 	frameSide := FrameSide{}

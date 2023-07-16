@@ -1,8 +1,6 @@
 package model
 
 import (
-	"strings"
-
 	"github.com/jmoiron/sqlx"
 )
 
@@ -18,32 +16,6 @@ type Frame struct {
 	LeftSide  *FrameSide `json:"left" `
 	RightSide *FrameSide `json:"right"`
 	Active   int     `db:"active"`
-}
-
-func (r *Frame) SetUp() {
-	var schema = strings.Replace(
-		`CREATE TABLE IF NOT EXISTS 'frames' (
-  'id' int unsigned NOT NULL AUTO_INCREMENT,
-  'user_id' int unsigned NOT NULL,
-  'box_id' int unsigned DEFAULT NULL,
-  'type' enum("VOID","FOUNDATION","EMPTY_COMB","PARTITION","FEEDER") CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT "EMPTY_COMB",
-  'position' int unsigned DEFAULT NULL,
-  'left_id' int unsigned DEFAULT NULL,
-  'right_id' int unsigned DEFAULT NULL,
-  'active' tinyint(1) NOT NULL DEFAULT 1,
-  PRIMARY KEY ('id'),
-  KEY 'box_id' ('box_id'),
-  KEY 'left_id' ('left_id'),
-  KEY 'right_id' ('right_id'),
-  CONSTRAINT 'frames_ibfk_1' FOREIGN KEY ('box_id') REFERENCES 'boxes' ('id') ON DELETE CASCADE,
-  CONSTRAINT 'frames_ibfk_2' FOREIGN KEY ('left_id') REFERENCES 'frames_sides' ('id') ON DELETE SET NULL,
-  CONSTRAINT 'frames_ibfk_3' FOREIGN KEY ('right_id') REFERENCES 'frames_sides' ('id') ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-`, "'", "`", -1)
-
-	// exec the schema or fail; multi-statement Exec behavior varies between
-	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
-	r.Db.MustExec(schema)
 }
 
 func (r *Frame) Get(id int64) (*Frame, error) {

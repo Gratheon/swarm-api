@@ -1,9 +1,6 @@
 package model
 
 import (
-	//"fmt"
-	"strings"
-	//"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
@@ -20,24 +17,6 @@ type Apiary struct {
 }
 
 func (Apiary) IsEntity() {}
-
-func (r *Apiary) SetUp() {
-	var schema = strings.Replace(
-		`CREATE TABLE IF NOT EXISTS 'apiaries' (
-  'id' int unsigned NOT NULL AUTO_INCREMENT,
-  'user_id' int unsigned NOT NULL,
-  'name' varchar(250) DEFAULT NULL,
-	'active' tinyint(1) NOT NULL DEFAULT 1,
-  'lng' varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT "0",
-  'lat' varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT "0",
-  PRIMARY KEY ('id')
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-`, "'", "`", -1)
-
-	// exec the schema or fail; multi-statement Exec behavior varies between
-	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
-	r.Db.MustExec(schema)
-}
 
 func (r *Apiary) Get(id string) (*Apiary, error) {
 	apiary := Apiary{}

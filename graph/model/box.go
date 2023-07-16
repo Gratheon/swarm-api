@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/jmoiron/sqlx"
 	"strconv"
-	"strings"
 )
 
 type Box struct {
@@ -16,26 +15,6 @@ type Box struct {
 	Type     BoxType `json:"type" db:"type"`
 	Active   int     `db:"active"`
 }
-
-func (r *Box) SetUp() {
-	var schema = strings.Replace(
-		`CREATE TABLE IF NOT EXISTS 'boxes' (
-  'id' int unsigned NOT NULL AUTO_INCREMENT,
-  'user_id' int unsigned NOT NULL,
-  'hive_id' int NOT NULL,
-  'active' tinyint(1) NOT NULL DEFAULT 1,
-  'color' varchar(10) DEFAULT NULL,
-  'position' mediumint DEFAULT NULL,
-  'type' enum("SUPER","DEEP") COLLATE utf8mb4_general_ci NOT NULL DEFAULT "DEEP",
-  PRIMARY KEY ('id')
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-`, "'", "`", -1)
-
-	// exec the schema or fail; multi-statement Exec behavior varies between
-	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
-	r.Db.MustExec(schema)
-}
-
 
 func (r *Box) Get(id string) (*Box, error) {
 	box := Box{}

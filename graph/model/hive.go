@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/jmoiron/sqlx"
-	"strings"
 )
 
 type Hive struct {
@@ -20,26 +19,6 @@ type Hive struct {
 }
 
 func (Hive) IsEntity() {}
-
-func (r *Hive) SetUp() {
-	var schema = strings.Replace(
-		`CREATE TABLE IF NOT EXISTS 'hives' (
-  'id' int unsigned NOT NULL AUTO_INCREMENT,
-  'user_id' int unsigned NOT NULL,
-  'family_id' int unsigned DEFAULT NULL,
-  'apiary_id' int unsigned DEFAULT NULL,
-  'name' varchar(250) DEFAULT NULL,
-  'notes' mediumtext DEFAULT NULL,
-  'color' varchar(20) DEFAULT NULL,
-  'active' tinyint(1) NOT NULL DEFAULT 1,
-  PRIMARY KEY ('id')
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-`, "'", "`", -1)
-
-	// exec the schema or fail; multi-statement Exec behavior varies between
-	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
-	r.Db.MustExec(schema)
-}
 
 func (r *Hive) Get(id string) (*Hive, error) {
 	hive := Hive{}

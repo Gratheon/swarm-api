@@ -75,16 +75,18 @@ type BoxType string
 const (
 	BoxTypeDeep  BoxType = "DEEP"
 	BoxTypeSuper BoxType = "SUPER"
+	BoxTypeGate  BoxType = "GATE"
 )
 
 var AllBoxType = []BoxType{
 	BoxTypeDeep,
 	BoxTypeSuper,
+	BoxTypeGate,
 }
 
 func (e BoxType) IsValid() bool {
 	switch e {
-	case BoxTypeDeep, BoxTypeSuper:
+	case BoxTypeDeep, BoxTypeSuper, BoxTypeGate:
 		return true
 	}
 	return false
