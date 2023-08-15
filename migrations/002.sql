@@ -1,1 +1,0 @@
-ALTER TABLE `boxes` CHANGE `type` `type` ENUM('SUPER','DEEP','GATE')  CHARACTER SET utf8mb4  COLLATE utf8mb4_general_ci  NOT NULL  DEFAULT 'DEEP';

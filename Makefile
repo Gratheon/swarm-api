@@ -1,5 +1,5 @@
 start:
-	make build && COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml up --build
+	make build && COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml up --build -d
 develop:
 	git rev-parse --short HEAD > .version
 #	go run github.com/99designs/gqlgen generate
