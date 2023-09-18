@@ -331,6 +331,35 @@ func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg s
 	}
 }
 
+// UpdateFrames is the resolver for the updateFrames field.
+func (r *mutationResolver) UpdateFrames(ctx context.Context, frames []*model.FrameInput) ([]*model.Frame, error) {
+	uid := ctx.Value("userID").(string)
+	frameModel := &model.Frame{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+	
+		// Initialize an empty results slice
+		results := []*model.Frame{}
+
+	for _, frame := range frames {
+		frameModel.Update(frame.ID, frame.BoxID, frame.Position)
+		id, err := strconv.ParseInt(frame.ID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		updatedFrame, err := frameModel.Get(id)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, updatedFrame)
+	}
+
+	return results, nil
+}
+
 // DeactivateFrame is the resolver for the deactivateFrame field.
 func (r *mutationResolver) DeactivateFrame(ctx context.Context, id string) (*bool, error) {
 	uid := ctx.Value("userID").(string)

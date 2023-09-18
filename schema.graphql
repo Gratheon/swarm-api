@@ -31,6 +31,7 @@ type Mutation {
   swapBoxPositions(id: ID!, id2: ID!): Boolean
 
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
+  updateFrames(frames: [FrameInput]) : [Frame]
   deactivateFrame(id: ID!): Boolean
 
   updateFrameSide(frameSide: FrameSideInput!): Boolean!
@@ -120,11 +121,11 @@ type Box{
 }
 
 input FrameInput{
-  id: ID
+  id: ID!
   position: Int!
   type: FrameType!
   "ignored, added for frontend ease"
-  boxIndex: Int
+  boxId: ID!
   "ignored, added for frontend ease"
   hiveId: Int
 }

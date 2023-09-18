@@ -105,11 +105,10 @@ func (r *Frame) IsFrameWithSides(frameType FrameType) bool {
 	return (frameType == `FOUNDATION` || frameType == `EMPTY_COMB` || frameType == `VOID`)
 }
 
-func (r *Frame) Update(frameID *string, boxID *string, position int) (*int64, error) {
+func (r *Frame) Update(frameID string, boxID string, position int) (*int64, error) {
 	_, err := r.Db.NamedExec(
 		`UPDATE frames 
-		SET box_id=:boxID,
-        	position=:position
+		SET box_id=:boxID, position=:position
 		WHERE id=:id AND user_id=:userID`,
 		map[string]interface{}{
 			"id":       frameID,

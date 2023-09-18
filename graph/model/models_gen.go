@@ -31,11 +31,11 @@ type FamilyInput struct {
 }
 
 type FrameInput struct {
-	ID       *string   `json:"id"`
+	ID       string    `json:"id"`
 	Position int       `json:"position"`
 	Type     FrameType `json:"type"`
 	// ignored, added for frontend ease
-	BoxIndex *int `json:"boxIndex"`
+	BoxID string `json:"boxId"`
 	// ignored, added for frontend ease
 	HiveID *int `json:"hiveId"`
 }
