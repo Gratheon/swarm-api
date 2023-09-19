@@ -31,7 +31,7 @@ type Mutation {
   swapBoxPositions(id: ID!, id2: ID!): Boolean
 
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
-  updateFrames(frames: [FrameInput]) : [Frame]
+  updateFrames(frames: [FrameInput]!) : [Frame]
   deactivateFrame(id: ID!): Boolean
 
   updateFrameSide(frameSide: FrameSideInput!): Boolean!

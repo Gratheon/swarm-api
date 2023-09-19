@@ -1,4 +1,4 @@
 server.bin
 .idea
 .dccache
-config
+config/*.json
