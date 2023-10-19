@@ -40,16 +40,6 @@ type FrameInput struct {
 	HiveID *int `json:"hiveId"`
 }
 
-type FrameSideInput struct {
-	ID                 string `json:"id"`
-	BroodPercent       *int   `json:"broodPercent"`
-	CappedBroodPercent *int   `json:"cappedBroodPercent"`
-	EggsPercent        *int   `json:"eggsPercent"`
-	PollenPercent      *int   `json:"pollenPercent"`
-	HoneyPercent       *int   `json:"honeyPercent"`
-	QueenDetected      bool   `json:"queenDetected"`
-}
-
 type HiveInput struct {
 	ApiaryID   string    `json:"apiaryId"`
 	Name       string    `json:"name"`

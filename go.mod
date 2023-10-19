@@ -19,6 +19,6 @@ require (
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.2 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.9
+	github.com/vektah/gqlparser/v2 v2.5.10
 	golang.org/x/net v0.10.0 // indirect
 )

@@ -1,8 +1,6 @@
 package model
 
 import (
-	"strconv"
-
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/jmoiron/sqlx"
 )
@@ -38,30 +36,12 @@ func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 	result, err := r.Db.NamedExec(
 		`INSERT INTO frames_sides (
-		  user_id,
-		  pollen,
-		  honey,
-		  eggs,
-		  capped_brood,
-		  brood,
-		  queen_detected
+		  user_id
 		) VALUES (
-		    :userID,
-		  	:pollen,
-		  	:honey,
-		  	:eggs,
-		  	:capped_brood,
-		  	:brood,
-		  	:queen_detected
+		    :userID
 		)`,
 		map[string]interface{}{
 			"userID":         frame.UserID,
-			"pollen":         frame.PollenPercent,
-			"honey":          frame.HoneyPercent,
-			"eggs":           frame.EggsPercent,
-			"capped_brood":   frame.CappedBroodPercent,
-			"brood":          frame.BroodPercent,
-			"queen_detected": frame.QueenDetected,
 		},
 	)
 
@@ -73,88 +53,4 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 	id, err := result.LastInsertId()
 
 	return &id, err
-}
-
-func (r *FrameSide) UpdateSide(frame FrameSideInput) (bool, error) {
-	ok := false
-
-	id, err := strconv.Atoi(frame.ID)
-	if err != nil {
-		return ok, err
-	}
-
-	exFrameSide, err := r.Get(&id)
-
-	if err != nil {
-		return ok, err
-	}
-
-	exFrameSide.BroodPercent = frame.BroodPercent
-	exFrameSide.CappedBroodPercent = frame.CappedBroodPercent
-	exFrameSide.EggsPercent = frame.EggsPercent
-	exFrameSide.PollenPercent = frame.PollenPercent
-	exFrameSide.HoneyPercent = frame.HoneyPercent
-
-	_, err = r.Db.NamedExec(
-		`UPDATE frames_sides SET
-		  pollen = :pollen,
-		  honey = :honey,
-		  eggs = :eggs,
-		  capped_brood = :capped_brood,
-		  brood = :brood
-		WHERE id = :id AND user_id=:userID`,
-		map[string]interface{}{
-			"pollen":       exFrameSide.PollenPercent,
-			"honey":        exFrameSide.HoneyPercent,
-			"eggs":         exFrameSide.EggsPercent,
-			"capped_brood": exFrameSide.CappedBroodPercent,
-			"brood":        exFrameSide.BroodPercent,
-			"id":           frame.ID,
-			"userID":       r.UserID,
-		},
-	)
-
-	if err != nil {
-		logger.LogError(err)
-		return ok, err
-	}
-
-	ok = true
-	return ok, err
-}
-
-func (r *FrameSide) UpdateQueenState(frame FrameSideInput) (bool, error) {
-	ok := false
-
-	id, err := strconv.Atoi(frame.ID)
-	if err != nil {
-		return ok, err
-	}
-
-	exFrameSide, err := r.Get(&id)
-
-	if err != nil {
-		return ok, err
-	}
-
-	exFrameSide.QueenDetected = frame.QueenDetected
-
-	_, err = r.Db.NamedExec(
-		`UPDATE frames_sides SET
-          queen_detected = :queen_detected
-		WHERE id = :id AND user_id=:userID`,
-		map[string]interface{}{
-			"queen_detected": exFrameSide.QueenDetected,
-			"id":             frame.ID,
-			"userID":         r.UserID,
-		},
-	)
-
-	if err != nil {
-		logger.LogError(err)
-		return ok, err
-	}
-
-	ok = true
-	return ok, err
 }

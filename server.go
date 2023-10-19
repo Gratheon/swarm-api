@@ -57,9 +57,6 @@ func main() {
 	rootResolver := &graph.Resolver{}
 	rootResolver.ConnectToDB()
 
-	log.Print("Listening to redis events")
-	redisPubSub.ListenFrameResourceUpdates(rootResolver.Db)
-
 	gqlGenConfig := generated.Config{Resolvers: rootResolver}
 	gqlGenServer := handler.NewDefaultServer(generated.NewExecutableSchema(gqlGenConfig))
 	router.Handle("/graphql", gqlGenServer)

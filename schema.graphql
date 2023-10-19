@@ -11,6 +11,7 @@ schema {
 type Query {
   hive(id: ID!): Hive
   apiary(id: ID!): Apiary
+  hiveFrameSide(id: ID!): FrameSide
   apiaries: [Apiary]
   inspection(inspectionId: ID!): Inspection
 }
@@ -33,8 +34,6 @@ type Mutation {
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
   updateFrames(frames: [FrameInput]!) : [Frame]
   deactivateFrame(id: ID!): Boolean
-
-  updateFrameSide(frameSide: FrameSideInput!): Boolean!
 
   addInspection(inspection: InspectionInput!): Inspection
 }
@@ -151,25 +150,6 @@ enum FrameType {
   FEEDER
 }
 
-input FrameSideInput{
-  id: ID!
-  broodPercent: Int
-  cappedBroodPercent: Int
-  eggsPercent: Int
-  pollenPercent: Int
-  honeyPercent: Int
-  queenDetected: Boolean!
-}
-
 type FrameSide @key(fields: "id") {
   id: ID
-  broodPercent: Int
-  cappedBroodPercent: Int
-  eggsPercent: Int
-  pollenPercent: Int
-  honeyPercent: Int
-  queenDetected: Boolean!
-
-	workerCount: Int
-	droneCount: Int
 }

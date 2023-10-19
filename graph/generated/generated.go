@@ -41,7 +41,6 @@ type ResolverRoot interface {
 	Box() BoxResolver
 	Entity() EntityResolver
 	Frame() FrameResolver
-	FrameSide() FrameSideResolver
 	Hive() HiveResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -88,15 +87,7 @@ type ComplexityRoot struct {
 	}
 
 	FrameSide struct {
-		BroodPercent       func(childComplexity int) int
-		CappedBroodPercent func(childComplexity int) int
-		DroneCount         func(childComplexity int) int
-		EggsPercent        func(childComplexity int) int
-		HoneyPercent       func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		PollenPercent      func(childComplexity int) int
-		QueenDetected      func(childComplexity int) int
-		WorkerCount        func(childComplexity int) int
+		ID func(childComplexity int) int
 	}
 
 	Hive struct {
@@ -128,7 +119,6 @@ type ComplexityRoot struct {
 		SwapBoxPositions func(childComplexity int, id string, id2 string) int
 		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
 		UpdateBoxColor   func(childComplexity int, id string, color *string) int
-		UpdateFrameSide  func(childComplexity int, frameSide model.FrameSideInput) int
 		UpdateFrames     func(childComplexity int, frames []*model.FrameInput) int
 		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
 	}
@@ -137,6 +127,7 @@ type ComplexityRoot struct {
 		Apiaries           func(childComplexity int) int
 		Apiary             func(childComplexity int, id string) int
 		Hive               func(childComplexity int, id string) int
+		HiveFrameSide      func(childComplexity int, id string) int
 		Inspection         func(childComplexity int, inspectionID string) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
@@ -161,10 +152,6 @@ type FrameResolver interface {
 	LeftSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
 	RightSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
 }
-type FrameSideResolver interface {
-	WorkerCount(ctx context.Context, obj *model.FrameSide) (*int, error)
-	DroneCount(ctx context.Context, obj *model.FrameSide) (*int, error)
-}
 type HiveResolver interface {
 	BoxCount(ctx context.Context, obj *model.Hive) (int, error)
 	Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box, error)
@@ -185,12 +172,12 @@ type MutationResolver interface {
 	AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error)
 	UpdateFrames(ctx context.Context, frames []*model.FrameInput) ([]*model.Frame, error)
 	DeactivateFrame(ctx context.Context, id string) (*bool, error)
-	UpdateFrameSide(ctx context.Context, frameSide model.FrameSideInput) (bool, error)
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
 	Apiary(ctx context.Context, id string) (*model.Apiary, error)
+	HiveFrameSide(ctx context.Context, id string) (*model.FrameSide, error)
 	Apiaries(ctx context.Context) ([]*model.Apiary, error)
 	Inspection(ctx context.Context, inspectionID string) (*model.Inspection, error)
 }
@@ -367,68 +354,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Frame.Type(childComplexity), true
 
-	case "FrameSide.broodPercent":
-		if e.complexity.FrameSide.BroodPercent == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.BroodPercent(childComplexity), true
-
-	case "FrameSide.cappedBroodPercent":
-		if e.complexity.FrameSide.CappedBroodPercent == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.CappedBroodPercent(childComplexity), true
-
-	case "FrameSide.droneCount":
-		if e.complexity.FrameSide.DroneCount == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.DroneCount(childComplexity), true
-
-	case "FrameSide.eggsPercent":
-		if e.complexity.FrameSide.EggsPercent == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.EggsPercent(childComplexity), true
-
-	case "FrameSide.honeyPercent":
-		if e.complexity.FrameSide.HoneyPercent == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.HoneyPercent(childComplexity), true
-
 	case "FrameSide.id":
 		if e.complexity.FrameSide.ID == nil {
 			break
 		}
 
 		return e.complexity.FrameSide.ID(childComplexity), true
-
-	case "FrameSide.pollenPercent":
-		if e.complexity.FrameSide.PollenPercent == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.PollenPercent(childComplexity), true
-
-	case "FrameSide.queenDetected":
-		if e.complexity.FrameSide.QueenDetected == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.QueenDetected(childComplexity), true
-
-	case "FrameSide.workerCount":
-		if e.complexity.FrameSide.WorkerCount == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.WorkerCount(childComplexity), true
 
 	case "Hive.boxCount":
 		if e.complexity.Hive.BoxCount == nil {
@@ -649,18 +580,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateBoxColor(childComplexity, args["id"].(string), args["color"].(*string)), true
 
-	case "Mutation.updateFrameSide":
-		if e.complexity.Mutation.UpdateFrameSide == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateFrameSide_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateFrameSide(childComplexity, args["frameSide"].(model.FrameSideInput)), true
-
 	case "Mutation.updateFrames":
 		if e.complexity.Mutation.UpdateFrames == nil {
 			break
@@ -716,6 +635,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Hive(childComplexity, args["id"].(string)), true
 
+	case "Query.hiveFrameSide":
+		if e.complexity.Query.HiveFrameSide == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hiveFrameSide_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.HiveFrameSide(childComplexity, args["id"].(string)), true
+
 	case "Query.inspection":
 		if e.complexity.Query.Inspection == nil {
 			break
@@ -766,7 +697,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBoxInput,
 		ec.unmarshalInputFamilyInput,
 		ec.unmarshalInputFrameInput,
-		ec.unmarshalInputFrameSideInput,
 		ec.unmarshalInputHiveInput,
 		ec.unmarshalInputHiveUpdateInput,
 		ec.unmarshalInputInspectionInput,
@@ -843,6 +773,7 @@ schema {
 type Query {
   hive(id: ID!): Hive
   apiary(id: ID!): Apiary
+  hiveFrameSide(id: ID!): FrameSide
   apiaries: [Apiary]
   inspection(inspectionId: ID!): Inspection
 }
@@ -865,8 +796,6 @@ type Mutation {
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
   updateFrames(frames: [FrameInput]!) : [Frame]
   deactivateFrame(id: ID!): Boolean
-
-  updateFrameSide(frameSide: FrameSideInput!): Boolean!
 
   addInspection(inspection: InspectionInput!): Inspection
 }
@@ -983,27 +912,8 @@ enum FrameType {
   FEEDER
 }
 
-input FrameSideInput{
-  id: ID!
-  broodPercent: Int
-  cappedBroodPercent: Int
-  eggsPercent: Int
-  pollenPercent: Int
-  honeyPercent: Int
-  queenDetected: Boolean!
-}
-
 type FrameSide @key(fields: "id") {
   id: ID
-  broodPercent: Int
-  cappedBroodPercent: Int
-  eggsPercent: Int
-  pollenPercent: Int
-  honeyPercent: Int
-  queenDetected: Boolean!
-
-	workerCount: Int
-	droneCount: Int
 }
 `, BuiltIn: false},
 	{Name: "../../federation/directives.graphql", Input: `
@@ -1341,21 +1251,6 @@ func (ec *executionContext) field_Mutation_updateBoxColor_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_updateFrameSide_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.FrameSideInput
-	if tmp, ok := rawArgs["frameSide"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frameSide"))
-		arg0, err = ec.unmarshalNFrameSideInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["frameSide"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_updateFrames_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1417,6 +1312,21 @@ func (ec *executionContext) field_Query__entities_args(ctx context.Context, rawA
 }
 
 func (ec *executionContext) field_Query_apiary_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_hiveFrameSide_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -2025,22 +1935,6 @@ func (ec *executionContext) fieldContext_Entity_findFrameSideByID(ctx context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "broodPercent":
-				return ec.fieldContext_FrameSide_broodPercent(ctx, field)
-			case "cappedBroodPercent":
-				return ec.fieldContext_FrameSide_cappedBroodPercent(ctx, field)
-			case "eggsPercent":
-				return ec.fieldContext_FrameSide_eggsPercent(ctx, field)
-			case "pollenPercent":
-				return ec.fieldContext_FrameSide_pollenPercent(ctx, field)
-			case "honeyPercent":
-				return ec.fieldContext_FrameSide_honeyPercent(ctx, field)
-			case "queenDetected":
-				return ec.fieldContext_FrameSide_queenDetected(ctx, field)
-			case "workerCount":
-				return ec.fieldContext_FrameSide_workerCount(ctx, field)
-			case "droneCount":
-				return ec.fieldContext_FrameSide_droneCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FrameSide", field.Name)
 		},
@@ -2423,22 +2317,6 @@ func (ec *executionContext) fieldContext_Frame_leftSide(ctx context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "broodPercent":
-				return ec.fieldContext_FrameSide_broodPercent(ctx, field)
-			case "cappedBroodPercent":
-				return ec.fieldContext_FrameSide_cappedBroodPercent(ctx, field)
-			case "eggsPercent":
-				return ec.fieldContext_FrameSide_eggsPercent(ctx, field)
-			case "pollenPercent":
-				return ec.fieldContext_FrameSide_pollenPercent(ctx, field)
-			case "honeyPercent":
-				return ec.fieldContext_FrameSide_honeyPercent(ctx, field)
-			case "queenDetected":
-				return ec.fieldContext_FrameSide_queenDetected(ctx, field)
-			case "workerCount":
-				return ec.fieldContext_FrameSide_workerCount(ctx, field)
-			case "droneCount":
-				return ec.fieldContext_FrameSide_droneCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FrameSide", field.Name)
 		},
@@ -2484,22 +2362,6 @@ func (ec *executionContext) fieldContext_Frame_rightSide(ctx context.Context, fi
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "broodPercent":
-				return ec.fieldContext_FrameSide_broodPercent(ctx, field)
-			case "cappedBroodPercent":
-				return ec.fieldContext_FrameSide_cappedBroodPercent(ctx, field)
-			case "eggsPercent":
-				return ec.fieldContext_FrameSide_eggsPercent(ctx, field)
-			case "pollenPercent":
-				return ec.fieldContext_FrameSide_pollenPercent(ctx, field)
-			case "honeyPercent":
-				return ec.fieldContext_FrameSide_honeyPercent(ctx, field)
-			case "queenDetected":
-				return ec.fieldContext_FrameSide_queenDetected(ctx, field)
-			case "workerCount":
-				return ec.fieldContext_FrameSide_workerCount(ctx, field)
-			case "droneCount":
-				return ec.fieldContext_FrameSide_droneCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FrameSide", field.Name)
 		},
@@ -2543,337 +2405,6 @@ func (ec *executionContext) fieldContext_FrameSide_id(ctx context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_broodPercent(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_broodPercent(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.BroodPercent, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_broodPercent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_cappedBroodPercent(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_cappedBroodPercent(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CappedBroodPercent, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_cappedBroodPercent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_eggsPercent(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_eggsPercent(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.EggsPercent, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_eggsPercent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_pollenPercent(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_pollenPercent(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PollenPercent, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_pollenPercent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_honeyPercent(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_honeyPercent(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.HoneyPercent, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_honeyPercent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_queenDetected(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_queenDetected(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.QueenDetected, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_queenDetected(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_workerCount(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_workerCount(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.FrameSide().WorkerCount(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_workerCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_droneCount(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_droneCount(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.FrameSide().DroneCount(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_droneCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4124,61 +3655,6 @@ func (ec *executionContext) fieldContext_Mutation_deactivateFrame(ctx context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_updateFrameSide(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateFrameSide(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateFrameSide(rctx, fc.Args["frameSide"].(model.FrameSideInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateFrameSide(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateFrameSide_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_addInspection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_addInspection(ctx, field)
 	if err != nil {
@@ -4367,6 +3843,62 @@ func (ec *executionContext) fieldContext_Query_apiary(ctx context.Context, field
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_apiary_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_hiveFrameSide(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_hiveFrameSide(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().HiveFrameSide(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.FrameSide)
+	fc.Result = res
+	return ec.marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_hiveFrameSide(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FrameSide_id(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FrameSide", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_hiveFrameSide_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -6750,82 +6282,6 @@ func (ec *executionContext) unmarshalInputFrameInput(ctx context.Context, obj in
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputFrameSideInput(ctx context.Context, obj interface{}) (model.FrameSideInput, error) {
-	var it model.FrameSideInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id", "broodPercent", "cappedBroodPercent", "eggsPercent", "pollenPercent", "honeyPercent", "queenDetected"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "broodPercent":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("broodPercent"))
-			it.BroodPercent, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cappedBroodPercent":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cappedBroodPercent"))
-			it.CappedBroodPercent, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "eggsPercent":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eggsPercent"))
-			it.EggsPercent, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "pollenPercent":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pollenPercent"))
-			it.PollenPercent, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "honeyPercent":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("honeyPercent"))
-			it.HoneyPercent, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "queenDetected":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("queenDetected"))
-			it.QueenDetected, err = ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj interface{}) (model.HiveInput, error) {
 	var it model.HiveInput
 	asMap := map[string]interface{}{}
@@ -7322,67 +6778,6 @@ func (ec *executionContext) _FrameSide(ctx context.Context, sel ast.SelectionSet
 
 			out.Values[i] = ec._FrameSide_id(ctx, field, obj)
 
-		case "broodPercent":
-
-			out.Values[i] = ec._FrameSide_broodPercent(ctx, field, obj)
-
-		case "cappedBroodPercent":
-
-			out.Values[i] = ec._FrameSide_cappedBroodPercent(ctx, field, obj)
-
-		case "eggsPercent":
-
-			out.Values[i] = ec._FrameSide_eggsPercent(ctx, field, obj)
-
-		case "pollenPercent":
-
-			out.Values[i] = ec._FrameSide_pollenPercent(ctx, field, obj)
-
-		case "honeyPercent":
-
-			out.Values[i] = ec._FrameSide_honeyPercent(ctx, field, obj)
-
-		case "queenDetected":
-
-			out.Values[i] = ec._FrameSide_queenDetected(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "workerCount":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._FrameSide_workerCount(ctx, field, obj)
-				return res
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
-		case "droneCount":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._FrameSide_droneCount(ctx, field, obj)
-				return res
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7649,15 +7044,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 				return ec._Mutation_deactivateFrame(ctx, field)
 			})
 
-		case "updateFrameSide":
-
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateFrameSide(ctx, field)
-			})
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "addInspection":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -7724,6 +7110,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_apiary(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "hiveFrameSide":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_hiveFrameSide(ctx, field)
 				return res
 			}
 
@@ -8288,11 +7694,6 @@ func (ec *executionContext) marshalNFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarm
 		return graphql.Null
 	}
 	return ec._FrameSide(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNFrameSideInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSideInput(ctx context.Context, v interface{}) (model.FrameSideInput, error) {
-	res, err := ec.unmarshalInputFrameSideInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNFrameType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameType(ctx context.Context, v interface{}) (model.FrameType, error) {

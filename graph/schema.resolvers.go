@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/Gratheon/swarm-api/graph/generated"
@@ -48,16 +47,6 @@ func (r *frameResolver) RightSide(ctx context.Context, obj *model.Frame) (*model
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Get(obj.RightID)
-}
-
-// WorkerCount is the resolver for the workerCount field.
-func (r *frameSideResolver) WorkerCount(ctx context.Context, obj *model.FrameSide) (*int, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-// DroneCount is the resolver for the droneCount field.
-func (r *frameSideResolver) DroneCount(ctx context.Context, obj *model.FrameSide) (*int, error) {
-	panic(fmt.Errorf("not implemented"))
 }
 
 // BoxCount is the resolver for the boxCount field.
@@ -338,9 +327,9 @@ func (r *mutationResolver) UpdateFrames(ctx context.Context, frames []*model.Fra
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}
-	
-		// Initialize an empty results slice
-		results := []*model.Frame{}
+
+	// Initialize an empty results slice
+	results := []*model.Frame{}
 
 	for _, frame := range frames {
 		frameModel.Update(frame.ID, frame.BoxID, frame.Position)
@@ -367,18 +356,6 @@ func (r *mutationResolver) DeactivateFrame(ctx context.Context, id string) (*boo
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Deactivate(id)
-}
-
-// UpdateFrameSide is the resolver for the updateFrameSide field.
-func (r *mutationResolver) UpdateFrameSide(ctx context.Context, frameSide model.FrameSideInput) (bool, error) {
-	uid := ctx.Value("userID").(string)
-	frameSideModel := &model.FrameSide{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}
-
-	frameSideModel.UpdateSide(frameSide)
-	return frameSideModel.UpdateQueenState(frameSide)
 }
 
 // AddInspection is the resolver for the addInspection field.
@@ -415,6 +392,22 @@ func (r *queryResolver) Apiary(ctx context.Context, id string) (*model.Apiary, e
 	}).Get(id)
 }
 
+// HiveFrameSide is the resolver for the hiveFrameSide field.
+func (r *queryResolver) HiveFrameSide(ctx context.Context, id string) (*model.FrameSide, error) {
+	uid := ctx.Value("userID").(string)
+	idNum, err := strconv.ParseInt(id, 10, 64)
+
+	if err != nil {
+		return nil, err
+	}
+	idNum2 := int(idNum)
+
+	return (&model.FrameSide{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Get(&idNum2)
+}
+
 // Apiaries is the resolver for the apiaries field.
 func (r *queryResolver) Apiaries(ctx context.Context) ([]*model.Apiary, error) {
 	uid := ctx.Value("userID").(string)
@@ -442,9 +435,6 @@ func (r *Resolver) Box() generated.BoxResolver { return &boxResolver{r} }
 // Frame returns generated.FrameResolver implementation.
 func (r *Resolver) Frame() generated.FrameResolver { return &frameResolver{r} }
 
-// FrameSide returns generated.FrameSideResolver implementation.
-func (r *Resolver) FrameSide() generated.FrameSideResolver { return &frameSideResolver{r} }
-
 // Hive returns generated.HiveResolver implementation.
 func (r *Resolver) Hive() generated.HiveResolver { return &hiveResolver{r} }
 
@@ -457,7 +447,6 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 type apiaryResolver struct{ *Resolver }
 type boxResolver struct{ *Resolver }
 type frameResolver struct{ *Resolver }
-type frameSideResolver struct{ *Resolver }
 type hiveResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
