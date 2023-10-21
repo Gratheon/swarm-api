@@ -9,14 +9,6 @@ type FrameSide struct {
 	Db                 *sqlx.DB
 	ID                 *string `json:"id" db:"id"`
 	UserID             string  `db:"user_id"`
-	BroodPercent       *int    `json:"broodPercent" db:"brood"`
-	CappedBroodPercent *int    `json:"cappedBroodPercent" db:"capped_brood"`
-	EggsPercent        *int    `json:"eggsPercent" db:"eggs"`
-	PollenPercent      *int    `json:"pollenPercent" db:"pollen"`
-	HoneyPercent       *int    `json:"honeyPercent" db:"honey"`
-	QueenDetected      bool    `json:"queenDetected" db:"queen_detected"`
-	WorkerCount        bool    `json:"workerCount" db:"workers"`
-	DroneCount         bool    `json:"droneCount" db:"drones"`
 }
 
 func (FrameSide) IsEntity() {}

@@ -34,20 +34,10 @@ func (r *Frame) CreateFramesForBox(boxID *string, frameCount int) error {
 		leftSide := &FrameSide{
 			Db:                 r.Db,
 			UserID:             r.UserID,
-			BroodPercent:       nil,
-			CappedBroodPercent: nil,
-			EggsPercent:  nil,
-			HoneyPercent:       nil,
-			PollenPercent:      nil,
 		}
 		rightSide := &FrameSide{
 			Db:                 r.Db,
 			UserID:             r.UserID,
-			BroodPercent:       nil,
-			CappedBroodPercent: nil,
-			EggsPercent:  nil,
-			HoneyPercent:       nil,
-			PollenPercent:      nil,
 		}
 
 		leftID, err := leftSide.CreateSide(leftSide)
