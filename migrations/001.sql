@@ -42,25 +42,6 @@ CREATE TABLE `files` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
-CREATE TABLE `frames` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int unsigned NOT NULL,
-  `box_id` int unsigned DEFAULT NULL,
-  `position` int unsigned DEFAULT NULL,
-  `type` enum('VOID','FOUNDATION','EMPTY_COMB','PARTITION','FEEDER') NOT NULL DEFAULT 'EMPTY_COMB',
-  `left_id` int unsigned DEFAULT NULL,
-  `right_id` int unsigned DEFAULT NULL,
-  `active` tinyint(1) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`id`),
-  KEY `box_id` (`box_id`),
-  KEY `left_id` (`left_id`),
-  KEY `right_id` (`right_id`),
-  CONSTRAINT `frames_ibfk_1` FOREIGN KEY (`box_id`) REFERENCES `boxes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `frames_ibfk_2` FOREIGN KEY (`left_id`) REFERENCES `frames_sides` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `frames_ibfk_3` FOREIGN KEY (`right_id`) REFERENCES `frames_sides` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
 CREATE TABLE `frames_sides` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int unsigned NOT NULL,
@@ -73,6 +54,25 @@ CREATE TABLE `frames_sides` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+
+
+CREATE TABLE `frames` (
+                          `id` int unsigned NOT NULL AUTO_INCREMENT,
+                          `user_id` int unsigned NOT NULL,
+                          `box_id` int unsigned DEFAULT NULL,
+                          `position` int unsigned DEFAULT NULL,
+                          `type` enum('VOID','FOUNDATION','EMPTY_COMB','PARTITION','FEEDER') NOT NULL DEFAULT 'EMPTY_COMB',
+    `left_id` int unsigned DEFAULT NULL,
+    `right_id` int unsigned DEFAULT NULL,
+    `active` tinyint(1) NOT NULL DEFAULT '1',
+    PRIMARY KEY (`id`),
+    KEY `box_id` (`box_id`),
+    KEY `left_id` (`left_id`),
+    KEY `right_id` (`right_id`),
+    CONSTRAINT `frames_ibfk_1` FOREIGN KEY (`box_id`) REFERENCES `boxes` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `frames_ibfk_2` FOREIGN KEY (`left_id`) REFERENCES `frames_sides` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `frames_ibfk_3` FOREIGN KEY (`right_id`) REFERENCES `frames_sides` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `hives` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
