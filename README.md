@@ -15,6 +15,10 @@ flowchart LR
     graphql-router --> graphql-schema-registry
 ```
 
+## Database
+Migrations need to run manually, see and execute migrations folder files one-by-one.
+
+TODO: add goose or other migration tool.
 
 ## Development
 Based on [gqlgen](https://gqlgen.com/getting-started/).
