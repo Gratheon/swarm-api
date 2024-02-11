@@ -6,7 +6,7 @@ services:
       ENV_ID: dev
       SERVICE_NAME: swarm-api
     ports:
-      - 60002:60002
+      - 8100:8100
     network_mode: bridge
     networks:
       - gratheon

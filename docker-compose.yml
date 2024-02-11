@@ -6,7 +6,7 @@ services:
       ENV_ID: prod
       SERVICE_NAME: swarm-api
     ports:
-      - 60002:60002
+      - 8100:8100
     volumes:
       - ./config/config.live.json:/app/config/config.json
     network_mode: host

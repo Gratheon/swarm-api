@@ -61,7 +61,7 @@ func main() {
 	gqlGenServer := handler.NewDefaultServer(generated.NewExecutableSchema(gqlGenConfig))
 	router.Handle("/graphql", gqlGenServer)
 
-	httpHost := "0.0.0.0:60002"
+	httpHost := "0.0.0.0:8100"
 
 	err := http.ListenAndServe(httpHost, router)
 

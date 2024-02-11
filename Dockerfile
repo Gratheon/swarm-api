@@ -7,7 +7,7 @@ RUN chmod +x /app/swarm-api
 
 USER nobody
 
-EXPOSE 60002
+EXPOSE 8100
 
 WORKDIR /app
 CMD /app/swarm-api
