@@ -49,15 +49,6 @@ func (r *frameResolver) RightSide(ctx context.Context, obj *model.Frame) (*model
 	}).Get(obj.RightID)
 }
 
-// BoxCount is the resolver for the boxCount field.
-func (r *hiveResolver) BoxCount(ctx context.Context, obj *model.Hive) (int, error) {
-	uid := ctx.Value("userID").(string)
-	return (&model.Box{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}).Count(obj.ID)
-}
-
 // Boxes is the resolver for the boxes field.
 func (r *hiveResolver) Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box, error) {
 	uid := ctx.Value("userID").(string)
@@ -80,13 +71,22 @@ func (r *hiveResolver) Family(ctx context.Context, obj *model.Hive) (*model.Fami
 	}).GetById(obj.FamilyID)
 }
 
-// Inspections is the resolver for the inspections field.
-func (r *hiveResolver) Inspections(ctx context.Context, obj *model.Hive, limit *int) ([]*model.Inspection, error) {
+// BoxCount is the resolver for the boxCount field.
+func (r *hiveResolver) BoxCount(ctx context.Context, obj *model.Hive) (int, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Count(obj.ID)
+}
+
+// InspectionCount is the resolver for the inspectionCount field.
+func (r *hiveResolver) InspectionCount(ctx context.Context, obj *model.Hive) (int, error) {
 	uid := ctx.Value("userID").(string)
 	return (&model.Inspection{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).ListByHiveId(obj.ID)
+	}).CountByHiveId(obj.ID)
 }
 
 // AddApiary is the resolver for the addApiary field.
@@ -424,6 +424,15 @@ func (r *queryResolver) Inspection(ctx context.Context, inspectionID string) (*m
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Get(inspectionID)
+}
+
+// Inspections is the resolver for the inspections field.
+func (r *queryResolver) Inspections(ctx context.Context, hiveID string, limit *int) ([]*model.Inspection, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Inspection{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListByHiveId(hiveID)
 }
 
 // Apiary returns generated.ApiaryResolver implementation.

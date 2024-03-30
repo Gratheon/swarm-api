@@ -13,7 +13,9 @@ type Query {
   apiary(id: ID!): Apiary
   hiveFrameSide(id: ID!): FrameSide
   apiaries: [Apiary]
+
   inspection(inspectionId: ID!): Inspection
+  inspections(hiveId: ID!, limit: Int): [Inspection]
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -72,10 +74,11 @@ type Hive @key(fields: "id") {
   id: ID!
   name: String
 	notes: String
-  boxCount: Int!
   boxes: [Box]
   family: Family
-  inspections(limit: Int): [Inspection]
+
+  boxCount: Int!
+  inspectionCount: Int!
 }
 
 input FamilyInput{
@@ -102,6 +105,7 @@ type Family{
 
 type Inspection {
   id: ID!
+  hiveId: ID!
   data: JSON!
   added: DateTime!
 }

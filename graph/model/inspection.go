@@ -1,15 +1,16 @@
 package model
 
 import (
-	"github.com/jmoiron/sqlx"
 	"strconv"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Inspection struct {
 	Db     *sqlx.DB
 	ID     string `json:"id" db:"id"`
 	UserID string `db:"user_id"`
-	HiveID string `db:"hive_id"`
+	HiveID string `json:"hiveId" db:"hive_id"`
 	Data   string `json:"data" db:"data"`
 	Added  string `json:"added" db:"added"`
 }
@@ -44,6 +45,25 @@ func (r *Inspection) ListByHiveId(hiveID string) ([]*Inspection, error) {
 		WHERE user_id=? AND hive_id=?`, r.UserID, hiveID)
 
 	return list, err
+}
+
+func (r *Inspection) CountByHiveId(hiveID string) (int, error) {
+	type InspectionCount struct {
+		Count *int `db:"count"`
+	}
+
+	result := []*InspectionCount{}
+	err := r.Db.Select(&result,
+		`SELECT COUNT(*) as count
+		FROM inspections
+		WHERE user_id=? AND hive_id=?
+		LIMIT 1`, r.UserID, hiveID)
+
+	if len(result) == 0 {
+		return 0, nil
+	}
+
+	return *result[0].Count, err
 }
 
 func (r *Inspection) Create(data string, hiveID int) (*string, error) {

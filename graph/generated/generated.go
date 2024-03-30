@@ -91,19 +91,20 @@ type ComplexityRoot struct {
 	}
 
 	Hive struct {
-		BoxCount    func(childComplexity int) int
-		Boxes       func(childComplexity int) int
-		Family      func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Inspections func(childComplexity int, limit *int) int
-		Name        func(childComplexity int) int
-		Notes       func(childComplexity int) int
+		BoxCount        func(childComplexity int) int
+		Boxes           func(childComplexity int) int
+		Family          func(childComplexity int) int
+		ID              func(childComplexity int) int
+		InspectionCount func(childComplexity int) int
+		Name            func(childComplexity int) int
+		Notes           func(childComplexity int) int
 	}
 
 	Inspection struct {
-		Added func(childComplexity int) int
-		Data  func(childComplexity int) int
-		ID    func(childComplexity int) int
+		Added  func(childComplexity int) int
+		Data   func(childComplexity int) int
+		HiveID func(childComplexity int) int
+		ID     func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -129,6 +130,7 @@ type ComplexityRoot struct {
 		Hive               func(childComplexity int, id string) int
 		HiveFrameSide      func(childComplexity int, id string) int
 		Inspection         func(childComplexity int, inspectionID string) int
+		Inspections        func(childComplexity int, hiveID string, limit *int) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
 	}
@@ -153,10 +155,10 @@ type FrameResolver interface {
 	RightSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
 }
 type HiveResolver interface {
-	BoxCount(ctx context.Context, obj *model.Hive) (int, error)
 	Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box, error)
 	Family(ctx context.Context, obj *model.Hive) (*model.Family, error)
-	Inspections(ctx context.Context, obj *model.Hive, limit *int) ([]*model.Inspection, error)
+	BoxCount(ctx context.Context, obj *model.Hive) (int, error)
+	InspectionCount(ctx context.Context, obj *model.Hive) (int, error)
 }
 type MutationResolver interface {
 	AddApiary(ctx context.Context, apiary model.ApiaryInput) (*model.Apiary, error)
@@ -180,6 +182,7 @@ type QueryResolver interface {
 	HiveFrameSide(ctx context.Context, id string) (*model.FrameSide, error)
 	Apiaries(ctx context.Context) ([]*model.Apiary, error)
 	Inspection(ctx context.Context, inspectionID string) (*model.Inspection, error)
+	Inspections(ctx context.Context, hiveID string, limit *int) ([]*model.Inspection, error)
 }
 
 type executableSchema struct {
@@ -389,17 +392,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Hive.ID(childComplexity), true
 
-	case "Hive.inspections":
-		if e.complexity.Hive.Inspections == nil {
+	case "Hive.inspectionCount":
+		if e.complexity.Hive.InspectionCount == nil {
 			break
 		}
 
-		args, err := ec.field_Hive_inspections_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Hive.Inspections(childComplexity, args["limit"].(*int)), true
+		return e.complexity.Hive.InspectionCount(childComplexity), true
 
 	case "Hive.name":
 		if e.complexity.Hive.Name == nil {
@@ -428,6 +426,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Inspection.Data(childComplexity), true
+
+	case "Inspection.hiveId":
+		if e.complexity.Inspection.HiveID == nil {
+			break
+		}
+
+		return e.complexity.Inspection.HiveID(childComplexity), true
 
 	case "Inspection.id":
 		if e.complexity.Inspection.ID == nil {
@@ -659,6 +664,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Inspection(childComplexity, args["inspectionId"].(string)), true
 
+	case "Query.inspections":
+		if e.complexity.Query.Inspections == nil {
+			break
+		}
+
+		args, err := ec.field_Query_inspections_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Inspections(childComplexity, args["hiveId"].(string), args["limit"].(*int)), true
+
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
 			break
@@ -775,7 +792,9 @@ type Query {
   apiary(id: ID!): Apiary
   hiveFrameSide(id: ID!): FrameSide
   apiaries: [Apiary]
+
   inspection(inspectionId: ID!): Inspection
+  inspections(hiveId: ID!, limit: Int): [Inspection]
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -834,10 +853,11 @@ type Hive @key(fields: "id") {
   id: ID!
   name: String
 	notes: String
-  boxCount: Int!
   boxes: [Box]
   family: Family
-  inspections(limit: Int): [Inspection]
+
+  boxCount: Int!
+  inspectionCount: Int!
 }
 
 input FamilyInput{
@@ -864,6 +884,7 @@ type Family{
 
 type Inspection {
   id: ID!
+  hiveId: ID!
   data: JSON!
   added: DateTime!
 }
@@ -981,21 +1002,6 @@ func (ec *executionContext) field_Entity_findHiveByID_args(ctx context.Context, 
 		}
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Hive_inspections_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["limit"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["limit"] = arg0
 	return args, nil
 }
 
@@ -1371,6 +1377,30 @@ func (ec *executionContext) field_Query_inspection_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_inspections_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["hiveId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["hiveId"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1536,14 +1566,14 @@ func (ec *executionContext) fieldContext_Apiary_hives(ctx context.Context, field
 				return ec.fieldContext_Hive_name(ctx, field)
 			case "notes":
 				return ec.fieldContext_Hive_notes(ctx, field)
-			case "boxCount":
-				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "boxes":
 				return ec.fieldContext_Hive_boxes(ctx, field)
 			case "family":
 				return ec.fieldContext_Hive_family(ctx, field)
-			case "inspections":
-				return ec.fieldContext_Hive_inspections(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -1998,14 +2028,14 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 				return ec.fieldContext_Hive_name(ctx, field)
 			case "notes":
 				return ec.fieldContext_Hive_notes(ctx, field)
-			case "boxCount":
-				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "boxes":
 				return ec.fieldContext_Hive_boxes(ctx, field)
 			case "family":
 				return ec.fieldContext_Hive_family(ctx, field)
-			case "inspections":
-				return ec.fieldContext_Hive_inspections(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2536,50 +2566,6 @@ func (ec *executionContext) fieldContext_Hive_notes(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Hive_boxCount(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Hive_boxCount(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Hive().BoxCount(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Hive_boxCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Hive",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Hive_boxes(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Hive_boxes(ctx, field)
 	if err != nil {
@@ -2682,8 +2668,8 @@ func (ec *executionContext) fieldContext_Hive_family(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Hive_inspections(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Hive_inspections(ctx, field)
+func (ec *executionContext) _Hive_boxCount(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_boxCount(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2696,48 +2682,76 @@ func (ec *executionContext) _Hive_inspections(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Hive().Inspections(rctx, obj, fc.Args["limit"].(*int))
+		return ec.resolvers.Hive().BoxCount(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Inspection)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalOInspection2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Hive_inspections(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Hive_boxCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Hive",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Inspection_id(ctx, field)
-			case "data":
-				return ec.fieldContext_Inspection_data(ctx, field)
-			case "added":
-				return ec.fieldContext_Inspection_added(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Inspection", field.Name)
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_inspectionCount(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_inspectionCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
 	defer func() {
 		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
 		}
 	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Hive_inspections_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Hive().InspectionCount(rctx, obj)
+	})
+	if err != nil {
 		ec.Error(ctx, err)
-		return
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Hive_inspectionCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -2774,6 +2788,50 @@ func (ec *executionContext) _Inspection_id(ctx context.Context, field graphql.Co
 }
 
 func (ec *executionContext) fieldContext_Inspection_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Inspection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Inspection_hiveId(ctx context.Context, field graphql.CollectedField, obj *model.Inspection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Inspection_hiveId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HiveID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Inspection_hiveId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Inspection",
 		Field:      field,
@@ -3100,14 +3158,14 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 				return ec.fieldContext_Hive_name(ctx, field)
 			case "notes":
 				return ec.fieldContext_Hive_notes(ctx, field)
-			case "boxCount":
-				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "boxes":
 				return ec.fieldContext_Hive_boxes(ctx, field)
 			case "family":
 				return ec.fieldContext_Hive_family(ctx, field)
-			case "inspections":
-				return ec.fieldContext_Hive_inspections(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3168,14 +3226,14 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 				return ec.fieldContext_Hive_name(ctx, field)
 			case "notes":
 				return ec.fieldContext_Hive_notes(ctx, field)
-			case "boxCount":
-				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "boxes":
 				return ec.fieldContext_Hive_boxes(ctx, field)
 			case "family":
 				return ec.fieldContext_Hive_family(ctx, field)
-			case "inspections":
-				return ec.fieldContext_Hive_inspections(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3693,6 +3751,8 @@ func (ec *executionContext) fieldContext_Mutation_addInspection(ctx context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Inspection_id(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Inspection_hiveId(ctx, field)
 			case "data":
 				return ec.fieldContext_Inspection_data(ctx, field)
 			case "added":
@@ -3757,14 +3817,14 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 				return ec.fieldContext_Hive_name(ctx, field)
 			case "notes":
 				return ec.fieldContext_Hive_notes(ctx, field)
-			case "boxCount":
-				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "boxes":
 				return ec.fieldContext_Hive_boxes(ctx, field)
 			case "family":
 				return ec.fieldContext_Hive_family(ctx, field)
-			case "inspections":
-				return ec.fieldContext_Hive_inspections(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3998,6 +4058,8 @@ func (ec *executionContext) fieldContext_Query_inspection(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Inspection_id(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Inspection_hiveId(ctx, field)
 			case "data":
 				return ec.fieldContext_Inspection_data(ctx, field)
 			case "added":
@@ -4014,6 +4076,68 @@ func (ec *executionContext) fieldContext_Query_inspection(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_inspection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_inspections(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_inspections(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Inspections(rctx, fc.Args["hiveId"].(string), fc.Args["limit"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Inspection)
+	fc.Result = res
+	return ec.marshalOInspection2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_inspections(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Inspection_id(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Inspection_hiveId(ctx, field)
+			case "data":
+				return ec.fieldContext_Inspection_data(ctx, field)
+			case "added":
+				return ec.fieldContext_Inspection_added(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Inspection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_inspections_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -6814,26 +6938,6 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Values[i] = ec._Hive_notes(ctx, field, obj)
 
-		case "boxCount":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Hive_boxCount(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
 		case "boxes":
 			field := field
 
@@ -6868,7 +6972,7 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
-		case "inspections":
+		case "boxCount":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -6877,7 +6981,30 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Hive_inspections(ctx, field, obj)
+				res = ec._Hive_boxCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "inspectionCount":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_inspectionCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -6909,6 +7036,13 @@ func (ec *executionContext) _Inspection(ctx context.Context, sel ast.SelectionSe
 		case "id":
 
 			out.Values[i] = ec._Inspection_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hiveId":
+
+			out.Values[i] = ec._Inspection_hiveId(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -7170,6 +7304,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_inspection(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "inspections":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_inspections(ctx, field)
 				return res
 			}
 
