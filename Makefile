@@ -12,7 +12,7 @@ update:
 	go get -u all
 
 build:
-#	git rev-parse --short HEAD > .version
+	git rev-parse --short HEAD > .version
 	@echo Building binary:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 	go build \
