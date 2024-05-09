@@ -63,20 +63,26 @@ type InspectionInput struct {
 type BoxType string
 
 const (
-	BoxTypeDeep  BoxType = "DEEP"
-	BoxTypeSuper BoxType = "SUPER"
-	BoxTypeGate  BoxType = "GATE"
+	BoxTypeDeep             BoxType = "DEEP"
+	BoxTypeSuper            BoxType = "SUPER"
+	BoxTypeGate             BoxType = "GATE"
+	BoxTypeVentilation      BoxType = "VENTILATION"
+	BoxTypeQueenExcluder    BoxType = "QUEEN_EXCLUDER"
+	BoxTypeHorizontalFeeder BoxType = "HORIZONTAL_FEEDER"
 )
 
 var AllBoxType = []BoxType{
 	BoxTypeDeep,
 	BoxTypeSuper,
 	BoxTypeGate,
+	BoxTypeVentilation,
+	BoxTypeQueenExcluder,
+	BoxTypeHorizontalFeeder,
 }
 
 func (e BoxType) IsValid() bool {
 	switch e {
-	case BoxTypeDeep, BoxTypeSuper, BoxTypeGate:
+	case BoxTypeDeep, BoxTypeSuper, BoxTypeGate, BoxTypeVentilation, BoxTypeQueenExcluder, BoxTypeHorizontalFeeder:
 		return true
 	}
 	return false

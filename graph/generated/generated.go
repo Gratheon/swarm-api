@@ -924,7 +924,11 @@ enum BoxType {
   DEEP
   SUPER
   GATE
+  VENTILATION
+  QUEEN_EXCLUDER
+  HORIZONTAL_FEEDER
 }
+
 enum FrameType {
   VOID
   FOUNDATION

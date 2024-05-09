@@ -20,5 +20,6 @@ require (
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.11
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 )
