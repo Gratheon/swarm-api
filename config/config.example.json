@@ -1,0 +1,15 @@
+{
+  "redis_address": "redis:6379",
+  "redis_pass": "pass",
+  "jwt_key": "",
+  "bugsnag_api_key": "",
+  "db_dsn": "root:test@tcp(mysql:3306)/swarm-api",
+  "files_base_url": "https://gratheon-test.s3.eu-central-1.amazonaws.com/",
+	"schema_registry_url": "http://gql-schema-registry:3000",
+	"self_url": "swarm-api:8100",
+  "http_port": "8100",
+  "aws_bucket": "gratheon-test",
+  "aws_key": "",
+  "aws_secret": ""
+}
+
