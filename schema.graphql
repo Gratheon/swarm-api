@@ -95,7 +95,11 @@ type Hive @key(fields: "id") {
   inspectionCount: Int!
 
   status: String
-  added: DateTime
+  added: DateTime!
+
+  """ true if added < 1 day """
+  isNew: Boolean!
+  lastInspection: DateTime
 }
 
 input FamilyInput{

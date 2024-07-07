@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/Gratheon/swarm-api/graph/generated"
 	"github.com/Gratheon/swarm-api/graph/model"
@@ -118,6 +119,43 @@ func (r *hiveResolver) InspectionCount(ctx context.Context, obj *model.Hive) (in
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).CountByHiveId(obj.ID)
+}
+
+// IsNew is the resolver for the isNew field.
+func (r *hiveResolver) IsNew(ctx context.Context, obj *model.Hive) (bool, error) {
+	if obj.Added == nil {
+		return false, nil
+	}
+	// return true if obj.Added is less than 1 day old
+	now := time.Now()
+	added, err := time.Parse(time.DateTime, *obj.Added)
+
+	if err != nil {
+		return false, err
+	}
+
+	return now.Sub(added).Hours() < 24, nil
+}
+
+// LastInspection is the resolver for the lastInspection field.
+func (r *hiveResolver) LastInspection(ctx context.Context, obj *model.Hive) (*string, error) {
+	// TODO use dataloader to avoid querying for each hive
+
+	uid := ctx.Value("userID").(string)
+	inspectionModel := &model.Inspection{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+	inspection, err := inspectionModel.GetLatestByHiveId(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if inspection == nil {
+		return nil, nil
+	}
+
+	return &inspection.Added, nil
 }
 
 // AddApiary is the resolver for the addApiary field.

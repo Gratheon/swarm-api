@@ -101,6 +101,8 @@ type ComplexityRoot struct {
 		Family          func(childComplexity int) int
 		ID              func(childComplexity int) int
 		InspectionCount func(childComplexity int) int
+		IsNew           func(childComplexity int) int
+		LastInspection  func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Notes           func(childComplexity int) int
 		Status          func(childComplexity int) int
@@ -180,6 +182,9 @@ type HiveResolver interface {
 	Family(ctx context.Context, obj *model.Hive) (*model.Family, error)
 	BoxCount(ctx context.Context, obj *model.Hive) (int, error)
 	InspectionCount(ctx context.Context, obj *model.Hive) (int, error)
+
+	IsNew(ctx context.Context, obj *model.Hive) (bool, error)
+	LastInspection(ctx context.Context, obj *model.Hive) (*string, error)
 }
 type MutationResolver interface {
 	AddApiary(ctx context.Context, apiary model.ApiaryInput) (*model.Apiary, error)
@@ -449,6 +454,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Hive.InspectionCount(childComplexity), true
+
+	case "Hive.isNew":
+		if e.complexity.Hive.IsNew == nil {
+			break
+		}
+
+		return e.complexity.Hive.IsNew(childComplexity), true
+
+	case "Hive.lastInspection":
+		if e.complexity.Hive.LastInspection == nil {
+			break
+		}
+
+		return e.complexity.Hive.LastInspection(childComplexity), true
 
 	case "Hive.name":
 		if e.complexity.Hive.Name == nil {
@@ -1000,7 +1019,11 @@ type Hive @key(fields: "id") {
   inspectionCount: Int!
 
   status: String
-  added: DateTime
+  added: DateTime!
+
+  """ true if added < 1 day """
+  isNew: Boolean!
+  lastInspection: DateTime
 }
 
 input FamilyInput{
@@ -1778,6 +1801,10 @@ func (ec *executionContext) fieldContext_Apiary_hives(ctx context.Context, field
 				return ec.fieldContext_Hive_status(ctx, field)
 			case "added":
 				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2244,6 +2271,10 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 				return ec.fieldContext_Hive_status(ctx, field)
 			case "added":
 				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3169,11 +3200,14 @@ func (ec *executionContext) _Hive_added(ctx context.Context, field graphql.Colle
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalODateTime2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalNDateTime2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Hive_added(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3182,6 +3216,91 @@ func (ec *executionContext) fieldContext_Hive_added(ctx context.Context, field g
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_isNew(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_isNew(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Hive().IsNew(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Hive_isNew(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_lastInspection(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_lastInspection(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Hive().LastInspection(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalODateTime2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Hive_lastInspection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
 		},
@@ -3603,6 +3722,10 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 				return ec.fieldContext_Hive_status(ctx, field)
 			case "added":
 				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3675,6 +3798,10 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 				return ec.fieldContext_Hive_status(ctx, field)
 			case "added":
 				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -4374,6 +4501,10 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 				return ec.fieldContext_Hive_status(ctx, field)
 			case "added":
 				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -7951,6 +8082,46 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Values[i] = ec._Hive_added(ctx, field, obj)
 
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "isNew":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_isNew(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "lastInspection":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_lastInspection(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8811,6 +8982,27 @@ func (ec *executionContext) unmarshalNDateTime2string(ctx context.Context, v int
 
 func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNDateTime2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDateTime2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := graphql.MarshalString(*v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

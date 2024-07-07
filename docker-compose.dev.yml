@@ -2,6 +2,7 @@ version: '3.9'
 services:
   swarm-api:
     build: .
+    tty: true
     environment:
       ENV_ID: dev
       SERVICE_NAME: swarm-api
