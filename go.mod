@@ -18,8 +18,6 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/viper v1.13.0
-	github.com/stretchr/testify v1.9.0 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.11
-	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	github.com/vektah/gqlparser/v2 v2.5.16
+	golang.org/x/net v0.26.0 // indirect
 )

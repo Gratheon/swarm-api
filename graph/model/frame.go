@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -15,7 +17,7 @@ type Frame struct {
 	RightID   *int       `json:"right" db:"right_id"`
 	LeftSide  *FrameSide `json:"left" `
 	RightSide *FrameSide `json:"right"`
-	Active   int     `db:"active"`
+	Active    int        `db:"active"`
 }
 
 func (r *Frame) Get(id int64) (*Frame, error) {
@@ -26,18 +28,22 @@ func (r *Frame) Get(id int64) (*Frame, error) {
 		WHERE id=? AND user_id=? AND active=1
 		LIMIT 1`, id, r.UserID)
 
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
 	return &frame, err
 }
 
 func (r *Frame) CreateFramesForBox(boxID *string, frameCount int) error {
 	for frameNr := 0; frameNr < frameCount; frameNr++ {
 		leftSide := &FrameSide{
-			Db:                 r.Db,
-			UserID:             r.UserID,
+			Db:     r.Db,
+			UserID: r.UserID,
 		}
 		rightSide := &FrameSide{
-			Db:                 r.Db,
-			UserID:             r.UserID,
+			Db:     r.Db,
+			UserID: r.UserID,
 		}
 
 		leftID, err := leftSide.CreateSide(leftSide)
@@ -149,7 +155,7 @@ func (r *Frame) Deactivate(id string) (*bool, error) {
 		SET active = 0
 		WHERE id=:id AND user_id=:userID`,
 		map[string]interface{}{
-			"id":  id,
+			"id":     id,
 			"userID": r.UserID,
 		},
 	)

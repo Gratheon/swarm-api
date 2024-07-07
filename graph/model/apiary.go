@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
@@ -25,6 +27,10 @@ func (r *Apiary) Get(id string) (*Apiary, error) {
 		FROM apiaries 
 		WHERE id=? AND user_id=? AND active=1
 		LIMIT 1`, id, r.UserID)
+
+	if err2 == sql.ErrNoRows {
+		return nil, nil
+	}
 
 	return &apiary, err2
 }

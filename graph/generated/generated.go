@@ -40,6 +40,7 @@ type ResolverRoot interface {
 	Apiary() ApiaryResolver
 	Box() BoxResolver
 	Entity() EntityResolver
+	Family() FamilyResolver
 	Frame() FrameResolver
 	Hive() HiveResolver
 	Mutation() MutationResolver
@@ -73,9 +74,12 @@ type ComplexityRoot struct {
 	}
 
 	Family struct {
-		Added func(childComplexity int) int
-		ID    func(childComplexity int) int
-		Race  func(childComplexity int) int
+		Added         func(childComplexity int) int
+		Age           func(childComplexity int) int
+		ID            func(childComplexity int) int
+		LastTreatment func(childComplexity int) int
+		Race          func(childComplexity int) int
+		Treatments    func(childComplexity int) int
 	}
 
 	Frame struct {
@@ -91,6 +95,7 @@ type ComplexityRoot struct {
 	}
 
 	Hive struct {
+		Added           func(childComplexity int) int
 		BoxCount        func(childComplexity int) int
 		Boxes           func(childComplexity int) int
 		Family          func(childComplexity int) int
@@ -98,6 +103,7 @@ type ComplexityRoot struct {
 		InspectionCount func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Notes           func(childComplexity int) int
+		Status          func(childComplexity int) int
 	}
 
 	Inspection struct {
@@ -118,6 +124,8 @@ type ComplexityRoot struct {
 		DeactivateFrame  func(childComplexity int, id string) int
 		DeactivateHive   func(childComplexity int, id string) int
 		SwapBoxPositions func(childComplexity int, id string, id2 string) int
+		TreatBox         func(childComplexity int, treatment model.TreatmentOfBoxInput) int
+		TreatHive        func(childComplexity int, treatment model.TreatmentOfHiveInput) int
 		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
 		UpdateBoxColor   func(childComplexity int, id string, color *string) int
 		UpdateFrames     func(childComplexity int, frames []*model.FrameInput) int
@@ -135,6 +143,15 @@ type ComplexityRoot struct {
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
 	}
 
+	Treatment struct {
+		Added    func(childComplexity int) int
+		BoxId    func(childComplexity int) int
+		FamilyId func(childComplexity int) int
+		HiveId   func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Type     func(childComplexity int) int
+	}
+
 	_Service struct {
 		SDL func(childComplexity int) int
 	}
@@ -149,6 +166,10 @@ type BoxResolver interface {
 type EntityResolver interface {
 	FindFrameSideByID(ctx context.Context, id *string) (*model.FrameSide, error)
 	FindHiveByID(ctx context.Context, id string) (*model.Hive, error)
+}
+type FamilyResolver interface {
+	LastTreatment(ctx context.Context, obj *model.Family) (*string, error)
+	Treatments(ctx context.Context, obj *model.Family) ([]*model.Treatment, error)
 }
 type FrameResolver interface {
 	LeftSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
@@ -175,6 +196,8 @@ type MutationResolver interface {
 	UpdateFrames(ctx context.Context, frames []*model.FrameInput) ([]*model.Frame, error)
 	DeactivateFrame(ctx context.Context, id string) (*bool, error)
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
+	TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error)
+	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -308,6 +331,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Family.Added(childComplexity), true
 
+	case "Family.age":
+		if e.complexity.Family.Age == nil {
+			break
+		}
+
+		return e.complexity.Family.Age(childComplexity), true
+
 	case "Family.id":
 		if e.complexity.Family.ID == nil {
 			break
@@ -315,12 +345,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Family.ID(childComplexity), true
 
+	case "Family.lastTreatment":
+		if e.complexity.Family.LastTreatment == nil {
+			break
+		}
+
+		return e.complexity.Family.LastTreatment(childComplexity), true
+
 	case "Family.race":
 		if e.complexity.Family.Race == nil {
 			break
 		}
 
 		return e.complexity.Family.Race(childComplexity), true
+
+	case "Family.treatments":
+		if e.complexity.Family.Treatments == nil {
+			break
+		}
+
+		return e.complexity.Family.Treatments(childComplexity), true
 
 	case "Frame.id":
 		if e.complexity.Frame.ID == nil {
@@ -363,6 +407,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.FrameSide.ID(childComplexity), true
+
+	case "Hive.added":
+		if e.complexity.Hive.Added == nil {
+			break
+		}
+
+		return e.complexity.Hive.Added(childComplexity), true
 
 	case "Hive.boxCount":
 		if e.complexity.Hive.BoxCount == nil {
@@ -412,6 +463,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Hive.Notes(childComplexity), true
+
+	case "Hive.status":
+		if e.complexity.Hive.Status == nil {
+			break
+		}
+
+		return e.complexity.Hive.Status(childComplexity), true
 
 	case "Inspection.added":
 		if e.complexity.Inspection.Added == nil {
@@ -561,6 +619,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SwapBoxPositions(childComplexity, args["id"].(string), args["id2"].(string)), true
 
+	case "Mutation.treatBox":
+		if e.complexity.Mutation.TreatBox == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_treatBox_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TreatBox(childComplexity, args["treatment"].(model.TreatmentOfBoxInput)), true
+
+	case "Mutation.treatHive":
+		if e.complexity.Mutation.TreatHive == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_treatHive_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TreatHive(childComplexity, args["treatment"].(model.TreatmentOfHiveInput)), true
+
 	case "Mutation.updateApiary":
 		if e.complexity.Mutation.UpdateApiary == nil {
 			break
@@ -695,6 +777,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.__resolve_entities(childComplexity, args["representations"].([]map[string]interface{})), true
 
+	case "Treatment.added":
+		if e.complexity.Treatment.Added == nil {
+			break
+		}
+
+		return e.complexity.Treatment.Added(childComplexity), true
+
+	case "Treatment.boxId":
+		if e.complexity.Treatment.BoxId == nil {
+			break
+		}
+
+		return e.complexity.Treatment.BoxId(childComplexity), true
+
+	case "Treatment.familyId":
+		if e.complexity.Treatment.FamilyId == nil {
+			break
+		}
+
+		return e.complexity.Treatment.FamilyId(childComplexity), true
+
+	case "Treatment.hiveId":
+		if e.complexity.Treatment.HiveId == nil {
+			break
+		}
+
+		return e.complexity.Treatment.HiveId(childComplexity), true
+
+	case "Treatment.id":
+		if e.complexity.Treatment.ID == nil {
+			break
+		}
+
+		return e.complexity.Treatment.ID(childComplexity), true
+
+	case "Treatment.type":
+		if e.complexity.Treatment.Type == nil {
+			break
+		}
+
+		return e.complexity.Treatment.Type(childComplexity), true
+
 	case "_Service.sdl":
 		if e.complexity._Service.SDL == nil {
 			break
@@ -717,6 +841,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputHiveInput,
 		ec.unmarshalInputHiveUpdateInput,
 		ec.unmarshalInputInspectionInput,
+		ec.unmarshalInputTreatmentOfBoxInput,
+		ec.unmarshalInputTreatmentOfHiveInput,
 	)
 	first := true
 
@@ -817,6 +943,20 @@ type Mutation {
   deactivateFrame(id: ID!): Boolean
 
   addInspection(inspection: InspectionInput!): Inspection
+
+  treatHive(treatment: TreatmentOfHiveInput!): Boolean
+  treatBox(treatment: TreatmentOfBoxInput!): Boolean
+}
+
+input TreatmentOfBoxInput {
+  hiveId: ID!
+  boxId: ID!
+  type: String!
+}
+
+input TreatmentOfHiveInput {
+  hiveId: ID!
+  type: String!
 }
 
 input ApiaryInput {
@@ -858,6 +998,9 @@ type Hive @key(fields: "id") {
 
   boxCount: Int!
   inspectionCount: Int!
+
+  status: String
+  added: DateTime
 }
 
 input FamilyInput{
@@ -876,10 +1019,33 @@ input BoxInput{
   family: FamilyInput
 }
 
+type Treatment {
+  id: ID!
+  type: String!
+  added: DateTime!
+  
+  hiveId: ID!
+  boxId: ID!
+  familyId: ID!
+}
+
 type Family{
   id: ID!
+
+  """ freeform race of the queen """
   race: String
+
+  """ year when queen was added """
   added: String
+
+  """ queen age in years, depends on added date"""
+  age: Int
+
+  """ aggregate info about Treatments """
+  lastTreatment: DateTime
+
+  """Anti-varroa medical treatments of a hive or a box are linked to a family to track history even if family is moved to another hive or ownership is changed"""
+  treatments: [Treatment]
 }
 
 type Inspection {
@@ -1210,6 +1376,36 @@ func (ec *executionContext) field_Mutation_swapBoxPositions_args(ctx context.Con
 		}
 	}
 	args["id2"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_treatBox_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.TreatmentOfBoxInput
+	if tmp, ok := rawArgs["treatment"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("treatment"))
+		arg0, err = ec.unmarshalNTreatmentOfBoxInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatmentOfBoxInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["treatment"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_treatHive_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.TreatmentOfHiveInput
+	if tmp, ok := rawArgs["treatment"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("treatment"))
+		arg0, err = ec.unmarshalNTreatmentOfHiveInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatmentOfHiveInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["treatment"] = arg0
 	return args, nil
 }
 
@@ -1578,6 +1774,10 @@ func (ec *executionContext) fieldContext_Apiary_hives(ctx context.Context, field
 				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "inspectionCount":
 				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2040,6 +2240,10 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "inspectionCount":
 				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2179,6 +2383,143 @@ func (ec *executionContext) fieldContext_Family_added(ctx context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Family_age(ctx context.Context, field graphql.CollectedField, obj *model.Family) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Family_age(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Age, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Family_age(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Family",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Family_lastTreatment(ctx context.Context, field graphql.CollectedField, obj *model.Family) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Family_lastTreatment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Family().LastTreatment(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalODateTime2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Family_lastTreatment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Family",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Family_treatments(ctx context.Context, field graphql.CollectedField, obj *model.Family) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Family_treatments(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Family().Treatments(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Treatment)
+	fc.Result = res
+	return ec.marshalOTreatment2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Family_treatments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Family",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Treatment_id(ctx, field)
+			case "type":
+				return ec.fieldContext_Treatment_type(ctx, field)
+			case "added":
+				return ec.fieldContext_Treatment_added(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Treatment_hiveId(ctx, field)
+			case "boxId":
+				return ec.fieldContext_Treatment_boxId(ctx, field)
+			case "familyId":
+				return ec.fieldContext_Treatment_familyId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Treatment", field.Name)
 		},
 	}
 	return fc, nil
@@ -2665,6 +3006,12 @@ func (ec *executionContext) fieldContext_Hive_family(ctx context.Context, field 
 				return ec.fieldContext_Family_race(ctx, field)
 			case "added":
 				return ec.fieldContext_Family_added(ctx, field)
+			case "age":
+				return ec.fieldContext_Family_age(ctx, field)
+			case "lastTreatment":
+				return ec.fieldContext_Family_lastTreatment(ctx, field)
+			case "treatments":
+				return ec.fieldContext_Family_treatments(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
 		},
@@ -2755,6 +3102,88 @@ func (ec *executionContext) fieldContext_Hive_inspectionCount(ctx context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_status(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Hive_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_added(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_added(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Added, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalODateTime2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Hive_added(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3170,6 +3599,10 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "inspectionCount":
 				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3238,6 +3671,10 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "inspectionCount":
 				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3779,6 +4216,110 @@ func (ec *executionContext) fieldContext_Mutation_addInspection(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_treatHive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_treatHive(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TreatHive(rctx, fc.Args["treatment"].(model.TreatmentOfHiveInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_treatHive(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_treatHive_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_treatBox(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_treatBox(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TreatBox(rctx, fc.Args["treatment"].(model.TreatmentOfBoxInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_treatBox(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_treatBox_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_hive(ctx, field)
 	if err != nil {
@@ -3829,6 +4370,10 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 				return ec.fieldContext_Hive_boxCount(ctx, field)
 			case "inspectionCount":
 				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -4375,6 +4920,270 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Treatment_id(ctx context.Context, field graphql.CollectedField, obj *model.Treatment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Treatment_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Treatment_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Treatment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Treatment_type(ctx context.Context, field graphql.CollectedField, obj *model.Treatment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Treatment_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Treatment_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Treatment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Treatment_added(ctx context.Context, field graphql.CollectedField, obj *model.Treatment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Treatment_added(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Added, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNDateTime2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Treatment_added(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Treatment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Treatment_hiveId(ctx context.Context, field graphql.CollectedField, obj *model.Treatment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Treatment_hiveId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HiveId, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Treatment_hiveId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Treatment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Treatment_boxId(ctx context.Context, field graphql.CollectedField, obj *model.Treatment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Treatment_boxId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BoxId, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalNID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Treatment_boxId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Treatment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Treatment_familyId(ctx context.Context, field graphql.CollectedField, obj *model.Treatment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Treatment_familyId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FamilyId, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Treatment_familyId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Treatment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6558,6 +7367,86 @@ func (ec *executionContext) unmarshalInputInspectionInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTreatmentOfBoxInput(ctx context.Context, obj interface{}) (model.TreatmentOfBoxInput, error) {
+	var it model.TreatmentOfBoxInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"hiveId", "boxId", "type"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "hiveId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveId"))
+			it.HiveID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "boxId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boxId"))
+			it.BoxID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTreatmentOfHiveInput(ctx context.Context, obj interface{}) (model.TreatmentOfHiveInput, error) {
+	var it model.TreatmentOfHiveInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"hiveId", "type"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "hiveId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveId"))
+			it.HiveID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -6798,7 +7687,7 @@ func (ec *executionContext) _Family(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Family_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "race":
 
@@ -6808,6 +7697,44 @@ func (ec *executionContext) _Family(ctx context.Context, sel ast.SelectionSet, o
 
 			out.Values[i] = ec._Family_added(ctx, field, obj)
 
+		case "age":
+
+			out.Values[i] = ec._Family_age(ctx, field, obj)
+
+		case "lastTreatment":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Family_lastTreatment(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "treatments":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Family_treatments(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7016,6 +7943,14 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
+		case "status":
+
+			out.Values[i] = ec._Hive_status(ctx, field, obj)
+
+		case "added":
+
+			out.Values[i] = ec._Hive_added(ctx, field, obj)
+
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7186,6 +8121,18 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_addInspection(ctx, field)
+			})
+
+		case "treatHive":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_treatHive(ctx, field)
+			})
+
+		case "treatBox":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_treatBox(ctx, field)
 			})
 
 		default:
@@ -7396,6 +8343,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				return ec._Query___schema(ctx, field)
 			})
 
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var treatmentImplementors = []string{"Treatment"}
+
+func (ec *executionContext) _Treatment(ctx context.Context, sel ast.SelectionSet, obj *model.Treatment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, treatmentImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Treatment")
+		case "id":
+
+			out.Values[i] = ec._Treatment_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "type":
+
+			out.Values[i] = ec._Treatment_type(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "added":
+
+			out.Values[i] = ec._Treatment_added(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hiveId":
+
+			out.Values[i] = ec._Treatment_hiveId(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "boxId":
+
+			out.Values[i] = ec._Treatment_boxId(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "familyId":
+
+			out.Values[i] = ec._Treatment_familyId(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7918,6 +8928,27 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := graphql.MarshalID(*v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNInspectionInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspectionInput(ctx context.Context, v interface{}) (model.InspectionInput, error) {
 	res, err := ec.unmarshalInputInspectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7966,6 +8997,16 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNTreatmentOfBoxInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatmentOfBoxInput(ctx context.Context, v interface{}) (model.TreatmentOfBoxInput, error) {
+	res, err := ec.unmarshalInputTreatmentOfBoxInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNTreatmentOfHiveInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatmentOfHiveInput(ctx context.Context, v interface{}) (model.TreatmentOfHiveInput, error) {
+	res, err := ec.unmarshalInputTreatmentOfHiveInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalN_Any2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
@@ -8453,6 +9494,22 @@ func (ec *executionContext) marshalOBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapi
 	return ec._Box(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalODateTime2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalString(*v)
+	return res
+}
+
 func (ec *executionContext) marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx context.Context, sel ast.SelectionSet, v *model.Family) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -8725,6 +9782,54 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTreatment2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatment(ctx context.Context, sel ast.SelectionSet, v []*model.Treatment) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTreatment2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOTreatment2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatment(ctx context.Context, sel ast.SelectionSet, v *model.Treatment) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Treatment(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO_Entity2githubᚗcomᚋ99designsᚋgqlgenᚋpluginᚋfederationᚋfedruntimeᚐEntity(ctx context.Context, sel ast.SelectionSet, v fedruntime.Entity) graphql.Marshaler {

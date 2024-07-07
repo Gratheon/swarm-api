@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql"
+
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/jmoiron/sqlx"
 )
@@ -17,6 +19,10 @@ func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 	frameSide := FrameSide{}
 	err := r.Db.Get(&frameSide, "SELECT * FROM `frames_sides` WHERE id=? AND user_id=? LIMIT 1", id, r.UserID)
 
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	
 	if err != nil {
 		logger.LogError(err)
 		return nil, nil

@@ -38,6 +38,20 @@ type Mutation {
   deactivateFrame(id: ID!): Boolean
 
   addInspection(inspection: InspectionInput!): Inspection
+
+  treatHive(treatment: TreatmentOfHiveInput!): Boolean
+  treatBox(treatment: TreatmentOfBoxInput!): Boolean
+}
+
+input TreatmentOfBoxInput {
+  hiveId: ID!
+  boxId: ID!
+  type: String!
+}
+
+input TreatmentOfHiveInput {
+  hiveId: ID!
+  type: String!
 }
 
 input ApiaryInput {
@@ -79,6 +93,9 @@ type Hive @key(fields: "id") {
 
   boxCount: Int!
   inspectionCount: Int!
+
+  status: String
+  added: DateTime
 }
 
 input FamilyInput{
@@ -97,10 +114,33 @@ input BoxInput{
   family: FamilyInput
 }
 
+type Treatment {
+  id: ID!
+  type: String!
+  added: DateTime!
+  
+  hiveId: ID!
+  boxId: ID!
+  familyId: ID!
+}
+
 type Family{
   id: ID!
+
+  """ freeform race of the queen """
   race: String
+
+  """ year when queen was added """
   added: String
+
+  """ queen age in years, depends on added date"""
+  age: Int
+
+  """ aggregate info about Treatments """
+  lastTreatment: DateTime
+
+  """Anti-varroa medical treatments of a hive or a box are linked to a family to track history even if family is moved to another hive or ownership is changed"""
+  treatments: [Treatment]
 }
 
 type Inspection {

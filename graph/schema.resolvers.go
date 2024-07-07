@@ -31,6 +31,37 @@ func (r *boxResolver) Frames(ctx context.Context, obj *model.Box) ([]*model.Fram
 	}).ListByBox(obj.ID)
 }
 
+// LastTreatment is the resolver for the lastTreatment field.
+func (r *familyResolver) LastTreatment(ctx context.Context, obj *model.Family) (*string, error) {
+	uid := ctx.Value("userID").(string)
+	treatmentModel := &model.Treatment{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	treatment, err := treatmentModel.GetLastFamilyTreatment(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if treatment == nil {
+		return nil, nil
+	}
+
+	return &treatment.Added, nil
+}
+
+// Treatments is the resolver for the treatments field.
+func (r *familyResolver) Treatments(ctx context.Context, obj *model.Family) ([]*model.Treatment, error) {
+	uid := ctx.Value("userID").(string)
+	treatmentModel := &model.Treatment{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	return treatmentModel.ListFamilyTreatments(obj.ID)
+}
+
 // LeftSide is the resolver for the leftSide field.
 func (r *frameResolver) LeftSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error) {
 	uid := ctx.Value("userID").(string)
@@ -374,6 +405,64 @@ func (r *mutationResolver) AddInspection(ctx context.Context, inspection model.I
 	return inspectionModel.Get(*id)
 }
 
+// TreatHive is the resolver for the treatHive field.
+func (r *mutationResolver) TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	treatmentModel := &model.Treatment{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	hiveModel := &model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	hive, err := hiveModel.Get(treatment.HiveID)
+	if err != nil {
+		logger.LogError(err)
+		ok := err == nil
+		return &ok, err
+	}
+
+	_, err2 := treatmentModel.TreatHive(treatment, hive.FamilyID)
+	ok := err2 == nil
+
+	if err2 != nil {
+		logger.LogError(err2)
+	}
+
+	return &ok, err
+}
+
+// TreatBox is the resolver for the treatBox field.
+func (r *mutationResolver) TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	treatmentModel := &model.Treatment{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	hiveModel := &model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	hive, err := hiveModel.Get(treatment.HiveID)
+	if err != nil {
+		logger.LogError(err)
+		ok := err == nil
+		return &ok, err
+	}
+
+	_, err2 := treatmentModel.TreatHiveBox(treatment, hive.FamilyID)
+	ok := err2 == nil
+	if err2 != nil {
+		logger.LogError(err2)
+	}
+	return &ok, err
+}
+
 // Hive is the resolver for the hive field.
 func (r *queryResolver) Hive(ctx context.Context, id string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
@@ -441,6 +530,9 @@ func (r *Resolver) Apiary() generated.ApiaryResolver { return &apiaryResolver{r}
 // Box returns generated.BoxResolver implementation.
 func (r *Resolver) Box() generated.BoxResolver { return &boxResolver{r} }
 
+// Family returns generated.FamilyResolver implementation.
+func (r *Resolver) Family() generated.FamilyResolver { return &familyResolver{r} }
+
 // Frame returns generated.FrameResolver implementation.
 func (r *Resolver) Frame() generated.FrameResolver { return &frameResolver{r} }
 
@@ -455,6 +547,7 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type apiaryResolver struct{ *Resolver }
 type boxResolver struct{ *Resolver }
+type familyResolver struct{ *Resolver }
 type frameResolver struct{ *Resolver }
 type hiveResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }

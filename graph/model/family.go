@@ -1,8 +1,11 @@
 package model
 
 import (
-	"github.com/jmoiron/sqlx"
+	"database/sql"
 	"strconv"
+	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Family struct {
@@ -10,7 +13,8 @@ type Family struct {
 	UserID      string        `db:"user_id"`
 	ID          string        `json:"id"  db:"id"`
 	Race        *string       `json:"race" db:"race"`
-	Added       *string        `json:"added" db:"added"`
+	Age         *int          `json:"age"`
+	Added       *string       `json:"added" db:"added"`
 	Inspections []*Inspection `json:"inspections"`
 }
 
@@ -21,6 +25,21 @@ func (r *Family) GetById(id *int) (*Family, error) {
 		FROM families
 		WHERE id=? AND user_id=?
 		LIMIT 1`, id, r.UserID)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if family.Added != nil {
+		// Parse the birth year from the string
+		birthYear, err := strconv.Atoi(*family.Added)
+		if err == nil {
+			currentYear := time.Now().Year()
+
+			age := (currentYear - birthYear)
+			family.Age = &age
+		}
+	}
 
 	return &family, err
 }
@@ -77,7 +96,7 @@ func (r *Family) Upsert(uid string, hive HiveUpdateInput) (*string, error) {
 
 		if err != nil {
 			return nil, err
-		}	
+		}
 	} else {
 		FamilyID, _ = r.Create(hive.Family.Race, hive.Family.Added)
 	}
