@@ -60,6 +60,17 @@ type InspectionInput struct {
 	Data   string `json:"data"`
 }
 
+type TreatmentOfBoxInput struct {
+	HiveID string `json:"hiveId"`
+	BoxID  string `json:"boxId"`
+	Type   string `json:"type"`
+}
+
+type TreatmentOfHiveInput struct {
+	HiveID string `json:"hiveId"`
+	Type   string `json:"type"`
+}
+
 type BoxType string
 
 const (

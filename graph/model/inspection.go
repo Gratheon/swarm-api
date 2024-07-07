@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"strconv"
 
 	"github.com/jmoiron/sqlx"
@@ -17,13 +18,17 @@ type Inspection struct {
 
 func (r *Inspection) Get(ID string) (*Inspection, error) {
 	currentInspection := Inspection{}
-	err2 := r.Db.Get(&currentInspection,
+	err := r.Db.Get(&currentInspection,
 		`SELECT *
 		FROM inspections
 		WHERE id=? AND user_id=?
 		LIMIT 1`, ID, r.UserID)
 
-	return &currentInspection, err2
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	return &currentInspection, err
 }
 
 func (r *Inspection) GetLatestByHiveId(hiveID string) (*Inspection, error) {

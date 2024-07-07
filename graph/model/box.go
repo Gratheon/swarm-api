@@ -1,8 +1,10 @@
 package model
 
 import (
-	"github.com/jmoiron/sqlx"
+	"database/sql"
 	"strconv"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Box struct {
@@ -23,6 +25,10 @@ func (r *Box) Get(id string) (*Box, error) {
 		FROM boxes
 		WHERE id=? AND user_id=? AND active=1
 		LIMIT 1`, id, r.UserID)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 
 	return &box, err
 }
@@ -103,26 +109,26 @@ func (r *Box) Count(hiveId string) (int, error) {
 	return count, nil
 }
 
-func (r *Box) SwapBoxPositions(box1ID string, box2ID string) (*bool, error ){
+func (r *Box) SwapBoxPositions(box1ID string, box2ID string) (*bool, error) {
 	ok := true
-	box1,_ := r.Get(box1ID)
-	box2,_ := r.Get(box2ID)
+	box1, _ := r.Get(box1ID)
+	box2, _ := r.Get(box2ID)
 
-	tmpPosition := *box1.Position;
-	box1.Position = box2.Position;
-	box2.Position = &tmpPosition;
+	tmpPosition := *box1.Position
+	box1.Position = box2.Position
+	box2.Position = &tmpPosition
 
-	_, upd1:=r.Update(box1.ID, *box1.Position, box1.Color)
+	_, upd1 := r.Update(box1.ID, *box1.Position, box1.Color)
 
-	if(upd1!=nil){
-		ok=false
-		return &ok, upd1;
+	if upd1 != nil {
+		ok = false
+		return &ok, upd1
 	}
-	_, upd2:=r.Update(box2.ID, *box2.Position, box2.Color)
-	
-	if(upd2!=nil){
-		ok=false
-		return &ok, upd2;
+	_, upd2 := r.Update(box2.ID, *box2.Position, box2.Color)
+
+	if upd2 != nil {
+		ok = false
+		return &ok, upd2
 	}
 
 	return &ok, nil

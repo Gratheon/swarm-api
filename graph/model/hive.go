@@ -1,21 +1,26 @@
 package model
 
 import (
+	"database/sql"
+
 	"github.com/jmoiron/sqlx"
 )
 
 type Hive struct {
 	Db       *sqlx.DB
-	ID       string  `json:"id"`
-	UserID   string  `db:"user_id"`
-	ApiaryID int     `db:"apiary_id"`
-	FamilyID *int    `db:"family_id"`
-	Active   *bool   `db:"active"`
-	Name     *string `json:"name"`
-	Notes    *string `json:"notes"`
-	Note     *string `json:"note"`
-	Color    *string `json:"color"`
-	Boxes    []*Box  `json:"boxes"`
+	ID       string `json:"id"`
+	UserID   string `db:"user_id"`
+	ApiaryID int    `db:"apiary_id"`
+	FamilyID *int   `db:"family_id"`
+	Active   *bool  `db:"active"`
+
+	Name   *string `json:"name"`
+	Notes  *string `json:"notes"`
+	Note   *string `json:"note"`
+	Color  *string `json:"color"`
+	Status *string `json:"status"`
+	Added  *string `json:"added"`
+	Boxes  []*Box  `json:"boxes"`
 }
 
 func (Hive) IsEntity() {}
@@ -27,6 +32,10 @@ func (r *Hive) Get(id string) (*Hive, error) {
 		FROM hives 
 		WHERE id=? AND user_id=? AND active=1
 		LIMIT 1`, id, r.UserID)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 
 	return &hive, err
 }
@@ -91,7 +100,7 @@ func (r *Hive) Update(id string, name *string, notes *string, FamilyID *string) 
 		map[string]interface{}{
 			"id":       id,
 			"name":     name,
-			"notes":     notes,
+			"notes":    notes,
 			"userID":   r.UserID,
 			"familyID": FamilyID,
 		},
