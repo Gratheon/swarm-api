@@ -51,7 +51,8 @@ func (r *Inspection) ListByHiveId(hiveID string) ([]*Inspection, error) {
 	err := r.Db.Select(&list,
 		`SELECT *
 		FROM inspections
-		WHERE user_id=? AND hive_id=?`, r.UserID, hiveID)
+		WHERE user_id=? AND hive_id=?
+		ORDER BY added DESC`, r.UserID, hiveID)
 
 	return list, err
 }

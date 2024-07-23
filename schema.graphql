@@ -11,6 +11,7 @@ schema {
 type Query {
   hive(id: ID!): Hive
   apiary(id: ID!): Apiary
+  hiveFrame(id: ID!): Frame
   hiveFrameSide(id: ID!): FrameSide
   apiaries: [Apiary]
 
