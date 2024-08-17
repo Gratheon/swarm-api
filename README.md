@@ -23,27 +23,17 @@ TODO: add goose or other migration tool.
 ## Development
 Based on [gqlgen](https://gqlgen.com/getting-started/).
 
-- re-run graphql schema -> code generator:
+```
+cp config/config.example.json config/config.dev.json
+make start
+```
+
+To re-generate graphql -> go resolvers, run: 
 ```
 make gen
-```
-
-- start db
-```
-docker-compose up
-``` 
-
-- run server:
-```
-make run
 ```
 
 ## Building
 ```
 make build
-```
-
-## Deployment
-```
-make deploy
 ```
