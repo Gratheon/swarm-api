@@ -58,15 +58,16 @@ func (r *Hive) ListByApiary(apiaryId int) ([]*Hive, error) {
 	return hives, err2
 }
 
-func (r *Hive) Create(input HiveInput) (*Hive, error) {
+func (r *Hive) Create(input HiveInput, familyID *int) (*Hive, error) {
 	tx := r.Db.MustBegin()
 
 	result, err := tx.NamedExec(
-		"INSERT INTO hives (apiary_id, name, user_id) VALUES (:apiaryID, :name, :userID)",
+		"INSERT INTO hives (apiary_id, name, user_id, family_id) VALUES (:apiaryID, :name, :userID, :familyID)",
 		map[string]interface{}{
 			"apiaryID": input.ApiaryID,
 			"name":     input.Name,
 			"userID":   r.UserID,
+			"familyID": familyID,
 		},
 	)
 

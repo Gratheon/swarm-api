@@ -44,7 +44,7 @@ func (r *Family) GetById(id *int) (*Family, error) {
 	return &family, err
 }
 
-func (r *Family) Create(race *string, added *string) (*string, error) {
+func (r *Family) Create(race *string, added *string) (*int, error) {
 	result, err := r.Db.NamedExec(
 		`INSERT INTO families (user_id, race, added) 
 		VALUES (:userID, :race, :added)`,
@@ -61,8 +61,9 @@ func (r *Family) Create(race *string, added *string) (*string, error) {
 
 	id, err := result.LastInsertId()
 
-	strId := strconv.Itoa(int(id))
-	return &strId, err
+	id2 := int(id)
+
+	return &id2, err
 }
 
 func (r *Family) Update(id *string, race *string, added *string) (*int64, error) {
@@ -98,7 +99,12 @@ func (r *Family) Upsert(uid string, hive HiveUpdateInput) (*string, error) {
 			return nil, err
 		}
 	} else {
-		FamilyID, _ = r.Create(hive.Family.Race, hive.Family.Added)
+		familyIDInt, err := r.Create(hive.Family.Race, hive.Family.Added)
+		if err != nil {
+			return nil, err
+		}
+		familyid := strconv.Itoa(*familyIDInt)
+		FamilyID = &familyid
 	}
 	return FamilyID, nil
 }

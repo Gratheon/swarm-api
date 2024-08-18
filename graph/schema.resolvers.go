@@ -209,10 +209,25 @@ func (r *mutationResolver) DeactivateApiary(ctx context.Context, id string) (*bo
 // AddHive is the resolver for the addHive field.
 func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
+
+	race := "unknown"
+	// generate current year
+	year := time.Now().Year()
+	added := strconv.Itoa(year)
+
+	FamilyID, err := (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Create(&race, &added)
+
+	if err != nil {
+		logger.LogError(err)
+	}
+
 	hiveResult, err := (&model.Hive{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).Create(hive)
+	}).Create(hive, FamilyID)
 
 	if err != nil {
 		logger.LogError(err)
