@@ -1,4 +1,4 @@
-
+-- +goose Up
 SET NAMES utf8mb4;
 
 CREATE TABLE `apiaries` (

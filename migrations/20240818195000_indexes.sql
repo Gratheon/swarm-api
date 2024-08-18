@@ -1,3 +1,4 @@
+-- +goose Up
 ALTER TABLE `frames_sides` ADD INDEX (`user_id`);
 ALTER TABLE `frames` ADD INDEX (`user_id`, `box_id`);
 ALTER TABLE `apiaries` ADD INDEX (`user_id`, `active`);

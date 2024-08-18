@@ -1,5 +1,8 @@
 start:
-	make build && COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml up --build
+	make migrate-db-dev
+	make build
+	COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml up --build
+
 stop:
 	COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml down
 
@@ -10,6 +13,14 @@ develop:
 
 update:
 	go get -u all
+
+migrate-db-prod:
+	go install github.com/pressly/goose/v3/cmd/goose@latest
+	DSN=$$(jq -r '.db_dsn_migrate' config/config.prod.json) && $$(go env GOPATH)/bin/goose -dir migrations mysql "$$DSN" up
+
+migrate-db-dev:
+	go install github.com/pressly/goose/v3/cmd/goose@latest
+	DSN=$$(jq -r '.db_dsn_migrate' config/config.dev.json) && $$(go env GOPATH)/bin/goose -dir migrations mysql "$$DSN" up
 
 build:
 	git rev-parse --short HEAD > .version
@@ -27,19 +38,5 @@ gen:
 	go get -d
 	@echo Generating schema.resolvers.go based on schema.graphql:
 	go run github.com/99designs/gqlgen generate
-
-deploy-copy:
-	scp -r Dockerfile schema.graphql .version docker-compose.yml restart.sh root@gratheon.com:/www/api.gratheon.com/
-	scp -r ./swarm-api root@gratheon.com:/www/api.gratheon.com/
-	scp -r config/* root@gratheon.com:/www/api.gratheon.com/config/
-
-deploy-run:
-	ssh root@gratheon.com 'bash /www/api.gratheon.com/restart.sh'
-
-deploy:
-	git rev-parse --short HEAD > .version
-	make build
-	make deploy-copy
-	make deploy-run
 
 .PHONY: run

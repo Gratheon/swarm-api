@@ -1,3 +1,4 @@
+-- +goose Up
 /* 17:19:48 local swarm-api */
 ALTER TABLE `hives` ADD `added` DATETIME NULL AFTER `notes`;
 /* 17:22:44 local swarm-api */
