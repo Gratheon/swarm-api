@@ -25,7 +25,7 @@ func main() {
 	log.Print("Reading config")
 	readConfig()
 
-	log.Print("Initializing logger");
+	log.Print("Initializing logger")
 	logrusInstance := logger.InitLogging()
 
 	log.Print("Initializing redis")
@@ -46,14 +46,14 @@ func main() {
 	}).Handler)
 
 	router.Use(authMiddleware)
-	router.Use(logToBugsnag)
+	//router.Use(logToBugsnag)
 	router.Use(logger.NewStructuredLogger(logrusInstance))
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
 
 	serveStaticFiles(router)
 
-	log.Print("Connecting to DB");
+	log.Print("Connecting to DB")
 	rootResolver := &graph.Resolver{}
 	rootResolver.ConnectToDB()
 

@@ -3,20 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/bugsnag/bugsnag-go"
+	"github.com/Gratheon/swarm-api/logger"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/spf13/viper"
-	"github.com/Gratheon/swarm-api/logger"
 	"net/http"
 )
 
-func logToBugsnag(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx = bugsnag.StartSession(ctx)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
+//func logToBugsnag(next http.Handler) http.Handler {
+//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//		ctx := r.Context()
+//		next.ServeHTTP(w, r.WithContext(ctx))
+//	})
+//}
 
 type Input struct {
 	OperationName string `json:"operationName"` //IntrospectionQuery
