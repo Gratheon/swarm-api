@@ -19,7 +19,7 @@ flowchart LR
 We use goose to manage database migrations.
 To 
 ```bash
-make migrate-db-dev
+just migrate-db-dev
 ```
 
 
@@ -28,15 +28,15 @@ Based on [gqlgen](https://gqlgen.com/getting-started/).
 
 ```
 cp config/config.example.json config/config.dev.json
-make start
+just start
 ```
 
 To re-generate graphql -> go resolvers, run: 
 ```
-make gen
+just gen
 ```
 
 ## Building
 ```
-make build
+just build
 ```
