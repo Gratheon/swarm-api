@@ -39,4 +39,3 @@ gen:
 	@echo Generating schema.resolvers.go based on schema.graphql:
 	go run github.com/99designs/gqlgen generate
 
-.PHONY: run
