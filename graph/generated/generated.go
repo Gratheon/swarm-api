@@ -44,7 +44,6 @@ type ResolverRoot interface {
 	Entity() EntityResolver
 	Family() FamilyResolver
 	Frame() FrameResolver
-	FrameSide() FrameSideResolver
 	Hive() HiveResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -183,9 +182,6 @@ type FamilyResolver interface {
 type FrameResolver interface {
 	LeftSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
 	RightSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
-}
-type FrameSideResolver interface {
-	FrameID(ctx context.Context, obj *model.FrameSide) (*string, error)
 }
 type HiveResolver interface {
 	Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box, error)
@@ -1222,7 +1218,7 @@ enum FrameType {
 type FrameSide @key(fields: "id") {
   id: ID
   isQueenConfirmed: Boolean!
-  frameId: ID # Add field back to schema type, resolver will implement it
+  frameId: ID
 }
 `, BuiltIn: false},
 	{Name: "../../federation/directives.graphql", Input: `
@@ -3590,7 +3586,7 @@ func (ec *executionContext) _FrameSide_frameId(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.FrameSide().FrameID(rctx, obj)
+		return obj.FrameID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3599,17 +3595,17 @@ func (ec *executionContext) _FrameSide_frameId(ctx context.Context, field graphq
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*int)
 	fc.Result = res
-	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOID2ᚖint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_FrameSide_frameId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FrameSide",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -9168,41 +9164,10 @@ func (ec *executionContext) _FrameSide(ctx context.Context, sel ast.SelectionSet
 		case "isQueenConfirmed":
 			out.Values[i] = ec._FrameSide_isQueenConfirmed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "frameId":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._FrameSide_frameId(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._FrameSide_frameId(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11216,6 +11181,22 @@ func (ec *executionContext) unmarshalOID2int(ctx context.Context, v any) (int, e
 
 func (ec *executionContext) marshalOID2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
 	res := graphql.MarshalInt(v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOID2ᚖint(ctx context.Context, v any) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt(*v)
 	return res
 }
 
