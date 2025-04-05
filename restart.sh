@@ -4,7 +4,7 @@ cd /www/swarm-api/
 
 echo "Starting build process..."
 git rev-parse --short HEAD > .version
-@echo Building binary:
+echo Building binary:
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 go build \
     -a \
