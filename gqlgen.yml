@@ -7,7 +7,7 @@ exec:
   filename: graph/generated/generated.go
   package: generated
 
-# Uncomment to enable federation
+  
 federation:
   filename: graph/generated/federation.go
   package: generated

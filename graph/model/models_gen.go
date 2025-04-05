@@ -10,24 +10,24 @@ import (
 
 type ApiaryInput struct {
 	Name string  `json:"name"`
-	Lat  *string `json:"lat"`
-	Lng  *string `json:"lng"`
+	Lat  *string `json:"lat,omitempty"`
+	Lng  *string `json:"lng,omitempty"`
 }
 
 type BoxInput struct {
-	ID       *string `json:"id"`
+	ID       *string `json:"id,omitempty"`
 	Position int     `json:"position"`
-	Color    *string `json:"color"`
+	Color    *string `json:"color,omitempty"`
 	Type     BoxType `json:"type"`
 	// ignored, added for frontend ease
-	HiveID *int         `json:"hiveId"`
-	Family *FamilyInput `json:"family"`
+	HiveID *int         `json:"hiveId,omitempty"`
+	Family *FamilyInput `json:"family,omitempty"`
 }
 
 type FamilyInput struct {
-	ID    *string `json:"id"`
-	Race  *string `json:"race"`
-	Added *string `json:"added"`
+	ID    *string `json:"id,omitempty"`
+	Race  *string `json:"race,omitempty"`
+	Added *string `json:"added,omitempty"`
 }
 
 type FrameInput struct {
@@ -37,7 +37,7 @@ type FrameInput struct {
 	// ignored, added for frontend ease
 	BoxID string `json:"boxId"`
 	// ignored, added for frontend ease
-	HiveID *int `json:"hiveId"`
+	HiveID *int `json:"hiveId,omitempty"`
 }
 
 type HiveInput struct {
@@ -45,19 +45,27 @@ type HiveInput struct {
 	Name       string    `json:"name"`
 	BoxCount   int       `json:"boxCount"`
 	FrameCount int       `json:"frameCount"`
-	Colors     []*string `json:"colors"`
+	Colors     []*string `json:"colors,omitempty"`
 }
 
 type HiveUpdateInput struct {
 	ID     string       `json:"id"`
-	Name   *string      `json:"name"`
-	Notes  *string      `json:"notes"`
-	Family *FamilyInput `json:"family"`
+	Name   *string      `json:"name,omitempty"`
+	Notes  *string      `json:"notes,omitempty"`
+	Family *FamilyInput `json:"family,omitempty"`
 }
 
 type InspectionInput struct {
 	HiveID int    `json:"hiveId"`
 	Data   string `json:"data"`
+}
+
+// The mutation type, represents all updates we can make to our data
+type Mutation struct {
+}
+
+// The query type, represents all of the entry points into our object graph
+type Query struct {
 }
 
 type TreatmentOfBoxInput struct {
@@ -103,7 +111,7 @@ func (e BoxType) String() string {
 	return string(e)
 }
 
-func (e *BoxType) UnmarshalGQL(v interface{}) error {
+func (e *BoxType) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -150,7 +158,7 @@ func (e FrameType) String() string {
 	return string(e)
 }
 
-func (e *FrameType) UnmarshalGQL(v interface{}) error {
+func (e *FrameType) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
