@@ -32,9 +32,10 @@ build:
         *.go
 
 gen:
+    # Ensure gqlgen tool is available
     go get github.com/99designs/gqlgen
-    go get github.com/99designs/gqlgen/internal/imports@v0.17.20
-    go get github.com/99designs/gqlgen/codegen/config@v0.17.20
-    go get -d
+    # Removed lines forcing specific old sub-package versions
+    # Let go get resolve dependencies based on go.mod
+    go get -d # Note: -d flag is deprecated but kept for compatibility if needed
     @echo Generating schema.resolvers.go based on schema.graphql:
     go run github.com/99designs/gqlgen generate

@@ -42,6 +42,7 @@ type Mutation {
 
   treatHive(treatment: TreatmentOfHiveInput!): Boolean
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
+  confirmFrameSideQueen(frameSideId: ID!, isConfirmed: Boolean!): FrameSide
 }
 
 input TreatmentOfBoxInput {
@@ -205,4 +206,6 @@ enum FrameType {
 
 type FrameSide @key(fields: "id") {
   id: ID
+  isQueenConfirmed: Boolean!
+  frameId: ID
 }

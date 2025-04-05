@@ -11,16 +11,36 @@ type FrameSide struct {
 	Db                 *sqlx.DB
 	ID                 *string `json:"id" db:"id"`
 	UserID             string  `db:"user_id"`
+	IsQueenConfirmed   bool    `json:"isQueenConfirmed" db:"is_queen_confirmed"`
+	FrameID            *int    `json:"frameId" db:"frame_id"` // Add FrameID field back for optimized query
 }
 
 func (FrameSide) IsEntity() {}
 
 func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 	frameSide := FrameSide{}
-	err := r.Db.Get(&frameSide, "SELECT * FROM `frames_sides` WHERE id=? AND user_id=? LIMIT 1", id, r.UserID)
+	// Updated query to LEFT JOIN frames and select frame_id
+	query := `
+		SELECT fs.*, f.id as frame_id
+		FROM frames_sides fs
+		LEFT JOIN frames f ON (fs.id = f.left_id OR fs.id = f.right_id) AND f.user_id = fs.user_id AND f.active = 1
+		WHERE fs.id = ? AND fs.user_id = ?
+		LIMIT 1`
+	err := r.Db.Get(&frameSide, query, id, r.UserID)
 
 	if err == sql.ErrNoRows {
-		return nil, nil
+		// It's possible the FrameSide exists but has no parent Frame (orphan)
+		// Try fetching just the FrameSide data in that case
+		errFallback := r.Db.Get(&frameSide, "SELECT * FROM `frames_sides` WHERE id=? AND user_id=? LIMIT 1", id, r.UserID)
+		if errFallback == sql.ErrNoRows {
+			return nil, nil // Truly doesn't exist
+		}
+		if errFallback != nil {
+			logger.LogError(errFallback)
+			return nil, errFallback // Error during fallback fetch
+		}
+		// FrameSide exists but no parent frame found, FrameID will be nil
+		return &frameSide, nil
 	}
 	
 	if err != nil {
@@ -52,3 +72,38 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 
 	return &id, err
 }
+
+// UpdateQueenConfirmation updates the is_queen_confirmed status for a specific frame side.
+func (r *FrameSide) UpdateQueenConfirmation(id int, confirmed bool) error {
+	_, err := r.Db.Exec(
+		"UPDATE frames_sides SET is_queen_confirmed = ? WHERE id = ? AND user_id = ?",
+		confirmed,
+		id,
+		r.UserID,
+	)
+
+	if err != nil {
+		logger.LogError(err)
+		return err
+	}
+
+	return nil
+}
+
+// Reverted - This method is no longer needed as frame_id is not on frames_sides
+// // UpdateFrameId sets the frame_id for a specific frame side.
+// func (r *FrameSide) UpdateFrameId(sideId int64, frameId int64) error {
+// 	_, err := r.Db.Exec(
+// 		"UPDATE frames_sides SET frame_id = ? WHERE id = ? AND user_id = ?",
+// 		frameId,
+// 		sideId,
+// 		r.UserID,
+// 	)
+
+// 	if err != nil {
+// 		logger.LogError(err)
+// 		return err
+// 	}
+
+// 	return nil
+// }

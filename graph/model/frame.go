@@ -168,3 +168,23 @@ func (r *Frame) Deactivate(id string) (*bool, error) {
 
 	return &success, err
 }
+
+// GetFrameBySideID finds the parent Frame ID for a given FrameSide ID.
+func (r *Frame) GetFrameBySideID(sideID int) (*int, error) {
+	var frameId int
+	err := r.Db.Get(&frameId,
+		`SELECT id
+		FROM frames
+		WHERE (left_id = ? OR right_id = ?) AND user_id = ? AND active = 1
+		LIMIT 1`, sideID, sideID, r.UserID)
+
+	if err == sql.ErrNoRows {
+		// No frame found for this side ID, might be an orphan or error
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &frameId, nil
+}
