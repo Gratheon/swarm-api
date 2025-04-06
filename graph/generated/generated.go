@@ -1031,7 +1031,6 @@ type Mutation {
 
   treatHive(treatment: TreatmentOfHiveInput!): Boolean
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
-  # confirmFrameSideQueen removed
 }
 
 input TreatmentOfBoxInput {
@@ -1195,7 +1194,6 @@ enum FrameType {
 
 type FrameSide @key(fields: "id") {
   id: ID
-  # isQueenConfirmed removed
   frameId: ID
 }
 `, BuiltIn: false},
