@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -518,43 +517,6 @@ func (r *mutationResolver) TreatBox(ctx context.Context, treatment model.Treatme
 		logger.LogError(err2)
 	}
 	return &ok, err
-}
-
-// ConfirmFrameSideQueen is the resolver for the confirmFrameSideQueen field.
-func (r *mutationResolver) ConfirmFrameSideQueen(ctx context.Context, frameSideID string, isConfirmed bool) (*model.FrameSide, error) {
-	uid := ctx.Value("userID").(string)
-	frameSideModel := &model.FrameSide{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}
-
-	// Convert frameSideID string to int
-	idNum, err := strconv.Atoi(frameSideID)
-	if err != nil {
-		logger.LogError(fmt.Errorf("invalid frameSideID: %w", err))
-		return nil, fmt.Errorf("invalid frame side ID")
-	}
-
-	// Call a method on the model to update the database
-	// NOTE: This assumes a method `UpdateQueenConfirmation(id int, confirmed bool) error` exists in the model.FrameSide implementation.
-	err = frameSideModel.UpdateQueenConfirmation(idNum, isConfirmed)
-	if err != nil {
-		logger.LogError(fmt.Errorf("failed to update queen confirmation for frame side %d: %w", idNum, err))
-		return nil, fmt.Errorf("failed to update queen confirmation")
-	}
-
-	// Fetch and return the updated FrameSide object
-	// Need to pass pointer for Get method based on HiveFrameSide query resolver
-	idNumPtr := &idNum
-	updatedFrameSide, err := frameSideModel.Get(idNumPtr)
-	if err != nil {
-		logger.LogError(fmt.Errorf("failed to fetch updated frame side %d: %w", idNum, err))
-		return nil, fmt.Errorf("failed to fetch updated frame side")
-	}
-
-	// TODO: Consider publishing a Redis event if needed, similar to other mutations
-
-	return updatedFrameSide, nil
 }
 
 // Hive is the resolver for the hive field.

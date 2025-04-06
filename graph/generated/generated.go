@@ -93,9 +93,8 @@ type ComplexityRoot struct {
 	}
 
 	FrameSide struct {
-		FrameID          func(childComplexity int) int
-		ID               func(childComplexity int) int
-		IsQueenConfirmed func(childComplexity int) int
+		FrameID func(childComplexity int) int
+		ID      func(childComplexity int) int
 	}
 
 	Hive struct {
@@ -120,23 +119,22 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddApiary             func(childComplexity int, apiary model.ApiaryInput) int
-		AddBox                func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
-		AddFrame              func(childComplexity int, boxID string, typeArg string, position int) int
-		AddHive               func(childComplexity int, hive model.HiveInput) int
-		AddInspection         func(childComplexity int, inspection model.InspectionInput) int
-		ConfirmFrameSideQueen func(childComplexity int, frameSideID string, isConfirmed bool) int
-		DeactivateApiary      func(childComplexity int, id string) int
-		DeactivateBox         func(childComplexity int, id string) int
-		DeactivateFrame       func(childComplexity int, id string) int
-		DeactivateHive        func(childComplexity int, id string) int
-		SwapBoxPositions      func(childComplexity int, id string, id2 string) int
-		TreatBox              func(childComplexity int, treatment model.TreatmentOfBoxInput) int
-		TreatHive             func(childComplexity int, treatment model.TreatmentOfHiveInput) int
-		UpdateApiary          func(childComplexity int, id string, apiary model.ApiaryInput) int
-		UpdateBoxColor        func(childComplexity int, id string, color *string) int
-		UpdateFrames          func(childComplexity int, frames []*model.FrameInput) int
-		UpdateHive            func(childComplexity int, hive model.HiveUpdateInput) int
+		AddApiary        func(childComplexity int, apiary model.ApiaryInput) int
+		AddBox           func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
+		AddFrame         func(childComplexity int, boxID string, typeArg string, position int) int
+		AddHive          func(childComplexity int, hive model.HiveInput) int
+		AddInspection    func(childComplexity int, inspection model.InspectionInput) int
+		DeactivateApiary func(childComplexity int, id string) int
+		DeactivateBox    func(childComplexity int, id string) int
+		DeactivateFrame  func(childComplexity int, id string) int
+		DeactivateHive   func(childComplexity int, id string) int
+		SwapBoxPositions func(childComplexity int, id string, id2 string) int
+		TreatBox         func(childComplexity int, treatment model.TreatmentOfBoxInput) int
+		TreatHive        func(childComplexity int, treatment model.TreatmentOfHiveInput) int
+		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
+		UpdateBoxColor   func(childComplexity int, id string, color *string) int
+		UpdateFrames     func(childComplexity int, frames []*model.FrameInput) int
+		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
 	}
 
 	Query struct {
@@ -209,7 +207,6 @@ type MutationResolver interface {
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
 	TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error)
 	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
-	ConfirmFrameSideQueen(ctx context.Context, frameSideID string, isConfirmed bool) (*model.FrameSide, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -432,13 +429,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.FrameSide.ID(childComplexity), true
 
-	case "FrameSide.isQueenConfirmed":
-		if e.complexity.FrameSide.IsQueenConfirmed == nil {
-			break
-		}
-
-		return e.complexity.FrameSide.IsQueenConfirmed(childComplexity), true
-
 	case "Hive.added":
 		if e.complexity.Hive.Added == nil {
 			break
@@ -603,18 +593,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.AddInspection(childComplexity, args["inspection"].(model.InspectionInput)), true
-
-	case "Mutation.confirmFrameSideQueen":
-		if e.complexity.Mutation.ConfirmFrameSideQueen == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_confirmFrameSideQueen_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.ConfirmFrameSideQueen(childComplexity, args["frameSideId"].(string), args["isConfirmed"].(bool)), true
 
 	case "Mutation.deactivateApiary":
 		if e.complexity.Mutation.DeactivateApiary == nil {
@@ -1053,7 +1031,7 @@ type Mutation {
 
   treatHive(treatment: TreatmentOfHiveInput!): Boolean
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
-  confirmFrameSideQueen(frameSideId: ID!, isConfirmed: Boolean!): FrameSide
+  # confirmFrameSideQueen removed
 }
 
 input TreatmentOfBoxInput {
@@ -1217,7 +1195,7 @@ enum FrameType {
 
 type FrameSide @key(fields: "id") {
   id: ID
-  isQueenConfirmed: Boolean!
+  # isQueenConfirmed removed
   frameId: ID
 }
 `, BuiltIn: false},
@@ -1564,57 +1542,6 @@ func (ec *executionContext) field_Mutation_addInspection_argsInspection(
 	}
 
 	var zeroVal model.InspectionInput
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_confirmFrameSideQueen_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_confirmFrameSideQueen_argsFrameSideID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["frameSideId"] = arg0
-	arg1, err := ec.field_Mutation_confirmFrameSideQueen_argsIsConfirmed(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["isConfirmed"] = arg1
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_confirmFrameSideQueen_argsFrameSideID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["frameSideId"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("frameSideId"))
-	if tmp, ok := rawArgs["frameSideId"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_confirmFrameSideQueen_argsIsConfirmed(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (bool, error) {
-	if _, ok := rawArgs["isConfirmed"]; !ok {
-		var zeroVal bool
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("isConfirmed"))
-	if tmp, ok := rawArgs["isConfirmed"]; ok {
-		return ec.unmarshalNBoolean2bool(ctx, tmp)
-	}
-
-	var zeroVal bool
 	return zeroVal, nil
 }
 
@@ -2896,8 +2823,6 @@ func (ec *executionContext) fieldContext_Entity_findFrameSideByID(ctx context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "isQueenConfirmed":
-				return ec.fieldContext_FrameSide_isQueenConfirmed(ctx, field)
 			case "frameId":
 				return ec.fieldContext_FrameSide_frameId(ctx, field)
 			}
@@ -3427,8 +3352,6 @@ func (ec *executionContext) fieldContext_Frame_leftSide(_ context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "isQueenConfirmed":
-				return ec.fieldContext_FrameSide_isQueenConfirmed(ctx, field)
 			case "frameId":
 				return ec.fieldContext_FrameSide_frameId(ctx, field)
 			}
@@ -3476,8 +3399,6 @@ func (ec *executionContext) fieldContext_Frame_rightSide(_ context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "isQueenConfirmed":
-				return ec.fieldContext_FrameSide_isQueenConfirmed(ctx, field)
 			case "frameId":
 				return ec.fieldContext_FrameSide_frameId(ctx, field)
 			}
@@ -3523,50 +3444,6 @@ func (ec *executionContext) fieldContext_FrameSide_id(_ context.Context, field g
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FrameSide_isQueenConfirmed(ctx context.Context, field graphql.CollectedField, obj *model.FrameSide) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FrameSide_isQueenConfirmed(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsQueenConfirmed, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FrameSide_isQueenConfirmed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FrameSide",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5244,66 +5121,6 @@ func (ec *executionContext) fieldContext_Mutation_treatBox(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_confirmFrameSideQueen(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_confirmFrameSideQueen(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ConfirmFrameSideQueen(rctx, fc.Args["frameSideId"].(string), fc.Args["isConfirmed"].(bool))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.FrameSide)
-	fc.Result = res
-	return ec.marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_confirmFrameSideQueen(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "isQueenConfirmed":
-				return ec.fieldContext_FrameSide_isQueenConfirmed(ctx, field)
-			case "frameId":
-				return ec.fieldContext_FrameSide_frameId(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FrameSide", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_confirmFrameSideQueen_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_hive(ctx, field)
 	if err != nil {
@@ -5548,8 +5365,6 @@ func (ec *executionContext) fieldContext_Query_hiveFrameSide(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_FrameSide_id(ctx, field)
-			case "isQueenConfirmed":
-				return ec.fieldContext_FrameSide_isQueenConfirmed(ctx, field)
 			case "frameId":
 				return ec.fieldContext_FrameSide_frameId(ctx, field)
 			}
@@ -9161,11 +8976,6 @@ func (ec *executionContext) _FrameSide(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = graphql.MarshalString("FrameSide")
 		case "id":
 			out.Values[i] = ec._FrameSide_id(ctx, field, obj)
-		case "isQueenConfirmed":
-			out.Values[i] = ec._FrameSide_isQueenConfirmed(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "frameId":
 			out.Values[i] = ec._FrameSide_frameId(ctx, field, obj)
 		default:
@@ -9593,10 +9403,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "treatBox":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_treatBox(ctx, field)
-			})
-		case "confirmFrameSideQueen":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_confirmFrameSideQueen(ctx, field)
 			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
