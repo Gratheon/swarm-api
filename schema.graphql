@@ -16,6 +16,7 @@ type Query {
   apiaries: [Apiary]
 
   inspection(inspectionId: ID!): Inspection
+  randomHiveName(language: String): String
   inspections(hiveId: ID!, limit: Int): [Inspection]
 }
 

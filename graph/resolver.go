@@ -1,12 +1,19 @@
 package graph
 
 import (
+	_ "embed"         // Blank import for embed directive
+	"encoding/json" // Import encoding/json
 	"fmt"
+	"math/rand" // Import math/rand
+	"time"      // Import time
 
+	"github.com/Gratheon/swarm-api/logger"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
-	"github.com/Gratheon/swarm-api/logger"
 )
+
+//go:embed female-names.json
+var femaleNamesJSONString string // Embed as string from the same directory
 
 //go:generate go run github.com/99designs/gqlgen -v
 
@@ -15,10 +22,19 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Db *sqlx.DB
+	Db             *sqlx.DB
+	femaleNamesMap map[string][]string // Add map to resolver
 }
 
 func (r *Resolver) ConnectToDB() {
+	// Parse the embedded JSON string during initialization
+	err := json.Unmarshal([]byte(femaleNamesJSONString), &r.femaleNamesMap) // Unmarshal into resolver map
+	if err != nil {
+		logger.LogFatal(err) // Use LogFatal
+	}
+	// Seed the random number generator once
+	rand.Seed(time.Now().UnixNano())
+
 	dsn := viper.GetString("db_dsn")
 
 	logger.LogInfo(fmt.Sprintf("Connecting to DB %s", dsn))

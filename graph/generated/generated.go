@@ -145,6 +145,7 @@ type ComplexityRoot struct {
 		HiveFrameSide      func(childComplexity int, id string) int
 		Inspection         func(childComplexity int, inspectionID string) int
 		Inspections        func(childComplexity int, hiveID string, limit *int) int
+		RandomHiveName     func(childComplexity int, language *string) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]any) int
 	}
@@ -215,6 +216,7 @@ type QueryResolver interface {
 	HiveFrameSide(ctx context.Context, id string) (*model.FrameSide, error)
 	Apiaries(ctx context.Context) ([]*model.Apiary, error)
 	Inspection(ctx context.Context, inspectionID string) (*model.Inspection, error)
+	RandomHiveName(ctx context.Context, language *string) (*string, error)
 	Inspections(ctx context.Context, hiveID string, limit *int) ([]*model.Inspection, error)
 }
 
@@ -805,6 +807,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Inspections(childComplexity, args["hiveId"].(string), args["limit"].(*int)), true
 
+	case "Query.randomHiveName":
+		if e.complexity.Query.RandomHiveName == nil {
+			break
+		}
+
+		args, err := ec.field_Query_randomHiveName_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.RandomHiveName(childComplexity, args["language"].(*string)), true
+
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
 			break
@@ -1005,6 +1019,7 @@ type Query {
   apiaries: [Apiary]
 
   inspection(inspectionId: ID!): Inspection
+  randomHiveName(language: String): String
   inspections(hiveId: ID!, limit: Int): [Inspection]
 }
 
@@ -2164,6 +2179,34 @@ func (ec *executionContext) field_Query_inspections_argsLimit(
 	}
 
 	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_randomHiveName_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_randomHiveName_argsLanguage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["language"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_randomHiveName_argsLanguage(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["language"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("language"))
+	if tmp, ok := rawArgs["language"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
 	return zeroVal, nil
 }
 
@@ -5494,6 +5537,58 @@ func (ec *executionContext) fieldContext_Query_inspection(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_inspection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_randomHiveName(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_randomHiveName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().RandomHiveName(rctx, fc.Args["language"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_randomHiveName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_randomHiveName_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9549,6 +9644,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_inspection(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "randomHiveName":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_randomHiveName(ctx, field)
 				return res
 			}
 
