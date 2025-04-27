@@ -43,6 +43,8 @@ type Mutation {
 
   treatHive(treatment: TreatmentOfHiveInput!): Boolean
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
+
+  markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
 }
 
 input TreatmentOfBoxInput {
@@ -102,6 +104,8 @@ type Hive @key(fields: "id") {
   """ true if added < 1 day """
   isNew: Boolean!
   lastInspection: DateTime
+  collapse_date: DateTime
+  collapse_cause: String
 }
 
 input FamilyInput{

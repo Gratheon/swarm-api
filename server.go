@@ -68,7 +68,7 @@ func main() {
 	log.Printf("Server running on http://%s:%s/graphql", httpHost)
 
 	if err != nil {
-		logger.LogError(err)
+		logger.Error(err.Error())
 		panic(err)
 	}
 }
@@ -78,7 +78,7 @@ func serveStaticFiles(router *chi.Mux) {
 	fs := http.FileServer(http.Dir(root))
 
 	router.Get("/files/*", func(w http.ResponseWriter, r *http.Request) {
-		logger.LogInfo(root + r.RequestURI)
+		logger.Info(root + r.RequestURI)
 		if _, err := os.Stat(root + r.RequestURI); os.IsNotExist(err) {
 			http.StripPrefix(r.RequestURI, fs).ServeHTTP(w, r)
 		} else {

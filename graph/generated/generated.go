@@ -101,6 +101,8 @@ type ComplexityRoot struct {
 		Added           func(childComplexity int) int
 		BoxCount        func(childComplexity int) int
 		Boxes           func(childComplexity int) int
+		CollapseCause   func(childComplexity int) int
+		CollapseDate    func(childComplexity int) int
 		Family          func(childComplexity int) int
 		ID              func(childComplexity int) int
 		InspectionCount func(childComplexity int) int
@@ -119,22 +121,23 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddApiary        func(childComplexity int, apiary model.ApiaryInput) int
-		AddBox           func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
-		AddFrame         func(childComplexity int, boxID string, typeArg string, position int) int
-		AddHive          func(childComplexity int, hive model.HiveInput) int
-		AddInspection    func(childComplexity int, inspection model.InspectionInput) int
-		DeactivateApiary func(childComplexity int, id string) int
-		DeactivateBox    func(childComplexity int, id string) int
-		DeactivateFrame  func(childComplexity int, id string) int
-		DeactivateHive   func(childComplexity int, id string) int
-		SwapBoxPositions func(childComplexity int, id string, id2 string) int
-		TreatBox         func(childComplexity int, treatment model.TreatmentOfBoxInput) int
-		TreatHive        func(childComplexity int, treatment model.TreatmentOfHiveInput) int
-		UpdateApiary     func(childComplexity int, id string, apiary model.ApiaryInput) int
-		UpdateBoxColor   func(childComplexity int, id string, color *string) int
-		UpdateFrames     func(childComplexity int, frames []*model.FrameInput) int
-		UpdateHive       func(childComplexity int, hive model.HiveUpdateInput) int
+		AddApiary           func(childComplexity int, apiary model.ApiaryInput) int
+		AddBox              func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
+		AddFrame            func(childComplexity int, boxID string, typeArg string, position int) int
+		AddHive             func(childComplexity int, hive model.HiveInput) int
+		AddInspection       func(childComplexity int, inspection model.InspectionInput) int
+		DeactivateApiary    func(childComplexity int, id string) int
+		DeactivateBox       func(childComplexity int, id string) int
+		DeactivateFrame     func(childComplexity int, id string) int
+		DeactivateHive      func(childComplexity int, id string) int
+		MarkHiveAsCollapsed func(childComplexity int, id string, collapseDate string, collapseCause string) int
+		SwapBoxPositions    func(childComplexity int, id string, id2 string) int
+		TreatBox            func(childComplexity int, treatment model.TreatmentOfBoxInput) int
+		TreatHive           func(childComplexity int, treatment model.TreatmentOfHiveInput) int
+		UpdateApiary        func(childComplexity int, id string, apiary model.ApiaryInput) int
+		UpdateBoxColor      func(childComplexity int, id string, color *string) int
+		UpdateFrames        func(childComplexity int, frames []*model.FrameInput) int
+		UpdateHive          func(childComplexity int, hive model.HiveUpdateInput) int
 	}
 
 	Query struct {
@@ -208,6 +211,7 @@ type MutationResolver interface {
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
 	TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error)
 	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
+	MarkHiveAsCollapsed(ctx context.Context, id string, collapseDate string, collapseCause string) (*model.Hive, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -234,7 +238,7 @@ func (e *executableSchema) Schema() *ast.Schema {
 	return parsedSchema
 }
 
-func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
+func (e *executableSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
@@ -321,7 +325,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Entity_findFrameSideByID_args(context.TODO(), rawArgs)
+		args, err := ec.field_Entity_findFrameSideByID_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -333,7 +337,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Entity_findHiveByID_args(context.TODO(), rawArgs)
+		args, err := ec.field_Entity_findHiveByID_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -452,6 +456,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Hive.Boxes(childComplexity), true
 
+	case "Hive.collapse_cause":
+		if e.complexity.Hive.CollapseCause == nil {
+			break
+		}
+
+		return e.complexity.Hive.CollapseCause(childComplexity), true
+
+	case "Hive.collapse_date":
+		if e.complexity.Hive.CollapseDate == nil {
+			break
+		}
+
+		return e.complexity.Hive.CollapseDate(childComplexity), true
+
 	case "Hive.family":
 		if e.complexity.Hive.Family == nil {
 			break
@@ -541,7 +559,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_addApiary_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_addApiary_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -553,7 +571,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_addBox_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_addBox_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -565,7 +583,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_addFrame_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_addFrame_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -577,7 +595,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_addHive_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_addHive_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -589,7 +607,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_addInspection_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_addInspection_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -601,7 +619,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_deactivateApiary_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deactivateApiary_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -613,7 +631,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_deactivateBox_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deactivateBox_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -625,7 +643,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_deactivateFrame_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deactivateFrame_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -637,19 +655,31 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_deactivateHive_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deactivateHive_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.DeactivateHive(childComplexity, args["id"].(string)), true
 
+	case "Mutation.markHiveAsCollapsed":
+		if e.complexity.Mutation.MarkHiveAsCollapsed == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_markHiveAsCollapsed_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.MarkHiveAsCollapsed(childComplexity, args["id"].(string), args["collapseDate"].(string), args["collapseCause"].(string)), true
+
 	case "Mutation.swapBoxPositions":
 		if e.complexity.Mutation.SwapBoxPositions == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_swapBoxPositions_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_swapBoxPositions_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -661,7 +691,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_treatBox_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_treatBox_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -673,7 +703,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_treatHive_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_treatHive_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -685,7 +715,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateApiary_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateApiary_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -697,7 +727,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateBoxColor_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateBoxColor_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -709,7 +739,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateFrames_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateFrames_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -721,7 +751,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateHive_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateHive_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -740,7 +770,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_apiary_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_apiary_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -752,7 +782,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_hive_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_hive_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -764,7 +794,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_hiveFrame_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_hiveFrame_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -776,7 +806,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_hiveFrameSide_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_hiveFrameSide_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -788,7 +818,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_inspection_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_inspection_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -800,7 +830,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_inspections_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_inspections_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -812,7 +842,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_randomHiveName_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_randomHiveName_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -831,7 +861,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query__entities_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query__entities_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1046,6 +1076,8 @@ type Mutation {
 
   treatHive(treatment: TreatmentOfHiveInput!): Boolean
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
+
+  markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
 }
 
 input TreatmentOfBoxInput {
@@ -1105,6 +1137,8 @@ type Hive @key(fields: "id") {
   """ true if added < 1 day """
   isNew: Boolean!
   lastInspection: DateTime
+  collapse_date: DateTime
+  collapse_cause: String
 }
 
 input FamilyInput{
@@ -1664,6 +1698,80 @@ func (ec *executionContext) field_Mutation_deactivateHive_argsID(
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 	if tmp, ok := rawArgs["id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_markHiveAsCollapsed_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_markHiveAsCollapsed_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_markHiveAsCollapsed_argsCollapseDate(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["collapseDate"] = arg1
+	arg2, err := ec.field_Mutation_markHiveAsCollapsed_argsCollapseCause(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["collapseCause"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_markHiveAsCollapsed_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_markHiveAsCollapsed_argsCollapseDate(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["collapseDate"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("collapseDate"))
+	if tmp, ok := rawArgs["collapseDate"]; ok {
+		return ec.unmarshalNDateTime2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_markHiveAsCollapsed_argsCollapseCause(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["collapseCause"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("collapseCause"))
+	if tmp, ok := rawArgs["collapseCause"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
 	var zeroVal string
@@ -2473,6 +2581,10 @@ func (ec *executionContext) fieldContext_Apiary_hives(_ context.Context, field g
 				return ec.fieldContext_Hive_isNew(ctx, field)
 			case "lastInspection":
 				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2945,6 +3057,10 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 				return ec.fieldContext_Hive_isNew(ctx, field)
 			case "lastInspection":
 				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -4023,6 +4139,88 @@ func (ec *executionContext) fieldContext_Hive_lastInspection(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Hive_collapse_date(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_collapse_date(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CollapseDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalODateTime2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Hive_collapse_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_collapse_cause(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Hive_collapse_cause(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CollapseCause, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Hive_collapse_cause(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Inspection_id(ctx context.Context, field graphql.CollectedField, obj *model.Inspection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Inspection_id(ctx, field)
 	if err != nil {
@@ -4441,6 +4639,10 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 				return ec.fieldContext_Hive_isNew(ctx, field)
 			case "lastInspection":
 				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -4517,6 +4719,10 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 				return ec.fieldContext_Hive_isNew(ctx, field)
 			case "lastInspection":
 				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -5162,6 +5368,86 @@ func (ec *executionContext) fieldContext_Mutation_treatBox(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_markHiveAsCollapsed(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_markHiveAsCollapsed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().MarkHiveAsCollapsed(rctx, fc.Args["id"].(string), fc.Args["collapseDate"].(string), fc.Args["collapseCause"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Hive)
+	fc.Result = res
+	return ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markHiveAsCollapsed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Hive_name(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markHiveAsCollapsed_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_hive(ctx, field)
 	if err != nil {
@@ -5220,6 +5506,10 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 				return ec.fieldContext_Hive_isNew(ctx, field)
 			case "lastInspection":
 				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -9328,6 +9618,10 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "collapse_date":
+			out.Values[i] = ec._Hive_collapse_date(ctx, field, obj)
+		case "collapse_cause":
+			out.Values[i] = ec._Hive_collapse_cause(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9496,6 +9790,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "treatBox":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_treatBox(ctx, field)
+			})
+		case "markHiveAsCollapsed":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markHiveAsCollapsed(ctx, field)
 			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

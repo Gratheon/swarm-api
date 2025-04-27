@@ -30,18 +30,18 @@ func (r *Resolver) ConnectToDB() {
 	// Parse the embedded JSON string during initialization
 	err := json.Unmarshal([]byte(femaleNamesJSONString), &r.femaleNamesMap) // Unmarshal into resolver map
 	if err != nil {
-		logger.LogFatal(err) // Use LogFatal
+		logger.Fatal(err.Error()) // Use LogFatal
 	}
 	// Seed the random number generator once
 	rand.Seed(time.Now().UnixNano())
 
 	dsn := viper.GetString("db_dsn")
 
-	logger.LogInfo(fmt.Sprintf("Connecting to DB %s", dsn))
+	logger.Info(fmt.Sprintf("Connecting to DB %s", dsn))
 	db, err := sqlx.Connect("mysql", dsn)
 
 	if err != nil {
-		logger.LogFatal(err)
+		logger.Fatal(err.Error())
 	}
 
 	r.Db = db

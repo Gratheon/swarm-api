@@ -36,7 +36,7 @@ func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 			return nil, nil // Truly doesn't exist
 		}
 		if errFallback != nil {
-			logger.LogError(errFallback)
+			logger.Error(errFallback.Error())
 			return nil, errFallback // Error during fallback fetch
 		}
 		// FrameSide exists but no parent frame found, FrameID will be nil
@@ -44,7 +44,7 @@ func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 	}
 	
 	if err != nil {
-		logger.LogError(err)
+		logger.Error(err.Error())
 		return nil, nil
 	}
 
@@ -64,7 +64,7 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 	)
 
 	if err != nil {
-		logger.LogError(err)
+		logger.Error(err.Error())
 		return nil, err
 	}
 

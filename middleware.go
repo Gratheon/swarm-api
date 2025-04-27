@@ -35,7 +35,7 @@ func authMiddleware(next http.Handler) http.Handler {
 			unauthorizedBodyResponse := "{\"success\":false, \"errors\":[\"Unauthorized\"]}"
 
 			if token == nil || !token.Valid {
-				logger.LogError(err)
+				logger.Error(err.Error())
 				http.Error(w, unauthorizedBodyResponse, http.StatusForbidden)
 				return
 			}
@@ -43,7 +43,7 @@ func authMiddleware(next http.Handler) http.Handler {
 			claims, ok := token.Claims.(jwt.MapClaims)
 
 			if !ok {
-				logger.LogError(err)
+				logger.Error(err.Error())
 				http.Error(w, unauthorizedBodyResponse, http.StatusForbidden)
 				return
 			}

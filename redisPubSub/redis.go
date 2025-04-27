@@ -36,7 +36,7 @@ func PublishEvent(uid string, entity string, entityID string, verb string, data 
 	payloadJSON, _ := json.Marshal(data)
 	channel := fmt.Sprintf("%s.%s.%s.%s", uid, entity, entityID, verb)
 
-	logger.LogInfo("publishing event to channel " + channel)
+	logger.Info("publishing event to channel " + channel)
 
 	err := client.Publish(ctx, channel, payloadJSON).Err()
 
@@ -44,7 +44,7 @@ func PublishEvent(uid string, entity string, entityID string, verb string, data 
 		fmt.Printf("redis publish error %v", err)
 	}
 
-	logger.LogInfo("publishing event to channel " + channel + "." + verb)
+	logger.Info("publishing event to channel " + channel + "." + verb)
 	err = client.Publish(ctx, channel + "." + verb, payloadJSON).Err()
 
 	if err != nil {

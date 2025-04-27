@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -21,6 +22,9 @@ type Hive struct {
 	Status *string `json:"status"`
 	Added  *string `json:"added"`
 	Boxes  []*Box  `json:"boxes"`
+
+	CollapseDate  *string `json:"collapse_date" db:"collapse_date"`
+	CollapseCause *string `json:"collapse_cause" db:"collapse_cause"`
 }
 
 func (Hive) IsEntity() {}
@@ -120,6 +124,12 @@ func (r *Hive) Deactivate(id string) (*bool, error) {
 			"userID": r.UserID,
 		},
 	)
+
+	if err != nil {
+		success = false
+		return &success, err
+	}
+
 	err = tx.Commit()
 
 	if err != nil {
@@ -127,4 +137,29 @@ func (r *Hive) Deactivate(id string) (*bool, error) {
 	}
 
 	return &success, err
+}
+
+func (r *Hive) MarkAsCollapsed(id string, collapseDate time.Time, collapseCause string) error {
+	tx := r.Db.MustBegin()
+
+	_, err := tx.NamedExec(
+		`UPDATE hives SET 
+			collapse_date = :collapseDate, 
+			collapse_cause = :collapseCause
+		WHERE id=:id AND user_id=:userID`,
+		map[string]interface{}{
+			"id":            id,
+			"userID":        r.UserID,
+			"collapseDate":  collapseDate,
+			"collapseCause": collapseCause,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+
+	return err
 }
