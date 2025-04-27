@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Gratheon/swarm-api/logger"
 	"github.com/spf13/viper"
 )
 
@@ -18,12 +18,12 @@ import (
 //go:embed .version
 var version string
 
-func RegisterGraphQLSchema(graphqlSchema string, log *logrus.Logger) error {
+func RegisterGraphQLSchema(graphqlSchema string) error {
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 
-	log.Info("Registering schema...")
+	logger.Info("Registering schema...")
 
 	service := viper.GetString("schema_registry_url")
 	selfUrl := viper.GetString("self_url")
@@ -32,7 +32,7 @@ func RegisterGraphQLSchema(graphqlSchema string, log *logrus.Logger) error {
 	if os.Getenv("ENV_ID") == "dev" {
 		tmpVersion = "latest"
 	}
-	log.Infof("tmpVersion  %s", tmpVersion)
+	logger.Info(fmt.Sprintf("tmpVersion  %s", tmpVersion))
 
 	requestBody, err := json.Marshal(map[string]string{
 		"name":      "swarm-api",
@@ -42,11 +42,11 @@ func RegisterGraphQLSchema(graphqlSchema string, log *logrus.Logger) error {
 	})
 
 	if err != nil {
-		log.Error(err)
+		logger.Error(err.Error())
 		return err
 	}
 
-	log.Infof("Sending request to to  %v/schema/push", service)
+	logger.Info(fmt.Sprintf("Sending request to to  %v/schema/push", service))
 
 	response, err := client.Post(
 		fmt.Sprintf("%v/schema/push", service),
@@ -54,9 +54,9 @@ func RegisterGraphQLSchema(graphqlSchema string, log *logrus.Logger) error {
 		bytes.NewBuffer(requestBody),
 	)
 
-	log.Infof("schema registry response: %s", response)
+	logger.Info(fmt.Sprintf("schema registry response: %s", response))
 	if err != nil {
-		log.Error(err)
+		logger.Error(err.Error())
 		return err
 	}
 
@@ -64,8 +64,12 @@ func RegisterGraphQLSchema(graphqlSchema string, log *logrus.Logger) error {
 
 	_ = json.NewDecoder(response.Body).Decode(&res)
 
-	log.Infof("schema registry response: %s", response.Body)
+	logger.Info(fmt.Sprintf("schema registry response: %s", response.Body))
 
-	log.Info(res["json"])
+	if jsonMsg, ok := res["json"].(string); ok {
+	logger.Info(jsonMsg)
+} else {
+	logger.Info(fmt.Sprintf("schema registry response json: %v", res["json"]))
+}
 	return nil
 }

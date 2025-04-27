@@ -20,21 +20,21 @@ import (
 var graphqlSchema string
 
 func main() {
-	log.Print("Starting service")
+	logger.Info("Starting service")
 
-	log.Print("Reading config")
+	logger.Info("Reading config")
 	readConfig()
 
-	log.Print("Initializing logger")
+	logger.Info("Initializing logger")
 	logrusInstance := logger.InitLogging()
 
-	log.Print("Initializing redis")
+	logger.Info("Initializing redis")
 	redisPubSub.InitRedis()
 
-	log.Print("Initializing router")
+	logger.Info("Initializing router")
 	router := chi.NewRouter()
 
-	_ = RegisterGraphQLSchema(graphqlSchema, logrusInstance)
+	_ = RegisterGraphQLSchema(graphqlSchema)
 
 	// Add CORS middleware around every request
 	// See https://github.com/rs/cors for full option listing
@@ -53,13 +53,13 @@ func main() {
 
 	serveStaticFiles(router)
 
-	log.Print("Connecting to DB")
+	logger.Info("Connecting to DB")
 	rootResolver := &graph.Resolver{}
 	rootResolver.ConnectToDB()
 
 	gqlGenConfig := generated.Config{Resolvers: rootResolver}
 	gqlGenServer := handler.NewDefaultServer(generated.NewExecutableSchema(gqlGenConfig))
-	router.Handle("/graphql", gqlGenServer)
+	router.Handle("/graphql", graphqlLoggingMiddleware(gqlGenServer))
 
 	httpHost := "0.0.0.0:8100"
 

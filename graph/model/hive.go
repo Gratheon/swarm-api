@@ -143,7 +143,7 @@ func (r *Hive) MarkAsCollapsed(id string, collapseDate time.Time, collapseCause 
 	tx := r.Db.MustBegin()
 
 	_, err := tx.NamedExec(
-		`UPDATE hives SET 
+		`UPDATE hives SET status='collapsed',
 			collapse_date = :collapseDate, 
 			collapse_cause = :collapseCause
 		WHERE id=:id AND user_id=:userID`,
