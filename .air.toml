@@ -1,0 +1,10 @@
+# Air configuration for swarm-api
+[build]
+  cmd = "go build -o swarm-api *.go"
+  bin = "./swarm-api"
+  include_ext = ["go", "json", "yml", "yaml"]
+  exclude_dir = ["vendor", "tmp"]
+  delay = 1000 # ms
+
+[log]
+  level = "debug" 
