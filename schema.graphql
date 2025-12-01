@@ -198,6 +198,7 @@ enum BoxType {
   VENTILATION
   QUEEN_EXCLUDER
   HORIZONTAL_FEEDER
+  BOTTOM
 }
 
 enum FrameType {

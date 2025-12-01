@@ -14,7 +14,9 @@ update:
 
 migrate-db-dev:
     go install github.com/pressly/goose/v3/cmd/goose@latest
-    DSN=$(jq -r '.db_dsn_migrate' config/config.dev.json) && $(go env GOPATH)/bin/goose -dir migrations mysql "$DSN" up
+    DSN=$(jq -r '.db_dsn_migrate' config/config.dev.json) && \
+        echo $DSN && \
+        $(go env GOPATH)/bin/goose -dir migrations mysql "$DSN" up
 
 build:
     git rev-parse --short HEAD > .version

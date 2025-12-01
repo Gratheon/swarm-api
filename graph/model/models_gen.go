@@ -89,6 +89,7 @@ const (
 	BoxTypeVentilation      BoxType = "VENTILATION"
 	BoxTypeQueenExcluder    BoxType = "QUEEN_EXCLUDER"
 	BoxTypeHorizontalFeeder BoxType = "HORIZONTAL_FEEDER"
+	BoxTypeBottom           BoxType = "BOTTOM"
 )
 
 var AllBoxType = []BoxType{
@@ -98,11 +99,12 @@ var AllBoxType = []BoxType{
 	BoxTypeVentilation,
 	BoxTypeQueenExcluder,
 	BoxTypeHorizontalFeeder,
+	BoxTypeBottom,
 }
 
 func (e BoxType) IsValid() bool {
 	switch e {
-	case BoxTypeDeep, BoxTypeSuper, BoxTypeGate, BoxTypeVentilation, BoxTypeQueenExcluder, BoxTypeHorizontalFeeder:
+	case BoxTypeDeep, BoxTypeSuper, BoxTypeGate, BoxTypeVentilation, BoxTypeQueenExcluder, BoxTypeHorizontalFeeder, BoxTypeBottom:
 		return true
 	}
 	return false
