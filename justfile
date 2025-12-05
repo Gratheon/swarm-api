@@ -35,3 +35,7 @@ gen:
     go get -d # Note: -d flag is deprecated but kept for compatibility if needed
     @echo Generating schema.resolvers.go based on schema.graphql:
     go run github.com/99designs/gqlgen generate
+    @echo Updating version file for schema registry:
+    git rev-parse --short HEAD > .version
+    @echo "Schema generation complete! Version:" $(cat .version)
+    @echo "⚠️  Remember to restart swarm-api to push the new schema to the registry"
