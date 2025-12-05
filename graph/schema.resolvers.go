@@ -178,6 +178,24 @@ func (r *hiveResolver) ChildHives(ctx context.Context, obj *model.Hive) ([]*mode
 	}).GetChildHives(obj.ID)
 }
 
+// MergedIntoHive is the resolver for the mergedIntoHive field.
+func (r *hiveResolver) MergedIntoHive(ctx context.Context, obj *model.Hive) (*model.Hive, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).GetMergedIntoHive(obj.MergedIntoHiveID)
+}
+
+// MergedFromHives is the resolver for the mergedFromHives field.
+func (r *hiveResolver) MergedFromHives(ctx context.Context, obj *model.Hive) ([]*model.Hive, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).GetMergedFromHives(obj.ID)
+}
+
 // AddApiary is the resolver for the addApiary field.
 func (r *mutationResolver) AddApiary(ctx context.Context, apiary model.ApiaryInput) (*model.Apiary, error) {
 	uid := ctx.Value("userID").(string)
@@ -623,6 +641,106 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, n
 	redisPubSub.PublishEvent(uid, "hive", newHive.ID, "split", newHive)
 
 	return newHive, nil
+}
+
+// JoinHives is the resolver for the joinHives field.
+func (r *mutationResolver) JoinHives(ctx context.Context, sourceHiveID string, targetHiveID string, mergeType string) (*model.Hive, error) {
+	uid := ctx.Value("userID").(string)
+
+	validMergeTypes := map[string]bool{
+		"both_queens":       true,
+		"source_queen_kept": true,
+		"target_queen_kept": true,
+	}
+	if !validMergeTypes[mergeType] {
+		return nil, errors.New("invalid merge type")
+	}
+
+	hiveModel := &model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	sourceHive, err := hiveModel.Get(sourceHiveID)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	if sourceHive == nil {
+		return nil, errors.New("source hive not found")
+	}
+
+	targetHive, err := hiveModel.Get(targetHiveID)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	if targetHive == nil {
+		return nil, errors.New("target hive not found")
+	}
+
+	boxModel := &model.Box{
+		Db:     r.Db,
+		UserID: uid,
+	}
+
+	sourceBoxes, err := boxModel.ListByHive(sourceHiveID)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	boxesToKeepInSource, err := boxModel.GetBoxesByTypeForHive(sourceHiveID, []model.BoxType{model.BoxTypeBottom, model.BoxTypeGate})
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	keepInSourceMap := make(map[string]bool)
+	for _, box := range boxesToKeepInSource {
+		if box.ID != nil {
+			keepInSourceMap[*box.ID] = true
+		}
+	}
+
+	var boxIDsToMove []string
+	for _, box := range sourceBoxes {
+		if box.ID != nil && !keepInSourceMap[*box.ID] {
+			boxIDsToMove = append(boxIDsToMove, *box.ID)
+		}
+	}
+
+	if len(boxIDsToMove) > 0 {
+		maxPos, err := boxModel.GetMaxPosition(targetHiveID)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, err
+		}
+
+		err = boxModel.MoveBoxesToHive(boxIDsToMove, targetHiveID, maxPos+1)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, err
+		}
+	}
+
+	now := time.Now()
+	err = hiveModel.MarkAsMerged(sourceHiveID, targetHiveID, now, mergeType)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	updatedTargetHive, err := hiveModel.Get(targetHiveID)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	redisPubSub.PublishEvent(uid, "hive", targetHiveID, "join", updatedTargetHive)
+	redisPubSub.PublishEvent(uid, "hive", sourceHiveID, "merged", sourceHive)
+
+	return updatedTargetHive, nil
 }
 
 // Hive is the resolver for the hive field.

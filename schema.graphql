@@ -46,6 +46,7 @@ type Mutation {
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
   splitHive(sourceHiveId: ID!, name: String!, frameIds: [ID!]!): Hive
+  joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 }
 
 input TreatmentOfBoxInput {
@@ -110,6 +111,10 @@ type Hive @key(fields: "id") {
   parentHive: Hive
   splitDate: DateTime
   childHives: [Hive]
+  mergedIntoHive: Hive
+  mergeDate: DateTime
+  mergeType: String
+  mergedFromHives: [Hive]
 }
 
 input FamilyInput{

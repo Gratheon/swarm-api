@@ -109,6 +109,10 @@ type ComplexityRoot struct {
 		InspectionCount func(childComplexity int) int
 		IsNew           func(childComplexity int) int
 		LastInspection  func(childComplexity int) int
+		MergeDate       func(childComplexity int) int
+		MergeType       func(childComplexity int) int
+		MergedFromHives func(childComplexity int) int
+		MergedIntoHive  func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Notes           func(childComplexity int) int
 		ParentHive      func(childComplexity int) int
@@ -133,6 +137,7 @@ type ComplexityRoot struct {
 		DeactivateBox       func(childComplexity int, id string) int
 		DeactivateFrame     func(childComplexity int, id string) int
 		DeactivateHive      func(childComplexity int, id string) int
+		JoinHives           func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
 		MarkHiveAsCollapsed func(childComplexity int, id string, collapseDate string, collapseCause string) int
 		SplitHive           func(childComplexity int, sourceHiveID string, name string, frameIds []string) int
 		SwapBoxPositions    func(childComplexity int, id string, id2 string) int
@@ -201,6 +206,9 @@ type HiveResolver interface {
 	ParentHive(ctx context.Context, obj *model.Hive) (*model.Hive, error)
 
 	ChildHives(ctx context.Context, obj *model.Hive) ([]*model.Hive, error)
+	MergedIntoHive(ctx context.Context, obj *model.Hive) (*model.Hive, error)
+
+	MergedFromHives(ctx context.Context, obj *model.Hive) ([]*model.Hive, error)
 }
 type MutationResolver interface {
 	AddApiary(ctx context.Context, apiary model.ApiaryInput) (*model.Apiary, error)
@@ -221,6 +229,7 @@ type MutationResolver interface {
 	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
 	MarkHiveAsCollapsed(ctx context.Context, id string, collapseDate string, collapseCause string) (*model.Hive, error)
 	SplitHive(ctx context.Context, sourceHiveID string, name string, frameIds []string) (*model.Hive, error)
+	JoinHives(ctx context.Context, sourceHiveID string, targetHiveID string, mergeType string) (*model.Hive, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -490,6 +499,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Hive.LastInspection(childComplexity), true
+	case "Hive.mergeDate":
+		if e.complexity.Hive.MergeDate == nil {
+			break
+		}
+
+		return e.complexity.Hive.MergeDate(childComplexity), true
+	case "Hive.mergeType":
+		if e.complexity.Hive.MergeType == nil {
+			break
+		}
+
+		return e.complexity.Hive.MergeType(childComplexity), true
+	case "Hive.mergedFromHives":
+		if e.complexity.Hive.MergedFromHives == nil {
+			break
+		}
+
+		return e.complexity.Hive.MergedFromHives(childComplexity), true
+	case "Hive.mergedIntoHive":
+		if e.complexity.Hive.MergedIntoHive == nil {
+			break
+		}
+
+		return e.complexity.Hive.MergedIntoHive(childComplexity), true
 	case "Hive.name":
 		if e.complexity.Hive.Name == nil {
 			break
@@ -645,6 +678,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeactivateHive(childComplexity, args["id"].(string)), true
+	case "Mutation.joinHives":
+		if e.complexity.Mutation.JoinHives == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_joinHives_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.JoinHives(childComplexity, args["sourceHiveId"].(string), args["targetHiveId"].(string), args["mergeType"].(string)), true
 	case "Mutation.markHiveAsCollapsed":
 		if e.complexity.Mutation.MarkHiveAsCollapsed == nil {
 			break
@@ -1052,6 +1096,7 @@ type Mutation {
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
   splitHive(sourceHiveId: ID!, name: String!, frameIds: [ID!]!): Hive
+  joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 }
 
 input TreatmentOfBoxInput {
@@ -1116,6 +1161,10 @@ type Hive @key(fields: "id") {
   parentHive: Hive
   splitDate: DateTime
   childHives: [Hive]
+  mergedIntoHive: Hive
+  mergeDate: DateTime
+  mergeType: String
+  mergedFromHives: [Hive]
 }
 
 input FamilyInput{
@@ -1402,6 +1451,27 @@ func (ec *executionContext) field_Mutation_deactivateHive_args(ctx context.Conte
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_joinHives_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sourceHiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["sourceHiveId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "targetHiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["targetHiveId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "mergeType", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["mergeType"] = arg2
 	return args, nil
 }
 
@@ -1809,6 +1879,14 @@ func (ec *executionContext) fieldContext_Apiary_hives(_ context.Context, field g
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2164,6 +2242,14 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3044,6 +3130,14 @@ func (ec *executionContext) fieldContext_Hive_parentHive(_ context.Context, fiel
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3136,6 +3230,214 @@ func (ec *executionContext) fieldContext_Hive_childHives(_ context.Context, fiel
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_mergedIntoHive(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_mergedIntoHive,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Hive().MergedIntoHive(ctx, obj)
+		},
+		nil,
+		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_mergedIntoHive(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Hive_name(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_mergeDate(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_mergeDate,
+		func(ctx context.Context) (any, error) {
+			return obj.MergeDate, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_mergeDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_mergeType(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_mergeType,
+		func(ctx context.Context) (any, error) {
+			return obj.MergeType, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_mergeType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_mergedFromHives(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_mergedFromHives,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Hive().MergedFromHives(ctx, obj)
+		},
+		nil,
+		ec.marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_mergedFromHives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Hive_name(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3467,6 +3769,14 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3542,6 +3852,14 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -4114,6 +4432,14 @@ func (ec *executionContext) fieldContext_Mutation_markHiveAsCollapsed(ctx contex
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -4189,6 +4515,14 @@ func (ec *executionContext) fieldContext_Mutation_splitHive(ctx context.Context,
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -4201,6 +4535,89 @@ func (ec *executionContext) fieldContext_Mutation_splitHive(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_splitHive_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_joinHives(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_joinHives,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().JoinHives(ctx, fc.Args["sourceHiveId"].(string), fc.Args["targetHiveId"].(string), fc.Args["mergeType"].(string))
+		},
+		nil,
+		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_joinHives(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Hive_name(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_joinHives_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4264,6 +4681,14 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 				return ec.fieldContext_Hive_splitDate(ctx, field)
 			case "childHives":
 				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -7707,6 +8132,76 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "mergedIntoHive":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_mergedIntoHive(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "mergeDate":
+			out.Values[i] = ec._Hive_mergeDate(ctx, field, obj)
+		case "mergeType":
+			out.Values[i] = ec._Hive_mergeType(ctx, field, obj)
+		case "mergedFromHives":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_mergedFromHives(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7883,6 +8378,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "splitHive":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_splitHive(ctx, field)
+			})
+		case "joinHives":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_joinHives(ctx, field)
 			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

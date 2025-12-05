@@ -28,6 +28,10 @@ type Hive struct {
 
 	ParentHiveID *int    `json:"parent_hive_id" db:"parent_hive_id"`
 	SplitDate    *string `json:"split_date" db:"split_date"`
+
+	MergedIntoHiveID *int    `json:"merged_into_hive_id" db:"merged_into_hive_id"`
+	MergeDate        *string `json:"merge_date" db:"merge_date"`
+	MergeType        *string `json:"merge_type" db:"merge_type"`
 }
 
 func (Hive) IsEntity() {}
@@ -228,4 +232,56 @@ func (r *Hive) Split(sourceHiveID string, name string, apiaryID int, familyID *i
 	err = r.Db.Get(&hive, "SELECT * FROM `hives` WHERE id=? LIMIT 1", id)
 
 	return &hive, err
+}
+
+func (r *Hive) MarkAsMerged(sourceHiveID string, targetHiveID string, mergeDate time.Time, mergeType string) error {
+	tx := r.Db.MustBegin()
+
+	_, err := tx.NamedExec(
+		`UPDATE hives SET status='merged',
+			merged_into_hive_id = :targetHiveID, 
+			merge_date = :mergeDate,
+			merge_type = :mergeType
+		WHERE id=:id AND user_id=:userID`,
+		map[string]interface{}{
+			"id":           sourceHiveID,
+			"userID":       r.UserID,
+			"targetHiveID": targetHiveID,
+			"mergeDate":    mergeDate,
+			"mergeType":    mergeType,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+
+	return err
+}
+
+func (r *Hive) GetMergedIntoHive(mergedIntoHiveID *int) (*Hive, error) {
+	if mergedIntoHiveID == nil {
+		return nil, nil
+	}
+
+	hive := Hive{}
+	err := r.Db.Get(&hive,
+		`SELECT * FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		*mergedIntoHiveID, r.UserID)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	return &hive, err
+}
+
+func (r *Hive) GetMergedFromHives(hiveID string) ([]*Hive, error) {
+	hives := []*Hive{}
+	err := r.Db.Select(&hives,
+		`SELECT * FROM hives WHERE merged_into_hive_id=? AND user_id=? AND active=1`,
+		hiveID, r.UserID)
+	return hives, err
 }

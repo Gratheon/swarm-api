@@ -211,3 +211,64 @@ func (r *Box) Deactivate(id string) (*bool, error) {
 
 	return &success, err
 }
+
+func (r *Box) MoveBoxesToHive(boxIDs []string, targetHiveID string, startPosition int) error {
+	tx := r.Db.MustBegin()
+
+	for i, boxID := range boxIDs {
+		_, err := tx.NamedExec(
+			`UPDATE boxes 
+			SET hive_id=:hiveID, position=:position
+			WHERE id=:id AND user_id=:userID AND active=1`,
+			map[string]interface{}{
+				"id":       boxID,
+				"hiveID":   targetHiveID,
+				"position": startPosition + i,
+				"userID":   r.UserID,
+			},
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *Box) GetMaxPosition(hiveID string) (int, error) {
+	var maxPosition sql.NullInt64
+	err := r.Db.QueryRow(
+		`SELECT MAX(position) FROM boxes WHERE hive_id=? AND user_id=? AND active=1`,
+		hiveID, r.UserID,
+	).Scan(&maxPosition)
+
+	if err != nil {
+		return -1, err
+	}
+
+	if !maxPosition.Valid {
+		return -1, nil
+	}
+
+	return int(maxPosition.Int64), nil
+}
+
+func (r *Box) GetBoxesByTypeForHive(hiveID string, boxTypes []BoxType) ([]*Box, error) {
+	if len(boxTypes) == 0 {
+		return []*Box{}, nil
+	}
+
+	query, args, err := sqlx.In(
+		`SELECT * FROM boxes WHERE hive_id=? AND user_id=? AND active=1 AND type IN (?)`,
+		hiveID, r.UserID, boxTypes,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	query = r.Db.Rebind(query)
+	boxes := []*Box{}
+	err = r.Db.Select(&boxes, query, args...)
+	return boxes, err
+}
