@@ -85,6 +85,38 @@ func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType
 	return &strId, tx.Commit()
 }
 
+func (r *Box) CreateSingleBox(hiveId string, position int, color string, boxType BoxType) (string, error) {
+	tx := r.Db.MustBegin()
+
+	result, err := tx.NamedExec(
+		`INSERT INTO boxes (hive_id, position, color, user_id, type)
+			VALUES (:hiveId, :position, :color, :userID, :boxType)`,
+		map[string]interface{}{
+			"hiveId":   hiveId,
+			"position": position,
+			"color":    color,
+			"userID":   r.UserID,
+			"boxType":  boxType,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return "", err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return "", err
+	}
+
+	return strconv.Itoa(int(id)), nil
+}
+
 func (r *Box) ListByHive(hiveId string) ([]*Box, error) {
 	boxes := []*Box{}
 	err2 := r.Db.Select(&boxes,

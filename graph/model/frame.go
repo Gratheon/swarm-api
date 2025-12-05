@@ -188,3 +188,27 @@ func (r *Frame) GetFrameBySideID(sideID int) (*int, error) {
 
 	return &frameId, nil
 }
+
+func (r *Frame) MoveFramesToBox(frameIDs []string, targetBoxID string) error {
+	tx := r.Db.MustBegin()
+
+	for i, frameID := range frameIDs {
+		_, err := tx.NamedExec(
+			`UPDATE frames 
+			SET box_id=:boxID, position=:position
+			WHERE id=:id AND user_id=:userID AND active=1`,
+			map[string]interface{}{
+				"id":       frameID,
+				"boxID":    targetBoxID,
+				"position": i,
+				"userID":   r.UserID,
+			},
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}

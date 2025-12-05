@@ -25,6 +25,9 @@ type Hive struct {
 
 	CollapseDate  *string `json:"collapse_date" db:"collapse_date"`
 	CollapseCause *string `json:"collapse_cause" db:"collapse_cause"`
+
+	ParentHiveID *int    `json:"parent_hive_id" db:"parent_hive_id"`
+	SplitDate    *string `json:"split_date" db:"split_date"`
 }
 
 func (Hive) IsEntity() {}
@@ -162,4 +165,67 @@ func (r *Hive) MarkAsCollapsed(id string, collapseDate time.Time, collapseCause 
 	err = tx.Commit()
 
 	return err
+}
+
+func (r *Hive) GetParentHive(parentHiveID *int) (*Hive, error) {
+	if parentHiveID == nil {
+		return nil, nil
+	}
+
+	hive := Hive{}
+	err := r.Db.Get(&hive,
+		`SELECT * FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		*parentHiveID, r.UserID)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	return &hive, err
+}
+
+func (r *Hive) GetChildHives(hiveID string) ([]*Hive, error) {
+	hives := []*Hive{}
+	err := r.Db.Select(&hives,
+		`SELECT * FROM hives WHERE parent_hive_id=? AND user_id=? AND active=1`,
+		hiveID, r.UserID)
+	return hives, err
+}
+
+func (r *Hive) Split(sourceHiveID string, name string, apiaryID int, familyID *int) (*Hive, error) {
+	tx := r.Db.MustBegin()
+
+	now := time.Now()
+	result, err := tx.NamedExec(
+		`INSERT INTO hives (apiary_id, name, user_id, family_id, parent_hive_id, split_date, added) 
+		VALUES (:apiaryID, :name, :userID, :familyID, :parentHiveID, :splitDate, :added)`,
+		map[string]interface{}{
+			"apiaryID":     apiaryID,
+			"name":         name,
+			"userID":       r.UserID,
+			"familyID":     familyID,
+			"parentHiveID": sourceHiveID,
+			"splitDate":    now,
+			"added":        now,
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	hive := Hive{}
+	err = r.Db.Get(&hive, "SELECT * FROM `hives` WHERE id=? LIMIT 1", id)
+
+	return &hive, err
 }

@@ -45,6 +45,7 @@ type Mutation {
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
+  splitHive(sourceHiveId: ID!, name: String!, frameIds: [ID!]!): Hive
 }
 
 input TreatmentOfBoxInput {
@@ -106,6 +107,9 @@ type Hive @key(fields: "id") {
   lastInspection: DateTime
   collapse_date: DateTime
   collapse_cause: String
+  parentHive: Hive
+  splitDate: DateTime
+  childHives: [Hive]
 }
 
 input FamilyInput{

@@ -143,8 +143,6 @@ func (r *hiveResolver) IsNew(ctx context.Context, obj *model.Hive) (bool, error)
 
 // LastInspection is the resolver for the lastInspection field.
 func (r *hiveResolver) LastInspection(ctx context.Context, obj *model.Hive) (*string, error) {
-	// TODO use dataloader to avoid querying for each hive
-
 	uid := ctx.Value("userID").(string)
 	inspectionModel := &model.Inspection{
 		Db:     r.Resolver.Db,
@@ -160,6 +158,24 @@ func (r *hiveResolver) LastInspection(ctx context.Context, obj *model.Hive) (*st
 	}
 
 	return &inspection.Added, nil
+}
+
+// ParentHive is the resolver for the parentHive field.
+func (r *hiveResolver) ParentHive(ctx context.Context, obj *model.Hive) (*model.Hive, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).GetParentHive(obj.ParentHiveID)
+}
+
+// ChildHives is the resolver for the childHives field.
+func (r *hiveResolver) ChildHives(ctx context.Context, obj *model.Hive) ([]*model.Hive, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).GetChildHives(obj.ID)
 }
 
 // AddApiary is the resolver for the addApiary field.
@@ -530,11 +546,8 @@ func (r *mutationResolver) MarkHiveAsCollapsed(ctx context.Context, id string, c
 		UserID: uid,
 	}
 
-	// Update the hive in the database
-	// Parse collapseDate string to time.Time
 	parsedCollapseDate, err := time.Parse(time.RFC3339, collapseDate)
 	if err != nil {
-		// Try parsing as simple date (YYYY-MM-DD)
 		parsedCollapseDate, err = time.Parse("2006-01-02", collapseDate)
 		if err != nil {
 			logger.Error("Invalid collapseDate format: " + err.Error())
@@ -542,24 +555,74 @@ func (r *mutationResolver) MarkHiveAsCollapsed(ctx context.Context, id string, c
 		}
 	}
 
-	// Update the hive in the database
 	err = hiveModel.MarkAsCollapsed(id, parsedCollapseDate, collapseCause)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 
-	// Fetch and return the updated hive
 	updatedHive, err := hiveModel.Get(id)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 
-	// Optionally publish an event
-	// redisPubSub.PublishEvent(uid, "hive", id, "collapsed", updatedHive)
-
 	return updatedHive, nil
+}
+
+// SplitHive is the resolver for the splitHive field.
+func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, name string, frameIds []string) (*model.Hive, error) {
+	uid := ctx.Value("userID").(string)
+
+	if len(frameIds) == 0 || len(frameIds) > 10 {
+		return nil, errors.New("must select between 1 and 10 frames to split")
+	}
+
+	hiveModel := &model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	sourceHive, err := hiveModel.Get(sourceHiveID)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	if sourceHive == nil {
+		return nil, errors.New("source hive not found")
+	}
+
+	newHive, err := hiveModel.Split(sourceHiveID, name, sourceHive.ApiaryID, sourceHive.FamilyID)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	boxModel := &model.Box{
+		Db:     r.Db,
+		UserID: uid,
+	}
+
+	newBoxID, err := boxModel.CreateSingleBox(newHive.ID, 0, "#ffc848", model.BoxTypeDeep)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	frameModel := &model.Frame{
+		Db:     r.Db,
+		UserID: uid,
+	}
+
+	err = frameModel.MoveFramesToBox(frameIds, newBoxID)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	redisPubSub.PublishEvent(uid, "hive", newHive.ID, "split", newHive)
+
+	return newHive, nil
 }
 
 // Hive is the resolver for the hive field.

@@ -101,6 +101,7 @@ type ComplexityRoot struct {
 		Added           func(childComplexity int) int
 		BoxCount        func(childComplexity int) int
 		Boxes           func(childComplexity int) int
+		ChildHives      func(childComplexity int) int
 		CollapseCause   func(childComplexity int) int
 		CollapseDate    func(childComplexity int) int
 		Family          func(childComplexity int) int
@@ -110,6 +111,8 @@ type ComplexityRoot struct {
 		LastInspection  func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Notes           func(childComplexity int) int
+		ParentHive      func(childComplexity int) int
+		SplitDate       func(childComplexity int) int
 		Status          func(childComplexity int) int
 	}
 
@@ -131,6 +134,7 @@ type ComplexityRoot struct {
 		DeactivateFrame     func(childComplexity int, id string) int
 		DeactivateHive      func(childComplexity int, id string) int
 		MarkHiveAsCollapsed func(childComplexity int, id string, collapseDate string, collapseCause string) int
+		SplitHive           func(childComplexity int, sourceHiveID string, name string, frameIds []string) int
 		SwapBoxPositions    func(childComplexity int, id string, id2 string) int
 		TreatBox            func(childComplexity int, treatment model.TreatmentOfBoxInput) int
 		TreatHive           func(childComplexity int, treatment model.TreatmentOfHiveInput) int
@@ -193,6 +197,10 @@ type HiveResolver interface {
 
 	IsNew(ctx context.Context, obj *model.Hive) (bool, error)
 	LastInspection(ctx context.Context, obj *model.Hive) (*string, error)
+
+	ParentHive(ctx context.Context, obj *model.Hive) (*model.Hive, error)
+
+	ChildHives(ctx context.Context, obj *model.Hive) ([]*model.Hive, error)
 }
 type MutationResolver interface {
 	AddApiary(ctx context.Context, apiary model.ApiaryInput) (*model.Apiary, error)
@@ -212,6 +220,7 @@ type MutationResolver interface {
 	TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error)
 	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
 	MarkHiveAsCollapsed(ctx context.Context, id string, collapseDate string, collapseCause string) (*model.Hive, error)
+	SplitHive(ctx context.Context, sourceHiveID string, name string, frameIds []string) (*model.Hive, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -433,6 +442,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Hive.Boxes(childComplexity), true
+	case "Hive.childHives":
+		if e.complexity.Hive.ChildHives == nil {
+			break
+		}
+
+		return e.complexity.Hive.ChildHives(childComplexity), true
 	case "Hive.collapse_cause":
 		if e.complexity.Hive.CollapseCause == nil {
 			break
@@ -487,6 +502,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Hive.Notes(childComplexity), true
+	case "Hive.parentHive":
+		if e.complexity.Hive.ParentHive == nil {
+			break
+		}
+
+		return e.complexity.Hive.ParentHive(childComplexity), true
+	case "Hive.splitDate":
+		if e.complexity.Hive.SplitDate == nil {
+			break
+		}
+
+		return e.complexity.Hive.SplitDate(childComplexity), true
 	case "Hive.status":
 		if e.complexity.Hive.Status == nil {
 			break
@@ -629,6 +656,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.MarkHiveAsCollapsed(childComplexity, args["id"].(string), args["collapseDate"].(string), args["collapseCause"].(string)), true
+	case "Mutation.splitHive":
+		if e.complexity.Mutation.SplitHive == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_splitHive_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SplitHive(childComplexity, args["sourceHiveId"].(string), args["name"].(string), args["frameIds"].([]string)), true
 	case "Mutation.swapBoxPositions":
 		if e.complexity.Mutation.SwapBoxPositions == nil {
 			break
@@ -1013,6 +1051,7 @@ type Mutation {
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
+  splitHive(sourceHiveId: ID!, name: String!, frameIds: [ID!]!): Hive
 }
 
 input TreatmentOfBoxInput {
@@ -1074,6 +1113,9 @@ type Hive @key(fields: "id") {
   lastInspection: DateTime
   collapse_date: DateTime
   collapse_cause: String
+  parentHive: Hive
+  splitDate: DateTime
+  childHives: [Hive]
 }
 
 input FamilyInput{
@@ -1381,6 +1423,27 @@ func (ec *executionContext) field_Mutation_markHiveAsCollapsed_args(ctx context.
 		return nil, err
 	}
 	args["collapseCause"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_splitHive_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sourceHiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["sourceHiveId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "frameIds", ec.unmarshalNID2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["frameIds"] = arg2
 	return args, nil
 }
 
@@ -1740,6 +1803,12 @@ func (ec *executionContext) fieldContext_Apiary_hives(_ context.Context, field g
 				return ec.fieldContext_Hive_collapse_date(ctx, field)
 			case "collapse_cause":
 				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2089,6 +2158,12 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 				return ec.fieldContext_Hive_collapse_date(ctx, field)
 			case "collapse_cause":
 				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -2913,6 +2988,161 @@ func (ec *executionContext) fieldContext_Hive_collapse_cause(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Hive_parentHive(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_parentHive,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Hive().ParentHive(ctx, obj)
+		},
+		nil,
+		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_parentHive(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Hive_name(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_splitDate(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_splitDate,
+		func(ctx context.Context) (any, error) {
+			return obj.SplitDate, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_splitDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_childHives(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_childHives,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Hive().ChildHives(ctx, obj)
+		},
+		nil,
+		ec.marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_childHives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Hive_name(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Inspection_id(ctx context.Context, field graphql.CollectedField, obj *model.Inspection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3231,6 +3461,12 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 				return ec.fieldContext_Hive_collapse_date(ctx, field)
 			case "collapse_cause":
 				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3300,6 +3536,12 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 				return ec.fieldContext_Hive_collapse_date(ctx, field)
 			case "collapse_cause":
 				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3866,6 +4108,12 @@ func (ec *executionContext) fieldContext_Mutation_markHiveAsCollapsed(ctx contex
 				return ec.fieldContext_Hive_collapse_date(ctx, field)
 			case "collapse_cause":
 				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -3878,6 +4126,81 @@ func (ec *executionContext) fieldContext_Mutation_markHiveAsCollapsed(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_markHiveAsCollapsed_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_splitHive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_splitHive,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SplitHive(ctx, fc.Args["sourceHiveId"].(string), fc.Args["name"].(string), fc.Args["frameIds"].([]string))
+		},
+		nil,
+		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_splitHive(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Hive_name(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_splitHive_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3935,6 +4258,12 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 				return ec.fieldContext_Hive_collapse_date(ctx, field)
 			case "collapse_cause":
 				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
@@ -7310,6 +7639,74 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Hive_collapse_date(ctx, field, obj)
 		case "collapse_cause":
 			out.Values[i] = ec._Hive_collapse_cause(ctx, field, obj)
+		case "parentHive":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_parentHive(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "splitDate":
+			out.Values[i] = ec._Hive_splitDate(ctx, field, obj)
+		case "childHives":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_childHives(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7482,6 +7879,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "markHiveAsCollapsed":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_markHiveAsCollapsed(ctx, field)
+			})
+		case "splitHive":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_splitHive(ctx, field)
 			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -8377,6 +8778,36 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNID2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNID2ᚖstring(ctx context.Context, v any) (*string, error) {
