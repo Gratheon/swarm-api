@@ -29,6 +29,7 @@ type FamilyInput struct {
 	ID    *string `json:"id,omitempty"`
 	Race  *string `json:"race,omitempty"`
 	Added *string `json:"added,omitempty"`
+	Color *string `json:"color,omitempty"`
 }
 
 type FrameInput struct {

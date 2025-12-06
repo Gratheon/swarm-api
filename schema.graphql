@@ -121,6 +121,7 @@ input FamilyInput{
   id: ID
   race: String
   added: String
+  color: String
 }
 
 input BoxInput{
@@ -151,6 +152,9 @@ type Family{
 
   """ year when queen was added """
   added: String
+
+  """ custom color for queen marking, overrides year-based color if set """
+  color: String
 
   """ queen age in years, depends on added date"""
   age: Int

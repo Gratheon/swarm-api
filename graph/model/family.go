@@ -15,6 +15,7 @@ type Family struct {
 	Race        *string       `json:"race" db:"race"`
 	Age         *int          `json:"age"`
 	Added       *string       `json:"added" db:"added"`
+	Color       *string       `json:"color" db:"color"`
 	Inspections []*Inspection `json:"inspections"`
 }
 
@@ -44,14 +45,15 @@ func (r *Family) GetById(id *int) (*Family, error) {
 	return &family, err
 }
 
-func (r *Family) Create(race *string, added *string) (*int, error) {
+func (r *Family) Create(race *string, added *string, color *string) (*int, error) {
 	result, err := r.Db.NamedExec(
-		`INSERT INTO families (user_id, race, added) 
-		VALUES (:userID, :race, :added)`,
+		`INSERT INTO families (user_id, race, added, color) 
+		VALUES (:userID, :race, :added, :color)`,
 		map[string]interface{}{
 			"userID": r.UserID,
 			"race":   race,
 			"added":  added,
+			"color":  color,
 		},
 	)
 
@@ -66,15 +68,16 @@ func (r *Family) Create(race *string, added *string) (*int, error) {
 	return &id2, err
 }
 
-func (r *Family) Update(id *string, race *string, added *string) (*int64, error) {
+func (r *Family) Update(id *string, race *string, added *string, color *string) (*int64, error) {
 	_, err := r.Db.NamedExec(
 		`UPDATE families 
-		SET race=:race, added = :added
+		SET race=:race, added = :added, color = :color
 		WHERE id=:id AND user_id=:userID`,
 		map[string]interface{}{
 			"id":     id,
 			"race":   race,
 			"added":  added,
+			"color":  color,
 			"userID": r.UserID,
 		},
 	)
@@ -93,13 +96,13 @@ func (r *Family) Upsert(uid string, hive HiveUpdateInput) (*string, error) {
 
 	FamilyID := hive.Family.ID
 	if hive.Family.ID != nil {
-		_, err := r.Update(FamilyID, hive.Family.Race, hive.Family.Added)
+		_, err := r.Update(FamilyID, hive.Family.Race, hive.Family.Added, hive.Family.Color)
 
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		familyIDInt, err := r.Create(hive.Family.Race, hive.Family.Added)
+		familyIDInt, err := r.Create(hive.Family.Race, hive.Family.Added, hive.Family.Color)
 		if err != nil {
 			return nil, err
 		}

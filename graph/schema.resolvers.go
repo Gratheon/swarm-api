@@ -256,7 +256,7 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 	FamilyID, err := (&model.Family{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).Create(&race, &added)
+	}).Create(&race, &added, nil)
 
 	if err != nil {
 		logger.Error(err.Error())

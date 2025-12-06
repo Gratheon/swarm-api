@@ -78,6 +78,7 @@ type ComplexityRoot struct {
 	Family struct {
 		Added         func(childComplexity int) int
 		Age           func(childComplexity int) int
+		Color         func(childComplexity int) int
 		ID            func(childComplexity int) int
 		LastTreatment func(childComplexity int) int
 		Race          func(childComplexity int) int
@@ -364,6 +365,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Family.Age(childComplexity), true
+	case "Family.color":
+		if e.complexity.Family.Color == nil {
+			break
+		}
+
+		return e.complexity.Family.Color(childComplexity), true
 	case "Family.id":
 		if e.complexity.Family.ID == nil {
 			break
@@ -1171,6 +1178,7 @@ input FamilyInput{
   id: ID
   race: String
   added: String
+  color: String
 }
 
 input BoxInput{
@@ -1201,6 +1209,9 @@ type Family{
 
   """ year when queen was added """
   added: String
+
+  """ custom color for queen marking, overrides year-based color if set """
+  color: String
 
   """ queen age in years, depends on added date"""
   age: Int
@@ -2355,6 +2366,35 @@ func (ec *executionContext) fieldContext_Family_added(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Family_color(ctx context.Context, field graphql.CollectedField, obj *model.Family) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Family_color,
+		func(ctx context.Context) (any, error) {
+			return obj.Color, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Family_color(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Family",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Family_age(ctx context.Context, field graphql.CollectedField, obj *model.Family) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2829,6 +2869,8 @@ func (ec *executionContext) fieldContext_Hive_family(_ context.Context, field gr
 				return ec.fieldContext_Family_race(ctx, field)
 			case "added":
 				return ec.fieldContext_Family_added(ctx, field)
+			case "color":
+				return ec.fieldContext_Family_color(ctx, field)
 			case "age":
 				return ec.fieldContext_Family_age(ctx, field)
 			case "lastTreatment":
@@ -6989,7 +7031,7 @@ func (ec *executionContext) unmarshalInputFamilyInput(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "race", "added"}
+	fieldsInOrder := [...]string{"id", "race", "added", "color"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7017,6 +7059,13 @@ func (ec *executionContext) unmarshalInputFamilyInput(ctx context.Context, obj a
 				return it, err
 			}
 			it.Added = data
+		case "color":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("color"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Color = data
 		}
 	}
 
@@ -7585,6 +7634,8 @@ func (ec *executionContext) _Family(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Family_race(ctx, field, obj)
 		case "added":
 			out.Values[i] = ec._Family_added(ctx, field, obj)
+		case "color":
+			out.Values[i] = ec._Family_color(ctx, field, obj)
 		case "age":
 			out.Values[i] = ec._Family_age(ctx, field, obj)
 		case "lastTreatment":
