@@ -27,6 +27,7 @@ type BoxInput struct {
 
 type FamilyInput struct {
 	ID    *string `json:"id,omitempty"`
+	Name  *string `json:"name,omitempty"`
 	Race  *string `json:"race,omitempty"`
 	Added *string `json:"added,omitempty"`
 	Color *string `json:"color,omitempty"`
@@ -44,17 +45,19 @@ type FrameInput struct {
 
 type HiveInput struct {
 	ApiaryID   string    `json:"apiaryId"`
-	Name       string    `json:"name"`
+	QueenName  *string   `json:"queenName,omitempty"`
+	HiveNumber *int      `json:"hiveNumber,omitempty"`
 	BoxCount   int       `json:"boxCount"`
 	FrameCount int       `json:"frameCount"`
 	Colors     []*string `json:"colors,omitempty"`
 }
 
 type HiveUpdateInput struct {
-	ID     string       `json:"id"`
-	Name   *string      `json:"name,omitempty"`
-	Notes  *string      `json:"notes,omitempty"`
-	Family *FamilyInput `json:"family,omitempty"`
+	ID         string       `json:"id"`
+	Name       *string      `json:"name,omitempty"`
+	HiveNumber *int         `json:"hiveNumber,omitempty"`
+	Notes      *string      `json:"notes,omitempty"`
+	Family     *FamilyInput `json:"family,omitempty"`
 }
 
 type InspectionInput struct {

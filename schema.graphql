@@ -41,6 +41,9 @@ type Mutation {
 
   addInspection(inspection: InspectionInput!): Inspection
 
+  addQueenToHive(hiveId: ID!, queen: FamilyInput!): Family
+  removeQueenFromHive(hiveId: ID!, familyId: ID!): Boolean
+
   treatHive(treatment: TreatmentOfHiveInput!): Boolean
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
@@ -77,7 +80,8 @@ type Apiary {
 
 input HiveInput {
   apiaryId: ID!
-  name: String!
+  queenName: String
+  hiveNumber: Int
   boxCount: Int!
   frameCount: Int!
   colors: [String]
@@ -86,16 +90,19 @@ input HiveInput {
 input HiveUpdateInput {
   id: ID!
   name: String
+  hiveNumber: Int
 	notes: String
   family: FamilyInput
 }
 
 type Hive @key(fields: "id") {
   id: ID!
-  name: String
+  name: String @deprecated(reason: "Use hiveNumber for identification and families[].name for queen names")
+  hiveNumber: Int
 	notes: String
   boxes: [Box]
   family: Family
+  families: [Family]
 
   boxCount: Int!
   inspectionCount: Int!
@@ -119,6 +126,7 @@ type Hive @key(fields: "id") {
 
 input FamilyInput{
   id: ID
+  name: String
   race: String
   added: String
   color: String
@@ -146,6 +154,9 @@ type Treatment {
 
 type Family{
   id: ID!
+
+  """ name of the queen """
+  name: String
 
   """ freeform race of the queen """
   race: String

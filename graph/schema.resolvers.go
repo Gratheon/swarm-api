@@ -107,6 +107,15 @@ func (r *hiveResolver) Family(ctx context.Context, obj *model.Hive) (*model.Fami
 	}).GetById(obj.FamilyID)
 }
 
+// Families is the resolver for the families field.
+func (r *hiveResolver) Families(ctx context.Context, obj *model.Hive) ([]*model.Family, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListByHive(obj.ID)
+}
+
 // BoxCount is the resolver for the boxCount field.
 func (r *hiveResolver) BoxCount(ctx context.Context, obj *model.Hive) (int, error) {
 	uid := ctx.Value("userID").(string)
@@ -249,14 +258,13 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 	uid := ctx.Value("userID").(string)
 
 	race := "unknown"
-	// generate current year
 	year := time.Now().Year()
 	added := strconv.Itoa(year)
 
 	FamilyID, err := (&model.Family{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).Create(&race, &added, nil)
+	}).Create(hive.QueenName, &race, &added, nil)
 
 	if err != nil {
 		logger.Error(err.Error())
@@ -320,7 +328,7 @@ func (r *mutationResolver) UpdateHive(ctx context.Context, hive model.HiveUpdate
 		logger.Error(err.Error())
 	}
 
-	err = hiveModel.Update(hive.ID, hive.Name, hive.Notes, familyID)
+	err = hiveModel.Update(hive.ID, hive.Notes, hive.HiveNumber, familyID)
 
 	if err != nil {
 		logger.Error(err.Error())
@@ -496,6 +504,43 @@ func (r *mutationResolver) AddInspection(ctx context.Context, inspection model.I
 	}
 
 	return inspectionModel.Get(*id)
+}
+
+// AddQueenToHive is the resolver for the addQueenToHive field.
+func (r *mutationResolver) AddQueenToHive(ctx context.Context, hiveID string, queen model.FamilyInput) (*model.Family, error) {
+	uid := ctx.Value("userID").(string)
+	familyModel := &model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	familyID, err := familyModel.CreateForHive(hiveID, queen.Name, queen.Race, queen.Added, queen.Color)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	return familyModel.GetById(familyID)
+}
+
+// RemoveQueenFromHive is the resolver for the removeQueenFromHive field.
+func (r *mutationResolver) RemoveQueenFromHive(ctx context.Context, hiveID string, familyID string) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+
+	result, err := r.Resolver.Db.Exec(
+		"DELETE FROM families WHERE id=? AND hive_id=? AND user_id=?",
+		familyID, hiveID, uid,
+	)
+
+	if err != nil {
+		logger.Error(err.Error())
+		success := false
+		return &success, err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	success := rowsAffected > 0
+	return &success, nil
 }
 
 // TreatHive is the resolver for the treatHive field.

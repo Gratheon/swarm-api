@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -15,13 +16,13 @@ type Hive struct {
 	FamilyID *int   `db:"family_id"`
 	Active   *bool  `db:"active"`
 
-	Name   *string `json:"name"`
-	Notes  *string `json:"notes"`
-	Note   *string `json:"note"`
-	Color  *string `json:"color"`
-	Status *string `json:"status"`
-	Added  *string `json:"added"`
-	Boxes  []*Box  `json:"boxes"`
+	HiveNumber *int    `json:"hive_number" db:"hive_number"`
+	Notes      *string `json:"notes"`
+	Note       *string `json:"note"`
+	Color      *string `json:"color"`
+	Status     *string `json:"status"`
+	Added      *string `json:"added"`
+	Boxes      []*Box  `json:"boxes"`
 
 	CollapseDate  *string `json:"collapse_date" db:"collapse_date"`
 	CollapseCause *string `json:"collapse_cause" db:"collapse_cause"`
@@ -72,23 +73,42 @@ func (r *Hive) ListByApiary(apiaryId int) ([]*Hive, error) {
 func (r *Hive) Create(input HiveInput, familyID *int) (*Hive, error) {
 	tx := r.Db.MustBegin()
 
+	hiveNumber := input.HiveNumber
+	if hiveNumber == nil {
+		var maxNumber sql.NullInt64
+		err := tx.Get(&maxNumber,
+			"SELECT MAX(hive_number) FROM hives WHERE user_id=? AND active=1",
+			r.UserID)
+		if err != nil && err != sql.ErrNoRows {
+			tx.Rollback()
+			return nil, err
+		}
+		nextNumber := 1
+		if maxNumber.Valid {
+			nextNumber = int(maxNumber.Int64) + 1
+		}
+		hiveNumber = &nextNumber
+	}
+
 	result, err := tx.NamedExec(
-		"INSERT INTO hives (apiary_id, name, user_id, family_id) VALUES (:apiaryID, :name, :userID, :familyID)",
+		"INSERT INTO hives (apiary_id, user_id, family_id, hive_number) VALUES (:apiaryID, :userID, :familyID, :hiveNumber)",
 		map[string]interface{}{
-			"apiaryID": input.ApiaryID,
-			"name":     input.Name,
-			"userID":   r.UserID,
-			"familyID": familyID,
+			"apiaryID":   input.ApiaryID,
+			"userID":     r.UserID,
+			"familyID":   familyID,
+			"hiveNumber": hiveNumber,
 		},
 	)
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
 	id, err := result.LastInsertId()
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -104,17 +124,34 @@ func (r *Hive) Create(input HiveInput, familyID *int) (*Hive, error) {
 	return &hive, err
 }
 
-func (r *Hive) Update(id string, name *string, notes *string, FamilyID *string) error {
+func (r *Hive) Update(id string, notes *string, hiveNumber *int, FamilyID *string) error {
 	tx := r.Db.MustBegin()
 
+	if hiveNumber != nil {
+		var existingHiveID sql.NullString
+		err := tx.Get(&existingHiveID,
+			"SELECT id FROM hives WHERE hive_number=? AND user_id=? AND id!=? AND active=1 LIMIT 1",
+			hiveNumber, r.UserID, id)
+
+		if err != nil && err != sql.ErrNoRows {
+			tx.Rollback()
+			return err
+		}
+
+		if existingHiveID.Valid {
+			tx.Rollback()
+			return errors.New("hive number already in use by another hive")
+		}
+	}
+
 	_, err := tx.NamedExec(
-		"UPDATE hives SET name = :name, notes=:notes, family_id = :familyID WHERE id=:id AND user_id=:userID",
+		"UPDATE hives SET notes=:notes, hive_number=:hiveNumber, family_id = :familyID WHERE id=:id AND user_id=:userID",
 		map[string]interface{}{
-			"id":       id,
-			"name":     name,
-			"notes":    notes,
-			"userID":   r.UserID,
-			"familyID": FamilyID,
+			"id":         id,
+			"notes":      notes,
+			"hiveNumber": hiveNumber,
+			"userID":     r.UserID,
+			"familyID":   FamilyID,
 		},
 	)
 	tx.Commit()
