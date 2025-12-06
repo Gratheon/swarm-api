@@ -117,7 +117,6 @@ type ComplexityRoot struct {
 		MergeType       func(childComplexity int) int
 		MergedFromHives func(childComplexity int) int
 		MergedIntoHive  func(childComplexity int) int
-		Name            func(childComplexity int) int
 		Notes           func(childComplexity int) int
 		ParentHive      func(childComplexity int) int
 		SplitDate       func(childComplexity int) int
@@ -145,7 +144,7 @@ type ComplexityRoot struct {
 		JoinHives           func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
 		MarkHiveAsCollapsed func(childComplexity int, id string, collapseDate string, collapseCause string) int
 		RemoveQueenFromHive func(childComplexity int, hiveID string, familyID string) int
-		SplitHive           func(childComplexity int, sourceHiveID string, name string, frameIds []string) int
+		SplitHive           func(childComplexity int, sourceHiveID string, queenName *string, frameIds []string) int
 		SwapBoxPositions    func(childComplexity int, id string, id2 string) int
 		TreatBox            func(childComplexity int, treatment model.TreatmentOfBoxInput) int
 		TreatHive           func(childComplexity int, treatment model.TreatmentOfHiveInput) int
@@ -237,7 +236,7 @@ type MutationResolver interface {
 	TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error)
 	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
 	MarkHiveAsCollapsed(ctx context.Context, id string, collapseDate string, collapseCause string) (*model.Hive, error)
-	SplitHive(ctx context.Context, sourceHiveID string, name string, frameIds []string) (*model.Hive, error)
+	SplitHive(ctx context.Context, sourceHiveID string, queenName *string, frameIds []string) (*model.Hive, error)
 	JoinHives(ctx context.Context, sourceHiveID string, targetHiveID string, mergeType string) (*model.Hive, error)
 }
 type QueryResolver interface {
@@ -556,12 +555,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Hive.MergedIntoHive(childComplexity), true
-	case "Hive.name":
-		if e.complexity.Hive.Name == nil {
-			break
-		}
-
-		return e.complexity.Hive.Name(childComplexity), true
 	case "Hive.notes":
 		if e.complexity.Hive.Notes == nil {
 			break
@@ -765,7 +758,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SplitHive(childComplexity, args["sourceHiveId"].(string), args["name"].(string), args["frameIds"].([]string)), true
+		return e.complexity.Mutation.SplitHive(childComplexity, args["sourceHiveId"].(string), args["queenName"].(*string), args["frameIds"].([]string)), true
 	case "Mutation.swapBoxPositions":
 		if e.complexity.Mutation.SwapBoxPositions == nil {
 			break
@@ -1153,7 +1146,7 @@ type Mutation {
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
-  splitHive(sourceHiveId: ID!, name: String!, frameIds: [ID!]!): Hive
+  splitHive(sourceHiveId: ID!, queenName: String, frameIds: [ID!]!): Hive
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 }
 
@@ -1194,7 +1187,6 @@ input HiveInput {
 
 input HiveUpdateInput {
   id: ID!
-  name: String
   hiveNumber: Int
 	notes: String
   family: FamilyInput
@@ -1202,7 +1194,6 @@ input HiveUpdateInput {
 
 type Hive @key(fields: "id") {
   id: ID!
-  name: String
   hiveNumber: Int
 	notes: String
   boxes: [Box]
@@ -1606,11 +1597,11 @@ func (ec *executionContext) field_Mutation_splitHive_args(ctx context.Context, r
 		return nil, err
 	}
 	args["sourceHiveId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "queenName", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["name"] = arg1
+	args["queenName"] = arg1
 	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "frameIds", ec.unmarshalNID2ᚕstringᚄ)
 	if err != nil {
 		return nil, err
@@ -1951,8 +1942,6 @@ func (ec *executionContext) fieldContext_Apiary_hives(_ context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -2318,8 +2307,6 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -2868,35 +2855,6 @@ func (ec *executionContext) fieldContext_Hive_id(_ context.Context, field graphq
 	return fc, nil
 }
 
-func (ec *executionContext) _Hive_name(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Hive_name,
-		func(ctx context.Context) (any, error) {
-			return obj.Name, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Hive_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Hive",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Hive_hiveNumber(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3348,8 +3306,6 @@ func (ec *executionContext) fieldContext_Hive_parentHive(_ context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -3452,8 +3408,6 @@ func (ec *executionContext) fieldContext_Hive_childHives(_ context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -3527,8 +3481,6 @@ func (ec *executionContext) fieldContext_Hive_mergedIntoHive(_ context.Context, 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -3660,8 +3612,6 @@ func (ec *executionContext) fieldContext_Hive_mergedFromHives(_ context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -4003,8 +3953,6 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -4090,8 +4038,6 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -4774,8 +4720,6 @@ func (ec *executionContext) fieldContext_Mutation_markHiveAsCollapsed(ctx contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -4842,7 +4786,7 @@ func (ec *executionContext) _Mutation_splitHive(ctx context.Context, field graph
 		ec.fieldContext_Mutation_splitHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SplitHive(ctx, fc.Args["sourceHiveId"].(string), fc.Args["name"].(string), fc.Args["frameIds"].([]string))
+			return ec.resolvers.Mutation().SplitHive(ctx, fc.Args["sourceHiveId"].(string), fc.Args["queenName"].(*string), fc.Args["frameIds"].([]string))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -4861,8 +4805,6 @@ func (ec *executionContext) fieldContext_Mutation_splitHive(ctx context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -4948,8 +4890,6 @@ func (ec *executionContext) fieldContext_Mutation_joinHives(ctx context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -5035,8 +4975,6 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Hive_name(ctx, field)
 			case "hiveNumber":
 				return ec.fieldContext_Hive_hiveNumber(ctx, field)
 			case "notes":
@@ -7549,7 +7487,7 @@ func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "name", "hiveNumber", "notes", "family"}
+	fieldsInOrder := [...]string{"id", "hiveNumber", "notes", "family"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7563,13 +7501,6 @@ func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, o
 				return it, err
 			}
 			it.ID = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
 		case "hiveNumber":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveNumber"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -8262,8 +8193,6 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "name":
-			out.Values[i] = ec._Hive_name(ctx, field, obj)
 		case "hiveNumber":
 			out.Values[i] = ec._Hive_hiveNumber(ctx, field, obj)
 		case "notes":

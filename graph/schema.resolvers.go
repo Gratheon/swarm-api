@@ -634,7 +634,7 @@ func (r *mutationResolver) MarkHiveAsCollapsed(ctx context.Context, id string, c
 }
 
 // SplitHive is the resolver for the splitHive field.
-func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, name string, frameIds []string) (*model.Hive, error) {
+func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, queenName *string, frameIds []string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
 
 	if len(frameIds) == 0 || len(frameIds) > 10 {
@@ -655,10 +655,21 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, n
 		return nil, errors.New("source hive not found")
 	}
 
-	newHive, err := hiveModel.Split(sourceHiveID, name, sourceHive.ApiaryID, sourceHive.FamilyID)
+	newHive, err := hiveModel.Split(sourceHiveID, sourceHive.ApiaryID, sourceHive.FamilyID)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
+	}
+
+	if queenName != nil && *queenName != "" {
+		familyModel := &model.Family{
+			Db:     r.Resolver.Db,
+			UserID: uid,
+		}
+		_, err = familyModel.CreateForHive(newHive.ID, queenName, nil, nil, nil)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 	}
 
 	boxModel := &model.Box{
@@ -917,3 +928,15 @@ type frameResolver struct{ *Resolver }
 type hiveResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *hiveResolver) Name(ctx context.Context, obj *model.Hive) (*string, error) {
+	panic(fmt.Errorf("not implemented: Name - name"))
+}
+*/

@@ -233,16 +233,15 @@ func (r *Hive) GetChildHives(hiveID string) ([]*Hive, error) {
 	return hives, err
 }
 
-func (r *Hive) Split(sourceHiveID string, name string, apiaryID int, familyID *int) (*Hive, error) {
+func (r *Hive) Split(sourceHiveID string, apiaryID int, familyID *int) (*Hive, error) {
 	tx := r.Db.MustBegin()
 
 	now := time.Now()
 	result, err := tx.NamedExec(
-		`INSERT INTO hives (apiary_id, name, user_id, family_id, parent_hive_id, split_date, added) 
-		VALUES (:apiaryID, :name, :userID, :familyID, :parentHiveID, :splitDate, :added)`,
+		`INSERT INTO hives (apiary_id, user_id, family_id, parent_hive_id, split_date, added) 
+		VALUES (:apiaryID, :userID, :familyID, :parentHiveID, :splitDate, :added)`,
 		map[string]interface{}{
 			"apiaryID":     apiaryID,
-			"name":         name,
 			"userID":       r.UserID,
 			"familyID":     familyID,
 			"parentHiveID": sourceHiveID,

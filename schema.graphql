@@ -48,7 +48,7 @@ type Mutation {
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
-  splitHive(sourceHiveId: ID!, name: String!, frameIds: [ID!]!): Hive
+  splitHive(sourceHiveId: ID!, queenName: String, frameIds: [ID!]!): Hive
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 }
 
@@ -89,7 +89,6 @@ input HiveInput {
 
 input HiveUpdateInput {
   id: ID!
-  name: String
   hiveNumber: Int
 	notes: String
   family: FamilyInput
@@ -97,9 +96,8 @@ input HiveUpdateInput {
 
 type Hive @key(fields: "id") {
   id: ID!
-  name: String @deprecated(reason: "Use hiveNumber for identification and families[].name for queen names")
   hiveNumber: Int
-	notes: String
+  notes: String
   boxes: [Box]
   family: Family
   families: [Family]

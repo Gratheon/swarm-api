@@ -54,7 +54,6 @@ type HiveInput struct {
 
 type HiveUpdateInput struct {
 	ID         string       `json:"id"`
-	Name       *string      `json:"name,omitempty"`
 	HiveNumber *int         `json:"hiveNumber,omitempty"`
 	Notes      *string      `json:"notes,omitempty"`
 	Family     *FamilyInput `json:"family,omitempty"`
