@@ -1195,7 +1195,7 @@ input HiveUpdateInput {
 type Hive @key(fields: "id") {
   id: ID!
   hiveNumber: Int
-	notes: String
+  notes: String
   boxes: [Box]
   family: Family
   families: [Family]

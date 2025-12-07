@@ -18,7 +18,6 @@ type Hive struct {
 
 	HiveNumber *int    `json:"hive_number" db:"hive_number"`
 	Notes      *string `json:"notes"`
-	Note       *string `json:"note"`
 	Color      *string `json:"color"`
 	Status     *string `json:"status"`
 	Added      *string `json:"added"`
@@ -64,7 +63,8 @@ func (r *Hive) List(userID string) ([]*Hive, error) {
 func (r *Hive) ListByApiary(apiaryId int) ([]*Hive, error) {
 	hives := []*Hive{}
 	err2 := r.Db.Select(&hives,
-		`SELECT * 
+		`SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
 		WHERE apiary_id=? AND user_id=? AND active=1`, apiaryId, r.UserID)
 	return hives, err2
@@ -119,7 +119,9 @@ func (r *Hive) Create(input HiveInput, familyID *int) (*Hive, error) {
 	}
 
 	hive := Hive{}
-	err = r.Db.Get(&hive, "SELECT * FROM `hives` WHERE id=? LIMIT 1", id)
+	err = r.Db.Get(&hive, `SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+	        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
+	        FROM hives WHERE id=? LIMIT 1`, id)
 
 	return &hive, err
 }
@@ -228,7 +230,9 @@ func (r *Hive) GetParentHive(parentHiveID *int) (*Hive, error) {
 func (r *Hive) GetChildHives(hiveID string) ([]*Hive, error) {
 	hives := []*Hive{}
 	err := r.Db.Select(&hives,
-		`SELECT * FROM hives WHERE parent_hive_id=? AND user_id=? AND active=1`,
+		`SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
+		FROM hives WHERE parent_hive_id=? AND user_id=? AND active=1`,
 		hiveID, r.UserID)
 	return hives, err
 }
@@ -265,7 +269,9 @@ func (r *Hive) Split(sourceHiveID string, apiaryID int, familyID *int) (*Hive, e
 	}
 
 	hive := Hive{}
-	err = r.Db.Get(&hive, "SELECT * FROM `hives` WHERE id=? LIMIT 1", id)
+	err = r.Db.Get(&hive, `SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+	        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
+	        FROM hives WHERE id=? LIMIT 1`, id)
 
 	return &hive, err
 }
@@ -317,7 +323,9 @@ func (r *Hive) GetMergedIntoHive(mergedIntoHiveID *int) (*Hive, error) {
 func (r *Hive) GetMergedFromHives(hiveID string) ([]*Hive, error) {
 	hives := []*Hive{}
 	err := r.Db.Select(&hives,
-		`SELECT * FROM hives WHERE merged_into_hive_id=? AND user_id=? AND active=1`,
+		`SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
+		FROM hives WHERE merged_into_hive_id=? AND user_id=? AND active=1`,
 		hiveID, r.UserID)
 	return hives, err
 }
