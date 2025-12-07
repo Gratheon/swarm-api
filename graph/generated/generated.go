@@ -1192,6 +1192,7 @@ input HiveUpdateInput {
   family: FamilyInput
 }
 
+""" Hive name is now stored in Family.name """
 type Hive @key(fields: "id") {
   id: ID!
   hiveNumber: Int

@@ -39,7 +39,8 @@ func (Hive) IsEntity() {}
 func (r *Hive) Get(id string) (*Hive, error) {
 	hive := Hive{}
 	err := r.Db.Get(&hive,
-		`SELECT * 
+		`SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
 		WHERE id=? AND user_id=? AND active=1
 		LIMIT 1`, id, r.UserID)
@@ -54,7 +55,8 @@ func (r *Hive) Get(id string) (*Hive, error) {
 func (r *Hive) List(userID string) ([]*Hive, error) {
 	hives := []*Hive{}
 	err2 := r.Db.Select(&hives,
-		`SELECT * 
+		`SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
 		WHERE user_id=? AND active=1`, userID)
 	return hives, err2
@@ -217,7 +219,9 @@ func (r *Hive) GetParentHive(parentHiveID *int) (*Hive, error) {
 
 	hive := Hive{}
 	err := r.Db.Get(&hive,
-		`SELECT * FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		`SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
+		FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
 		*parentHiveID, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -310,7 +314,9 @@ func (r *Hive) GetMergedIntoHive(mergedIntoHiveID *int) (*Hive, error) {
 
 	hive := Hive{}
 	err := r.Db.Get(&hive,
-		`SELECT * FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		`SELECT id, user_id, apiary_id, family_id, active, hive_number, notes, color, status, added, 
+		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
+		FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
 		*mergedIntoHiveID, r.UserID)
 
 	if err == sql.ErrNoRows {

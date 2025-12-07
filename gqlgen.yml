@@ -50,6 +50,26 @@ models:
     fields:
       boxes:
         resolver: true
+      family:
+        resolver: true
+      families:
+        resolver: true
+      boxCount:
+        resolver: true
+      inspectionCount:
+        resolver: true
+      isNew:
+        resolver: true
+      lastInspection:
+        resolver: true
+      parentHive:
+        resolver: true
+      childHives:
+        resolver: true
+      mergedIntoHive:
+        resolver: true
+      mergedFromHives:
+        resolver: true
   Box:
     model: github.com/Gratheon/swarm-api/graph/model.Box
   Frame:
