@@ -81,6 +81,8 @@ type Apiary {
 input HiveInput {
   apiaryId: ID!
   queenName: String
+  queenYear: String
+  queenColor: String
   hiveNumber: Int
   boxCount: Int!
   frameCount: Int!

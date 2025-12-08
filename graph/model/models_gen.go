@@ -46,6 +46,8 @@ type FrameInput struct {
 type HiveInput struct {
 	ApiaryID   string    `json:"apiaryId"`
 	QueenName  *string   `json:"queenName,omitempty"`
+	QueenYear  *string   `json:"queenYear,omitempty"`
+	QueenColor *string   `json:"queenColor,omitempty"`
 	HiveNumber *int      `json:"hiveNumber,omitempty"`
 	BoxCount   int       `json:"boxCount"`
 	FrameCount int       `json:"frameCount"`

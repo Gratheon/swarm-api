@@ -1179,6 +1179,8 @@ type Apiary {
 input HiveInput {
   apiaryId: ID!
   queenName: String
+  queenYear: String
+  queenColor: String
   hiveNumber: Int
   boxCount: Int!
   frameCount: Int!
@@ -7426,7 +7428,7 @@ func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"apiaryId", "queenName", "hiveNumber", "boxCount", "frameCount", "colors"}
+	fieldsInOrder := [...]string{"apiaryId", "queenName", "queenYear", "queenColor", "hiveNumber", "boxCount", "frameCount", "colors"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7447,6 +7449,20 @@ func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any
 				return it, err
 			}
 			it.QueenName = data
+		case "queenYear":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("queenYear"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QueenYear = data
+		case "queenColor":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("queenColor"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QueenColor = data
 		case "hiveNumber":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveNumber"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)

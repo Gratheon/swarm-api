@@ -258,13 +258,18 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 	uid := ctx.Value("userID").(string)
 
 	race := "unknown"
-	year := time.Now().Year()
-	added := strconv.Itoa(year)
+	var added string
+	if hive.QueenYear != nil && *hive.QueenYear != "" {
+		added = *hive.QueenYear
+	} else {
+		year := time.Now().Year()
+		added = strconv.Itoa(year)
+	}
 
 	FamilyID, err := (&model.Family{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).Create(hive.QueenName, &race, &added, nil)
+	}).Create(hive.QueenName, &race, &added, hive.QueenColor)
 
 	if err != nil {
 		logger.Error(err.Error())
