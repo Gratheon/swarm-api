@@ -36,6 +36,15 @@ To re-generate graphql -> go resolvers, run:
 just gen
 ```
 
+## Testing
+
+Run e2e tests for split hive functionality:
+```bash
+just test
+```
+
+See [graph/TESTING.md](graph/TESTING.md) for detailed testing instructions.
+
 ## Building
 ```
 just build

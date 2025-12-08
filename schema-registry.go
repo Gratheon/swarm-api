@@ -14,7 +14,8 @@ import (
 )
 
 // I'm writing to .version on build time:
-//git rev-parse --short HEAD > .version
+// git rev-parse --short HEAD > .version
+//
 //go:embed .version
 var version string
 
@@ -54,11 +55,12 @@ func RegisterGraphQLSchema(graphqlSchema string) error {
 		bytes.NewBuffer(requestBody),
 	)
 
-	logger.Info(fmt.Sprintf("schema registry response: %s", response))
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
+
+	logger.Info(fmt.Sprintf("schema registry response status: %s", response.Status))
 
 	var res map[string]interface{}
 
@@ -67,9 +69,9 @@ func RegisterGraphQLSchema(graphqlSchema string) error {
 	logger.Info(fmt.Sprintf("schema registry response: %s", response.Body))
 
 	if jsonMsg, ok := res["json"].(string); ok {
-	logger.Info(jsonMsg)
-} else {
-	logger.Info(fmt.Sprintf("schema registry response json: %v", res["json"]))
-}
+		logger.Info(jsonMsg)
+	} else {
+		logger.Info(fmt.Sprintf("schema registry response json: %v", res["json"]))
+	}
 	return nil
 }

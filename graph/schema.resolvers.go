@@ -97,14 +97,17 @@ func (r *hiveResolver) Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box
 // Family is the resolver for the family field.
 func (r *hiveResolver) Family(ctx context.Context, obj *model.Hive) (*model.Family, error) {
 	uid := ctx.Value("userID").(string)
-	if obj.FamilyID == nil {
-		return nil, nil
-	}
 
-	return (&model.Family{
+	families, err := (&model.Family{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).GetById(obj.FamilyID)
+	}).ListByHive(obj.ID)
+
+	if err != nil || len(families) == 0 {
+		return nil, err
+	}
+
+	return families[0], nil
 }
 
 // Families is the resolver for the families field.
@@ -266,19 +269,20 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 		added = strconv.Itoa(year)
 	}
 
-	FamilyID, err := (&model.Family{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}).Create(hive.QueenName, &race, &added, hive.QueenColor)
-
-	if err != nil {
-		logger.Error(err.Error())
-	}
-
 	hiveResult, err := (&model.Hive{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).Create(hive, FamilyID)
+	}).Create(hive)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	_, err = (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).CreateForHive(hiveResult.ID, hive.QueenName, &race, &added, hive.QueenColor)
 
 	if err != nil {
 		logger.Error(err.Error())
@@ -556,19 +560,23 @@ func (r *mutationResolver) TreatHive(ctx context.Context, treatment model.Treatm
 		UserID: uid,
 	}
 
-	hiveModel := &model.Hive{
+	familyModel := &model.Family{
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}
-
-	hive, err := hiveModel.Get(treatment.HiveID)
+	families, err := familyModel.ListByHive(treatment.HiveID)
 	if err != nil {
 		logger.Error(err.Error())
-		ok := err == nil
+		ok := false
 		return &ok, err
 	}
+	var familyID *int
+	if err == nil && len(families) > 0 {
+		familyIDInt, _ := strconv.Atoi(families[0].ID)
+		familyID = &familyIDInt
+	}
 
-	_, err2 := treatmentModel.TreatHive(treatment, hive.FamilyID)
+	_, err2 := treatmentModel.TreatHive(treatment, familyID)
 	ok := err2 == nil
 
 	if err2 != nil {
@@ -586,19 +594,23 @@ func (r *mutationResolver) TreatBox(ctx context.Context, treatment model.Treatme
 		UserID: uid,
 	}
 
-	hiveModel := &model.Hive{
+	familyModel := &model.Family{
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}
-
-	hive, err := hiveModel.Get(treatment.HiveID)
+	families, err := familyModel.ListByHive(treatment.HiveID)
 	if err != nil {
 		logger.Error(err.Error())
-		ok := err == nil
+		ok := false
 		return &ok, err
 	}
+	var familyID *int
+	if err == nil && len(families) > 0 {
+		familyIDInt, _ := strconv.Atoi(families[0].ID)
+		familyID = &familyIDInt
+	}
 
-	_, err2 := treatmentModel.TreatHiveBox(treatment, hive.FamilyID)
+	_, err2 := treatmentModel.TreatHiveBox(treatment, familyID)
 	ok := err2 == nil
 	if err2 != nil {
 		logger.Error(err2.Error())
@@ -639,11 +651,20 @@ func (r *mutationResolver) MarkHiveAsCollapsed(ctx context.Context, id string, c
 }
 
 // SplitHive is the resolver for the splitHive field.
-func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, queenName *string, frameIds []string) (*model.Hive, error) {
+func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, queenName *string, queenAction string, frameIds []string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
 
 	if len(frameIds) == 0 || len(frameIds) > 10 {
 		return nil, errors.New("must select between 1 and 10 frames to split")
+	}
+
+	validQueenActions := map[string]bool{
+		"new_queen":      true,
+		"take_old_queen": true,
+		"no_queen":       true,
+	}
+	if !validQueenActions[queenAction] {
+		return nil, errors.New("invalid queenAction. Must be: new_queen, take_old_queen, or no_queen")
 	}
 
 	hiveModel := &model.Hive{
@@ -660,20 +681,57 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 		return nil, errors.New("source hive not found")
 	}
 
-	newHive, err := hiveModel.Split(sourceHiveID, sourceHive.ApiaryID, sourceHive.FamilyID)
+	newHive, err := hiveModel.Split(sourceHiveID, sourceHive.ApiaryID)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 
-	if queenName != nil && *queenName != "" {
-		familyModel := &model.Family{
-			Db:     r.Resolver.Db,
-			UserID: uid,
+	familyModel := &model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	if queenAction == "new_queen" {
+		if queenName == nil || *queenName == "" {
+			return nil, errors.New("queenName is required when queenAction is new_queen")
 		}
 		_, err = familyModel.CreateForHive(newHive.ID, queenName, nil, nil, nil)
 		if err != nil {
 			logger.Error(err.Error())
+			return nil, err
+		}
+	} else if queenAction == "take_old_queen" {
+		logger.Info("Attempting to take old queen from hive " + sourceHiveID + " for user " + uid)
+
+		families, err := familyModel.ListByHive(sourceHiveID)
+		if err != nil {
+			logger.Error("Error listing families for source hive " + sourceHiveID + ": " + err.Error())
+			return nil, err
+		}
+
+		logger.Info("Found " + strconv.Itoa(len(families)) + " queen(s) in source hive " + sourceHiveID)
+
+		if len(families) == 0 {
+			return nil, errors.New("source hive has no queen to take")
+		}
+
+		oldQueen := families[0]
+		logger.Info("Moving queen " + oldQueen.ID + " from hive " + sourceHiveID + " to hive " + newHive.ID)
+
+		newHiveIDInt, err := strconv.Atoi(newHive.ID)
+		if err != nil {
+			logger.Error("Error converting new hive ID: " + err.Error())
+			return nil, err
+		}
+
+		_, err = r.Resolver.Db.Exec(
+			"UPDATE families SET hive_id=? WHERE id=? AND user_id=?",
+			newHiveIDInt, oldQueen.ID, uid,
+		)
+		if err != nil {
+			logger.Error("Error updating queen hive_id: " + err.Error())
+			return nil, err
 		}
 	}
 
@@ -903,6 +961,12 @@ func (r *queryResolver) Inspections(ctx context.Context, hiveID string, limit *i
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).ListByHiveId(hiveID)
+}
+
+// DebugHiveQueens is the resolver for the debugHiveQueens field.
+func (r *queryResolver) DebugHiveQueens(ctx context.Context, hiveID string) (*string, error) {
+	result, err := (&mutationResolver{Resolver: r.Resolver}).DebugHiveQueens(ctx, hiveID)
+	return &result, err
 }
 
 // Apiary returns generated.ApiaryResolver implementation.

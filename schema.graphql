@@ -18,6 +18,9 @@ type Query {
   inspection(inspectionId: ID!): Inspection
   randomHiveName(language: String): String
   inspections(hiveId: ID!, limit: Int): [Inspection]
+
+  """ Debug query to check queen tracking for a hive """
+  debugHiveQueens(hiveId: ID!): String
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -48,7 +51,19 @@ type Mutation {
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
-  splitHive(sourceHiveId: ID!, queenName: String, frameIds: [ID!]!): Hive
+
+  """
+  Split a hive by moving selected frames to a new hive.
+
+  queenAction options:
+  - "new_queen": Install a new queen in the split hive (requires queenName)
+  - "take_old_queen": Move the old queen from source to split hive (source becomes queenless)
+  - "no_queen": Create a queenless split (for raising their own queen from cells)
+
+  queenName is required only when queenAction is "new_queen"
+  """
+  splitHive(sourceHiveId: ID!, queenName: String, queenAction: String!, frameIds: [ID!]!): Hive
+
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 }
 

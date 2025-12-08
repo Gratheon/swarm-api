@@ -38,7 +38,7 @@ func (f *UserCycleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	case logrus.DebugLevel:
 		levelColored = colorGrey + "debug" + colorReset
 	default:
-		levelColored = string(entry.Level)
+		levelColored = entry.Level.String()
 	}
 
 	// Message

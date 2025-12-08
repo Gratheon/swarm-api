@@ -144,7 +144,7 @@ type ComplexityRoot struct {
 		JoinHives           func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
 		MarkHiveAsCollapsed func(childComplexity int, id string, collapseDate string, collapseCause string) int
 		RemoveQueenFromHive func(childComplexity int, hiveID string, familyID string) int
-		SplitHive           func(childComplexity int, sourceHiveID string, queenName *string, frameIds []string) int
+		SplitHive           func(childComplexity int, sourceHiveID string, queenName *string, queenAction string, frameIds []string) int
 		SwapBoxPositions    func(childComplexity int, id string, id2 string) int
 		TreatBox            func(childComplexity int, treatment model.TreatmentOfBoxInput) int
 		TreatHive           func(childComplexity int, treatment model.TreatmentOfHiveInput) int
@@ -157,6 +157,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Apiaries           func(childComplexity int) int
 		Apiary             func(childComplexity int, id string) int
+		DebugHiveQueens    func(childComplexity int, hiveID string) int
 		Hive               func(childComplexity int, id string) int
 		HiveFrame          func(childComplexity int, id string) int
 		HiveFrameSide      func(childComplexity int, id string) int
@@ -236,7 +237,7 @@ type MutationResolver interface {
 	TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error)
 	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
 	MarkHiveAsCollapsed(ctx context.Context, id string, collapseDate string, collapseCause string) (*model.Hive, error)
-	SplitHive(ctx context.Context, sourceHiveID string, queenName *string, frameIds []string) (*model.Hive, error)
+	SplitHive(ctx context.Context, sourceHiveID string, queenName *string, queenAction string, frameIds []string) (*model.Hive, error)
 	JoinHives(ctx context.Context, sourceHiveID string, targetHiveID string, mergeType string) (*model.Hive, error)
 }
 type QueryResolver interface {
@@ -248,6 +249,7 @@ type QueryResolver interface {
 	Inspection(ctx context.Context, inspectionID string) (*model.Inspection, error)
 	RandomHiveName(ctx context.Context, language *string) (*string, error)
 	Inspections(ctx context.Context, hiveID string, limit *int) ([]*model.Inspection, error)
+	DebugHiveQueens(ctx context.Context, hiveID string) (*string, error)
 }
 
 type executableSchema struct {
@@ -758,7 +760,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SplitHive(childComplexity, args["sourceHiveId"].(string), args["queenName"].(*string), args["frameIds"].([]string)), true
+		return e.complexity.Mutation.SplitHive(childComplexity, args["sourceHiveId"].(string), args["queenName"].(*string), args["queenAction"].(string), args["frameIds"].([]string)), true
 	case "Mutation.swapBoxPositions":
 		if e.complexity.Mutation.SwapBoxPositions == nil {
 			break
@@ -854,6 +856,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Apiary(childComplexity, args["id"].(string)), true
+	case "Query.debugHiveQueens":
+		if e.complexity.Query.DebugHiveQueens == nil {
+			break
+		}
+
+		args, err := ec.field_Query_debugHiveQueens_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DebugHiveQueens(childComplexity, args["hiveId"].(string)), true
 	case "Query.hive":
 		if e.complexity.Query.Hive == nil {
 			break
@@ -1116,6 +1129,9 @@ type Query {
   inspection(inspectionId: ID!): Inspection
   randomHiveName(language: String): String
   inspections(hiveId: ID!, limit: Int): [Inspection]
+
+  """ Debug query to check queen tracking for a hive """
+  debugHiveQueens(hiveId: ID!): String
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -1146,7 +1162,19 @@ type Mutation {
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
-  splitHive(sourceHiveId: ID!, queenName: String, frameIds: [ID!]!): Hive
+
+  """
+  Split a hive by moving selected frames to a new hive.
+
+  queenAction options:
+  - "new_queen": Install a new queen in the split hive (requires queenName)
+  - "take_old_queen": Move the old queen from source to split hive (source becomes queenless)
+  - "no_queen": Create a queenless split (for raising their own queen from cells)
+
+  queenName is required only when queenAction is "new_queen"
+  """
+  splitHive(sourceHiveId: ID!, queenName: String, queenAction: String!, frameIds: [ID!]!): Hive
+
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 }
 
@@ -1605,11 +1633,16 @@ func (ec *executionContext) field_Mutation_splitHive_args(ctx context.Context, r
 		return nil, err
 	}
 	args["queenName"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "frameIds", ec.unmarshalNID2ᚕstringᚄ)
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "queenAction", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["frameIds"] = arg2
+	args["queenAction"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "frameIds", ec.unmarshalNID2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["frameIds"] = arg3
 	return args, nil
 }
 
@@ -1735,6 +1768,17 @@ func (ec *executionContext) field_Query_apiary_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_debugHiveQueens_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "hiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["hiveId"] = arg0
 	return args, nil
 }
 
@@ -4789,7 +4833,7 @@ func (ec *executionContext) _Mutation_splitHive(ctx context.Context, field graph
 		ec.fieldContext_Mutation_splitHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SplitHive(ctx, fc.Args["sourceHiveId"].(string), fc.Args["queenName"].(*string), fc.Args["frameIds"].([]string))
+			return ec.resolvers.Mutation().SplitHive(ctx, fc.Args["sourceHiveId"].(string), fc.Args["queenName"].(*string), fc.Args["queenAction"].(string), fc.Args["frameIds"].([]string))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -5371,6 +5415,47 @@ func (ec *executionContext) fieldContext_Query_inspections(ctx context.Context, 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_inspections_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_debugHiveQueens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_debugHiveQueens,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().DebugHiveQueens(ctx, fc.Args["hiveId"].(string))
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_debugHiveQueens(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_debugHiveQueens_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8977,6 +9062,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_inspections(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "debugHiveQueens":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_debugHiveQueens(ctx, field)
 				return res
 			}
 

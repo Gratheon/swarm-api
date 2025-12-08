@@ -34,7 +34,14 @@ func main() {
 	logger.Info("Initializing router")
 	router := chi.NewRouter()
 
-	_ = RegisterGraphQLSchema(graphqlSchema)
+	if os.Getenv("TESTING") != "true" {
+		err := RegisterGraphQLSchema(graphqlSchema)
+		if err != nil {
+			logger.Error("Failed to register schema: " + err.Error())
+		}
+	} else {
+		logger.Info("Skipping schema registration in test mode")
+	}
 
 	// Add CORS middleware around every request
 	// See https://github.com/rs/cors for full option listing
@@ -63,9 +70,9 @@ func main() {
 
 	httpHost := "0.0.0.0:8100"
 
-	err := http.ListenAndServe(httpHost, router)
+	log.Printf("Server running on http://%s/graphql", httpHost)
 
-	log.Printf("Server running on http://%s:%s/graphql", httpHost)
+	err := http.ListenAndServe(httpHost, router)
 
 	if err != nil {
 		logger.Error(err.Error())
