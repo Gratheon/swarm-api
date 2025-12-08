@@ -40,6 +40,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Apiary() ApiaryResolver
+	ApiaryObstacle() ApiaryObstacleResolver
 	Box() BoxResolver
 	Entity() EntityResolver
 	Family() FamilyResolver
@@ -60,6 +61,19 @@ type ComplexityRoot struct {
 		Lng      func(childComplexity int) int
 		Location func(childComplexity int) int
 		Name     func(childComplexity int) int
+	}
+
+	ApiaryObstacle struct {
+		ApiaryID func(childComplexity int) int
+		Height   func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Label    func(childComplexity int) int
+		Radius   func(childComplexity int) int
+		Rotation func(childComplexity int) int
+		Type     func(childComplexity int) int
+		Width    func(childComplexity int) int
+		X        func(childComplexity int) int
+		Y        func(childComplexity int) int
 	}
 
 	Box struct {
@@ -123,6 +137,15 @@ type ComplexityRoot struct {
 		Status          func(childComplexity int) int
 	}
 
+	HivePlacement struct {
+		ApiaryID func(childComplexity int) int
+		HiveID   func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Rotation func(childComplexity int) int
+		X        func(childComplexity int) int
+		Y        func(childComplexity int) int
+	}
+
 	Inspection struct {
 		Added  func(childComplexity int) int
 		Data   func(childComplexity int) int
@@ -131,36 +154,42 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddApiary           func(childComplexity int, apiary model.ApiaryInput) int
-		AddBox              func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
-		AddFrame            func(childComplexity int, boxID string, typeArg string, position int) int
-		AddHive             func(childComplexity int, hive model.HiveInput) int
-		AddInspection       func(childComplexity int, inspection model.InspectionInput) int
-		AddQueenToHive      func(childComplexity int, hiveID string, queen model.FamilyInput) int
-		DeactivateApiary    func(childComplexity int, id string) int
-		DeactivateBox       func(childComplexity int, id string) int
-		DeactivateFrame     func(childComplexity int, id string) int
-		DeactivateHive      func(childComplexity int, id string) int
-		JoinHives           func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
-		MarkHiveAsCollapsed func(childComplexity int, id string, collapseDate string, collapseCause string) int
-		RemoveQueenFromHive func(childComplexity int, hiveID string, familyID string) int
-		SplitHive           func(childComplexity int, sourceHiveID string, queenName *string, queenAction string, frameIds []string) int
-		SwapBoxPositions    func(childComplexity int, id string, id2 string) int
-		TreatBox            func(childComplexity int, treatment model.TreatmentOfBoxInput) int
-		TreatHive           func(childComplexity int, treatment model.TreatmentOfHiveInput) int
-		UpdateApiary        func(childComplexity int, id string, apiary model.ApiaryInput) int
-		UpdateBoxColor      func(childComplexity int, id string, color *string) int
-		UpdateFrames        func(childComplexity int, frames []*model.FrameInput) int
-		UpdateHive          func(childComplexity int, hive model.HiveUpdateInput) int
+		AddApiary            func(childComplexity int, apiary model.ApiaryInput) int
+		AddApiaryObstacle    func(childComplexity int, apiaryID string, obstacle model.ApiaryObstacleInput) int
+		AddBox               func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
+		AddFrame             func(childComplexity int, boxID string, typeArg string, position int) int
+		AddHive              func(childComplexity int, hive model.HiveInput) int
+		AddInspection        func(childComplexity int, inspection model.InspectionInput) int
+		AddQueenToHive       func(childComplexity int, hiveID string, queen model.FamilyInput) int
+		DeactivateApiary     func(childComplexity int, id string) int
+		DeactivateBox        func(childComplexity int, id string) int
+		DeactivateFrame      func(childComplexity int, id string) int
+		DeactivateHive       func(childComplexity int, id string) int
+		DeleteApiaryObstacle func(childComplexity int, id string) int
+		JoinHives            func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
+		MarkHiveAsCollapsed  func(childComplexity int, id string, collapseDate string, collapseCause string) int
+		RemoveQueenFromHive  func(childComplexity int, hiveID string, familyID string) int
+		SplitHive            func(childComplexity int, sourceHiveID string, queenName *string, queenAction string, frameIds []string) int
+		SwapBoxPositions     func(childComplexity int, id string, id2 string) int
+		TreatBox             func(childComplexity int, treatment model.TreatmentOfBoxInput) int
+		TreatHive            func(childComplexity int, treatment model.TreatmentOfHiveInput) int
+		UpdateApiary         func(childComplexity int, id string, apiary model.ApiaryInput) int
+		UpdateApiaryObstacle func(childComplexity int, id string, obstacle model.ApiaryObstacleInput) int
+		UpdateBoxColor       func(childComplexity int, id string, color *string) int
+		UpdateFrames         func(childComplexity int, frames []*model.FrameInput) int
+		UpdateHive           func(childComplexity int, hive model.HiveUpdateInput) int
+		UpdateHivePlacement  func(childComplexity int, apiaryID string, hiveID string, x float64, y float64, rotation float64) int
 	}
 
 	Query struct {
 		Apiaries           func(childComplexity int) int
 		Apiary             func(childComplexity int, id string) int
+		ApiaryObstacles    func(childComplexity int, apiaryID string) int
 		DebugHiveQueens    func(childComplexity int, hiveID string) int
 		Hive               func(childComplexity int, id string) int
 		HiveFrame          func(childComplexity int, id string) int
 		HiveFrameSide      func(childComplexity int, id string) int
+		HivePlacements     func(childComplexity int, apiaryID string) int
 		Inspection         func(childComplexity int, inspectionID string) int
 		Inspections        func(childComplexity int, hiveID string, limit *int) int
 		RandomHiveName     func(childComplexity int, language *string) int
@@ -184,6 +213,9 @@ type ComplexityRoot struct {
 
 type ApiaryResolver interface {
 	Hives(ctx context.Context, obj *model.Apiary) ([]*model.Hive, error)
+}
+type ApiaryObstacleResolver interface {
+	Type(ctx context.Context, obj *model.ApiaryObstacle) (model.ObstacleType, error)
 }
 type BoxResolver interface {
 	Frames(ctx context.Context, obj *model.Box) ([]*model.Frame, error)
@@ -239,6 +271,10 @@ type MutationResolver interface {
 	MarkHiveAsCollapsed(ctx context.Context, id string, collapseDate string, collapseCause string) (*model.Hive, error)
 	SplitHive(ctx context.Context, sourceHiveID string, queenName *string, queenAction string, frameIds []string) (*model.Hive, error)
 	JoinHives(ctx context.Context, sourceHiveID string, targetHiveID string, mergeType string) (*model.Hive, error)
+	UpdateHivePlacement(ctx context.Context, apiaryID string, hiveID string, x float64, y float64, rotation float64) (*model.HivePlacement, error)
+	AddApiaryObstacle(ctx context.Context, apiaryID string, obstacle model.ApiaryObstacleInput) (*model.ApiaryObstacle, error)
+	UpdateApiaryObstacle(ctx context.Context, id string, obstacle model.ApiaryObstacleInput) (*model.ApiaryObstacle, error)
+	DeleteApiaryObstacle(ctx context.Context, id string) (*bool, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -250,6 +286,8 @@ type QueryResolver interface {
 	RandomHiveName(ctx context.Context, language *string) (*string, error)
 	Inspections(ctx context.Context, hiveID string, limit *int) ([]*model.Inspection, error)
 	DebugHiveQueens(ctx context.Context, hiveID string) (*string, error)
+	HivePlacements(ctx context.Context, apiaryID string) ([]*model.HivePlacement, error)
+	ApiaryObstacles(ctx context.Context, apiaryID string) ([]*model.ApiaryObstacle, error)
 }
 
 type executableSchema struct {
@@ -307,6 +345,67 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Apiary.Name(childComplexity), true
+
+	case "ApiaryObstacle.apiaryId":
+		if e.complexity.ApiaryObstacle.ApiaryID == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.ApiaryID(childComplexity), true
+	case "ApiaryObstacle.height":
+		if e.complexity.ApiaryObstacle.Height == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.Height(childComplexity), true
+	case "ApiaryObstacle.id":
+		if e.complexity.ApiaryObstacle.ID == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.ID(childComplexity), true
+	case "ApiaryObstacle.label":
+		if e.complexity.ApiaryObstacle.Label == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.Label(childComplexity), true
+	case "ApiaryObstacle.radius":
+		if e.complexity.ApiaryObstacle.Radius == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.Radius(childComplexity), true
+	case "ApiaryObstacle.rotation":
+		if e.complexity.ApiaryObstacle.Rotation == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.Rotation(childComplexity), true
+	case "ApiaryObstacle.type":
+		if e.complexity.ApiaryObstacle.Type == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.Type(childComplexity), true
+	case "ApiaryObstacle.width":
+		if e.complexity.ApiaryObstacle.Width == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.Width(childComplexity), true
+	case "ApiaryObstacle.x":
+		if e.complexity.ApiaryObstacle.X == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.X(childComplexity), true
+	case "ApiaryObstacle.y":
+		if e.complexity.ApiaryObstacle.Y == nil {
+			break
+		}
+
+		return e.complexity.ApiaryObstacle.Y(childComplexity), true
 
 	case "Box.color":
 		if e.complexity.Box.Color == nil {
@@ -582,6 +681,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Hive.Status(childComplexity), true
 
+	case "HivePlacement.apiaryId":
+		if e.complexity.HivePlacement.ApiaryID == nil {
+			break
+		}
+
+		return e.complexity.HivePlacement.ApiaryID(childComplexity), true
+	case "HivePlacement.hiveId":
+		if e.complexity.HivePlacement.HiveID == nil {
+			break
+		}
+
+		return e.complexity.HivePlacement.HiveID(childComplexity), true
+	case "HivePlacement.id":
+		if e.complexity.HivePlacement.ID == nil {
+			break
+		}
+
+		return e.complexity.HivePlacement.ID(childComplexity), true
+	case "HivePlacement.rotation":
+		if e.complexity.HivePlacement.Rotation == nil {
+			break
+		}
+
+		return e.complexity.HivePlacement.Rotation(childComplexity), true
+	case "HivePlacement.x":
+		if e.complexity.HivePlacement.X == nil {
+			break
+		}
+
+		return e.complexity.HivePlacement.X(childComplexity), true
+	case "HivePlacement.y":
+		if e.complexity.HivePlacement.Y == nil {
+			break
+		}
+
+		return e.complexity.HivePlacement.Y(childComplexity), true
+
 	case "Inspection.added":
 		if e.complexity.Inspection.Added == nil {
 			break
@@ -618,6 +754,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddApiary(childComplexity, args["apiary"].(model.ApiaryInput)), true
+	case "Mutation.addApiaryObstacle":
+		if e.complexity.Mutation.AddApiaryObstacle == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addApiaryObstacle_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddApiaryObstacle(childComplexity, args["apiaryId"].(string), args["obstacle"].(model.ApiaryObstacleInput)), true
 	case "Mutation.addBox":
 		if e.complexity.Mutation.AddBox == nil {
 			break
@@ -717,6 +864,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeactivateHive(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteApiaryObstacle":
+		if e.complexity.Mutation.DeleteApiaryObstacle == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteApiaryObstacle_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteApiaryObstacle(childComplexity, args["id"].(string)), true
 	case "Mutation.joinHives":
 		if e.complexity.Mutation.JoinHives == nil {
 			break
@@ -805,6 +963,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateApiary(childComplexity, args["id"].(string), args["apiary"].(model.ApiaryInput)), true
+	case "Mutation.updateApiaryObstacle":
+		if e.complexity.Mutation.UpdateApiaryObstacle == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateApiaryObstacle_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateApiaryObstacle(childComplexity, args["id"].(string), args["obstacle"].(model.ApiaryObstacleInput)), true
 	case "Mutation.updateBoxColor":
 		if e.complexity.Mutation.UpdateBoxColor == nil {
 			break
@@ -838,6 +1007,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateHive(childComplexity, args["hive"].(model.HiveUpdateInput)), true
+	case "Mutation.updateHivePlacement":
+		if e.complexity.Mutation.UpdateHivePlacement == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateHivePlacement_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateHivePlacement(childComplexity, args["apiaryId"].(string), args["hiveId"].(string), args["x"].(float64), args["y"].(float64), args["rotation"].(float64)), true
 
 	case "Query.apiaries":
 		if e.complexity.Query.Apiaries == nil {
@@ -856,6 +1036,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Apiary(childComplexity, args["id"].(string)), true
+	case "Query.apiaryObstacles":
+		if e.complexity.Query.ApiaryObstacles == nil {
+			break
+		}
+
+		args, err := ec.field_Query_apiaryObstacles_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ApiaryObstacles(childComplexity, args["apiaryId"].(string)), true
 	case "Query.debugHiveQueens":
 		if e.complexity.Query.DebugHiveQueens == nil {
 			break
@@ -900,6 +1091,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.HiveFrameSide(childComplexity, args["id"].(string)), true
+	case "Query.hivePlacements":
+		if e.complexity.Query.HivePlacements == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hivePlacements_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.HivePlacements(childComplexity, args["apiaryId"].(string)), true
 	case "Query.inspection":
 		if e.complexity.Query.Inspection == nil {
 			break
@@ -1004,6 +1206,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputApiaryInput,
+		ec.unmarshalInputApiaryObstacleInput,
 		ec.unmarshalInputBoxInput,
 		ec.unmarshalInputFamilyInput,
 		ec.unmarshalInputFrameInput,
@@ -1132,6 +1335,9 @@ type Query {
 
   """ Debug query to check queen tracking for a hive """
   debugHiveQueens(hiveId: ID!): String
+
+  hivePlacements(apiaryId: ID!): [HivePlacement]
+  apiaryObstacles(apiaryId: ID!): [ApiaryObstacle]
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -1176,6 +1382,11 @@ type Mutation {
   splitHive(sourceHiveId: ID!, queenName: String, queenAction: String!, frameIds: [ID!]!): Hive
 
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
+
+  updateHivePlacement(apiaryId: ID!, hiveId: ID!, x: Float!, y: Float!, rotation: Float!): HivePlacement
+  addApiaryObstacle(apiaryId: ID!, obstacle: ApiaryObstacleInput!): ApiaryObstacle
+  updateApiaryObstacle(id: ID!, obstacle: ApiaryObstacleInput!): ApiaryObstacle
+  deleteApiaryObstacle(id: ID!): Boolean
 }
 
 input TreatmentOfBoxInput {
@@ -1364,6 +1575,45 @@ type FrameSide @key(fields: "id") {
   id: ID
   frameId: ID
 }
+
+type HivePlacement {
+  id: ID!
+  apiaryId: ID!
+  hiveId: ID!
+  x: Float!
+  y: Float!
+  rotation: Float!
+}
+
+type ApiaryObstacle {
+  id: ID!
+  apiaryId: ID!
+  type: ObstacleType!
+  x: Float!
+  y: Float!
+  width: Float
+  height: Float
+  radius: Float
+  rotation: Float!
+  label: String
+}
+
+enum ObstacleType {
+  CIRCLE
+  RECTANGLE
+}
+
+input ApiaryObstacleInput {
+  type: ObstacleType!
+  x: Float!
+  y: Float!
+  width: Float
+  height: Float
+  radius: Float
+  rotation: Float
+  label: String
+}
+
 `, BuiltIn: false},
 	{Name: "../../federation/directives.graphql", Input: `
 	directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
@@ -1419,6 +1669,22 @@ func (ec *executionContext) field_Entity_findHiveByID_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addApiaryObstacle_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "apiaryId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["apiaryId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "obstacle", ec.unmarshalNApiaryObstacleInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacleInput)
+	if err != nil {
+		return nil, err
+	}
+	args["obstacle"] = arg1
 	return args, nil
 }
 
@@ -1562,6 +1828,17 @@ func (ec *executionContext) field_Mutation_deactivateHive_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteApiaryObstacle_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_joinHives_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1684,6 +1961,22 @@ func (ec *executionContext) field_Mutation_treatHive_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateApiaryObstacle_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "obstacle", ec.unmarshalNApiaryObstacleInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacleInput)
+	if err != nil {
+		return nil, err
+	}
+	args["obstacle"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateApiary_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1727,6 +2020,37 @@ func (ec *executionContext) field_Mutation_updateFrames_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateHivePlacement_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "apiaryId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["apiaryId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "hiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["hiveId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "x", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["x"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "y", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["y"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "rotation", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["rotation"] = arg4
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateHive_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1757,6 +2081,17 @@ func (ec *executionContext) field_Query__entities_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["representations"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_apiaryObstacles_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "apiaryId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["apiaryId"] = arg0
 	return args, nil
 }
 
@@ -1801,6 +2136,17 @@ func (ec *executionContext) field_Query_hiveFrame_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_hivePlacements_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "apiaryId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["apiaryId"] = arg0
 	return args, nil
 }
 
@@ -2113,6 +2459,296 @@ func (ec *executionContext) _Apiary_lng(ctx context.Context, field graphql.Colle
 func (ec *executionContext) fieldContext_Apiary_lng(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Apiary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_id(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_apiaryId(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_apiaryId,
+		func(ctx context.Context) (any, error) {
+			return obj.ApiaryID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_apiaryId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_type(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_type,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ApiaryObstacle().Type(ctx, obj)
+		},
+		nil,
+		ec.marshalNObstacleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐObstacleType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ObstacleType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_x(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_x,
+		func(ctx context.Context) (any, error) {
+			return obj.X, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_x(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_y(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_y,
+		func(ctx context.Context) (any, error) {
+			return obj.Y, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_y(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_width(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_width,
+		func(ctx context.Context) (any, error) {
+			return obj.Width, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_width(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_height(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_height,
+		func(ctx context.Context) (any, error) {
+			return obj.Height, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_height(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_radius(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_radius,
+		func(ctx context.Context) (any, error) {
+			return obj.Radius, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_radius(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_rotation(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_rotation,
+		func(ctx context.Context) (any, error) {
+			return obj.Rotation, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_rotation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiaryObstacle_label(ctx context.Context, field graphql.CollectedField, obj *model.ApiaryObstacle) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiaryObstacle_label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiaryObstacle_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiaryObstacle",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3706,6 +4342,180 @@ func (ec *executionContext) fieldContext_Hive_mergedFromHives(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _HivePlacement_id(ctx context.Context, field graphql.CollectedField, obj *model.HivePlacement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HivePlacement_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HivePlacement_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HivePlacement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HivePlacement_apiaryId(ctx context.Context, field graphql.CollectedField, obj *model.HivePlacement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HivePlacement_apiaryId,
+		func(ctx context.Context) (any, error) {
+			return obj.ApiaryID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HivePlacement_apiaryId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HivePlacement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HivePlacement_hiveId(ctx context.Context, field graphql.CollectedField, obj *model.HivePlacement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HivePlacement_hiveId,
+		func(ctx context.Context) (any, error) {
+			return obj.HiveID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HivePlacement_hiveId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HivePlacement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HivePlacement_x(ctx context.Context, field graphql.CollectedField, obj *model.HivePlacement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HivePlacement_x,
+		func(ctx context.Context) (any, error) {
+			return obj.X, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HivePlacement_x(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HivePlacement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HivePlacement_y(ctx context.Context, field graphql.CollectedField, obj *model.HivePlacement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HivePlacement_y,
+		func(ctx context.Context) (any, error) {
+			return obj.Y, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HivePlacement_y(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HivePlacement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HivePlacement_rotation(ctx context.Context, field graphql.CollectedField, obj *model.HivePlacement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HivePlacement_rotation,
+		func(ctx context.Context) (any, error) {
+			return obj.Rotation, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HivePlacement_rotation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HivePlacement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Inspection_id(ctx context.Context, field graphql.CollectedField, obj *model.Inspection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4995,6 +5805,228 @@ func (ec *executionContext) fieldContext_Mutation_joinHives(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateHivePlacement(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateHivePlacement,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateHivePlacement(ctx, fc.Args["apiaryId"].(string), fc.Args["hiveId"].(string), fc.Args["x"].(float64), fc.Args["y"].(float64), fc.Args["rotation"].(float64))
+		},
+		nil,
+		ec.marshalOHivePlacement2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateHivePlacement(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HivePlacement_id(ctx, field)
+			case "apiaryId":
+				return ec.fieldContext_HivePlacement_apiaryId(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_HivePlacement_hiveId(ctx, field)
+			case "x":
+				return ec.fieldContext_HivePlacement_x(ctx, field)
+			case "y":
+				return ec.fieldContext_HivePlacement_y(ctx, field)
+			case "rotation":
+				return ec.fieldContext_HivePlacement_rotation(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HivePlacement", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateHivePlacement_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_addApiaryObstacle(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_addApiaryObstacle,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AddApiaryObstacle(ctx, fc.Args["apiaryId"].(string), fc.Args["obstacle"].(model.ApiaryObstacleInput))
+		},
+		nil,
+		ec.marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addApiaryObstacle(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ApiaryObstacle_id(ctx, field)
+			case "apiaryId":
+				return ec.fieldContext_ApiaryObstacle_apiaryId(ctx, field)
+			case "type":
+				return ec.fieldContext_ApiaryObstacle_type(ctx, field)
+			case "x":
+				return ec.fieldContext_ApiaryObstacle_x(ctx, field)
+			case "y":
+				return ec.fieldContext_ApiaryObstacle_y(ctx, field)
+			case "width":
+				return ec.fieldContext_ApiaryObstacle_width(ctx, field)
+			case "height":
+				return ec.fieldContext_ApiaryObstacle_height(ctx, field)
+			case "radius":
+				return ec.fieldContext_ApiaryObstacle_radius(ctx, field)
+			case "rotation":
+				return ec.fieldContext_ApiaryObstacle_rotation(ctx, field)
+			case "label":
+				return ec.fieldContext_ApiaryObstacle_label(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ApiaryObstacle", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addApiaryObstacle_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateApiaryObstacle(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateApiaryObstacle,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateApiaryObstacle(ctx, fc.Args["id"].(string), fc.Args["obstacle"].(model.ApiaryObstacleInput))
+		},
+		nil,
+		ec.marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateApiaryObstacle(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ApiaryObstacle_id(ctx, field)
+			case "apiaryId":
+				return ec.fieldContext_ApiaryObstacle_apiaryId(ctx, field)
+			case "type":
+				return ec.fieldContext_ApiaryObstacle_type(ctx, field)
+			case "x":
+				return ec.fieldContext_ApiaryObstacle_x(ctx, field)
+			case "y":
+				return ec.fieldContext_ApiaryObstacle_y(ctx, field)
+			case "width":
+				return ec.fieldContext_ApiaryObstacle_width(ctx, field)
+			case "height":
+				return ec.fieldContext_ApiaryObstacle_height(ctx, field)
+			case "radius":
+				return ec.fieldContext_ApiaryObstacle_radius(ctx, field)
+			case "rotation":
+				return ec.fieldContext_ApiaryObstacle_rotation(ctx, field)
+			case "label":
+				return ec.fieldContext_ApiaryObstacle_label(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ApiaryObstacle", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateApiaryObstacle_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteApiaryObstacle(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteApiaryObstacle,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DeleteApiaryObstacle(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteApiaryObstacle(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteApiaryObstacle_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5456,6 +6488,124 @@ func (ec *executionContext) fieldContext_Query_debugHiveQueens(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_debugHiveQueens_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_hivePlacements(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_hivePlacements,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().HivePlacements(ctx, fc.Args["apiaryId"].(string))
+		},
+		nil,
+		ec.marshalOHivePlacement2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_hivePlacements(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HivePlacement_id(ctx, field)
+			case "apiaryId":
+				return ec.fieldContext_HivePlacement_apiaryId(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_HivePlacement_hiveId(ctx, field)
+			case "x":
+				return ec.fieldContext_HivePlacement_x(ctx, field)
+			case "y":
+				return ec.fieldContext_HivePlacement_y(ctx, field)
+			case "rotation":
+				return ec.fieldContext_HivePlacement_rotation(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HivePlacement", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_hivePlacements_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_apiaryObstacles(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_apiaryObstacles,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().ApiaryObstacles(ctx, fc.Args["apiaryId"].(string))
+		},
+		nil,
+		ec.marshalOApiaryObstacle2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_apiaryObstacles(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ApiaryObstacle_id(ctx, field)
+			case "apiaryId":
+				return ec.fieldContext_ApiaryObstacle_apiaryId(ctx, field)
+			case "type":
+				return ec.fieldContext_ApiaryObstacle_type(ctx, field)
+			case "x":
+				return ec.fieldContext_ApiaryObstacle_x(ctx, field)
+			case "y":
+				return ec.fieldContext_ApiaryObstacle_y(ctx, field)
+			case "width":
+				return ec.fieldContext_ApiaryObstacle_width(ctx, field)
+			case "height":
+				return ec.fieldContext_ApiaryObstacle_height(ctx, field)
+			case "radius":
+				return ec.fieldContext_ApiaryObstacle_radius(ctx, field)
+			case "rotation":
+				return ec.fieldContext_ApiaryObstacle_rotation(ctx, field)
+			case "label":
+				return ec.fieldContext_ApiaryObstacle_label(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ApiaryObstacle", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_apiaryObstacles_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7334,6 +8484,82 @@ func (ec *executionContext) unmarshalInputApiaryInput(ctx context.Context, obj a
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputApiaryObstacleInput(ctx context.Context, obj any) (model.ApiaryObstacleInput, error) {
+	var it model.ApiaryObstacleInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"type", "x", "y", "width", "height", "radius", "rotation", "label"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNObstacleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐObstacleType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "x":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("x"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.X = data
+		case "y":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("y"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Y = data
+		case "width":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("width"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Width = data
+		case "height":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Height = data
+		case "radius":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("radius"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Radius = data
+		case "rotation":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rotation"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rotation = data
+		case "label":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Label = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj any) (model.BoxInput, error) {
 	var it model.BoxInput
 	asMap := map[string]any{}
@@ -7827,6 +9053,109 @@ func (ec *executionContext) _Apiary(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Apiary_lat(ctx, field, obj)
 		case "lng":
 			out.Values[i] = ec._Apiary_lng(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var apiaryObstacleImplementors = []string{"ApiaryObstacle"}
+
+func (ec *executionContext) _ApiaryObstacle(ctx context.Context, sel ast.SelectionSet, obj *model.ApiaryObstacle) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, apiaryObstacleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ApiaryObstacle")
+		case "id":
+			out.Values[i] = ec._ApiaryObstacle_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "apiaryId":
+			out.Values[i] = ec._ApiaryObstacle_apiaryId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "type":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ApiaryObstacle_type(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "x":
+			out.Values[i] = ec._ApiaryObstacle_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "y":
+			out.Values[i] = ec._ApiaryObstacle_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "width":
+			out.Values[i] = ec._ApiaryObstacle_width(ctx, field, obj)
+		case "height":
+			out.Values[i] = ec._ApiaryObstacle_height(ctx, field, obj)
+		case "radius":
+			out.Values[i] = ec._ApiaryObstacle_radius(ctx, field, obj)
+		case "rotation":
+			out.Values[i] = ec._ApiaryObstacle_rotation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "label":
+			out.Values[i] = ec._ApiaryObstacle_label(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8711,6 +10040,70 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var hivePlacementImplementors = []string{"HivePlacement"}
+
+func (ec *executionContext) _HivePlacement(ctx context.Context, sel ast.SelectionSet, obj *model.HivePlacement) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, hivePlacementImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HivePlacement")
+		case "id":
+			out.Values[i] = ec._HivePlacement_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "apiaryId":
+			out.Values[i] = ec._HivePlacement_apiaryId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hiveId":
+			out.Values[i] = ec._HivePlacement_hiveId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "x":
+			out.Values[i] = ec._HivePlacement_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "y":
+			out.Values[i] = ec._HivePlacement_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rotation":
+			out.Values[i] = ec._HivePlacement_rotation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var inspectionImplementors = []string{"Inspection"}
 
 func (ec *executionContext) _Inspection(ctx context.Context, sel ast.SelectionSet, obj *model.Inspection) graphql.Marshaler {
@@ -8876,6 +10269,22 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "joinHives":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_joinHives(ctx, field)
+			})
+		case "updateHivePlacement":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateHivePlacement(ctx, field)
+			})
+		case "addApiaryObstacle":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addApiaryObstacle(ctx, field)
+			})
+		case "updateApiaryObstacle":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateApiaryObstacle(ctx, field)
+			})
+		case "deleteApiaryObstacle":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteApiaryObstacle(ctx, field)
 			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -9081,6 +10490,44 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_debugHiveQueens(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "hivePlacements":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_hivePlacements(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "apiaryObstacles":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_apiaryObstacles(ctx, field)
 				return res
 			}
 
@@ -9605,6 +11052,11 @@ func (ec *executionContext) unmarshalNApiaryInput2githubᚗcomᚋGratheonᚋswar
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNApiaryObstacleInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacleInput(ctx context.Context, v any) (model.ApiaryObstacleInput, error) {
+	res, err := ec.unmarshalInputApiaryObstacleInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9686,6 +11138,22 @@ func (ec *executionContext) marshalNDateTime2ᚖstring(ctx context.Context, sel 
 func (ec *executionContext) unmarshalNFamilyInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx context.Context, v any) (model.FamilyInput, error) {
 	res, err := ec.unmarshalInputFamilyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) marshalNFrame2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v model.Frame) graphql.Marshaler {
@@ -9884,6 +11352,16 @@ func (ec *executionContext) marshalNJSON2string(ctx context.Context, sel ast.Sel
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNObstacleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐObstacleType(ctx context.Context, v any) (model.ObstacleType, error) {
+	var res model.ObstacleType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNObstacleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐObstacleType(ctx context.Context, sel ast.SelectionSet, v model.ObstacleType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
@@ -10323,6 +11801,54 @@ func (ec *executionContext) marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑ
 	return ec._Apiary(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOApiaryObstacle2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle(ctx context.Context, sel ast.SelectionSet, v []*model.ApiaryObstacle) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle(ctx context.Context, sel ast.SelectionSet, v *model.ApiaryObstacle) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ApiaryObstacle(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10475,6 +12001,23 @@ func (ec *executionContext) unmarshalOFamilyInput2ᚖgithubᚗcomᚋGratheonᚋs
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
 func (ec *executionContext) marshalOFrame2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx context.Context, sel ast.SelectionSet, v []*model.Frame) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -10584,6 +12127,54 @@ func (ec *executionContext) marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑap
 		return graphql.Null
 	}
 	return ec._Hive(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOHivePlacement2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement(ctx context.Context, sel ast.SelectionSet, v []*model.HivePlacement) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOHivePlacement2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOHivePlacement2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement(ctx context.Context, sel ast.SelectionSet, v *model.HivePlacement) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._HivePlacement(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOID2int(ctx context.Context, v any) (int, error) {

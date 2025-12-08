@@ -15,6 +15,17 @@ type ApiaryInput struct {
 	Lng  *string `json:"lng,omitempty"`
 }
 
+type ApiaryObstacleInput struct {
+	Type     ObstacleType `json:"type"`
+	X        float64      `json:"x"`
+	Y        float64      `json:"y"`
+	Width    *float64     `json:"width,omitempty"`
+	Height   *float64     `json:"height,omitempty"`
+	Radius   *float64     `json:"radius,omitempty"`
+	Rotation *float64     `json:"rotation,omitempty"`
+	Label    *string      `json:"label,omitempty"`
+}
+
 type BoxInput struct {
 	ID       *string `json:"id,omitempty"`
 	Position int     `json:"position"`
@@ -206,6 +217,61 @@ func (e *FrameType) UnmarshalJSON(b []byte) error {
 }
 
 func (e FrameType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ObstacleType string
+
+const (
+	ObstacleTypeCircle    ObstacleType = "CIRCLE"
+	ObstacleTypeRectangle ObstacleType = "RECTANGLE"
+)
+
+var AllObstacleType = []ObstacleType{
+	ObstacleTypeCircle,
+	ObstacleTypeRectangle,
+}
+
+func (e ObstacleType) IsValid() bool {
+	switch e {
+	case ObstacleTypeCircle, ObstacleTypeRectangle:
+		return true
+	}
+	return false
+}
+
+func (e ObstacleType) String() string {
+	return string(e)
+}
+
+func (e *ObstacleType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ObstacleType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ObstacleType", str)
+	}
+	return nil
+}
+
+func (e ObstacleType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ObstacleType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ObstacleType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -27,6 +27,11 @@ func (r *apiaryResolver) Hives(ctx context.Context, obj *model.Apiary) ([]*model
 	}).ListByApiary(obj.ID)
 }
 
+// Type is the resolver for the type field.
+func (r *apiaryObstacleResolver) Type(ctx context.Context, obj *model.ApiaryObstacle) (model.ObstacleType, error) {
+	return model.ObstacleType(obj.Type), nil
+}
+
 // Frames is the resolver for the frames field.
 func (r *boxResolver) Frames(ctx context.Context, obj *model.Box) ([]*model.Frame, error) {
 	uid := ctx.Value("userID").(string)
@@ -862,6 +867,70 @@ func (r *mutationResolver) JoinHives(ctx context.Context, sourceHiveID string, t
 	return updatedTargetHive, nil
 }
 
+// UpdateHivePlacement is the resolver for the updateHivePlacement field.
+func (r *mutationResolver) UpdateHivePlacement(ctx context.Context, apiaryID string, hiveID string, x float64, y float64, rotation float64) (*model.HivePlacement, error) {
+	uid := ctx.Value("userID").(string)
+	placement, err := (&model.HivePlacement{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Update(apiaryID, hiveID, x, y, rotation)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	return placement, nil
+}
+
+// AddApiaryObstacle is the resolver for the addApiaryObstacle field.
+func (r *mutationResolver) AddApiaryObstacle(ctx context.Context, apiaryID string, obstacle model.ApiaryObstacleInput) (*model.ApiaryObstacle, error) {
+	uid := ctx.Value("userID").(string)
+	created, err := (&model.ApiaryObstacle{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Create(apiaryID, string(obstacle.Type), obstacle.X, obstacle.Y, obstacle.Width, obstacle.Height, obstacle.Radius, obstacle.Rotation, obstacle.Label)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	return created, nil
+}
+
+// UpdateApiaryObstacle is the resolver for the updateApiaryObstacle field.
+func (r *mutationResolver) UpdateApiaryObstacle(ctx context.Context, id string, obstacle model.ApiaryObstacleInput) (*model.ApiaryObstacle, error) {
+	uid := ctx.Value("userID").(string)
+	updated, err := (&model.ApiaryObstacle{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Update(id, string(obstacle.Type), obstacle.X, obstacle.Y, obstacle.Width, obstacle.Height, obstacle.Radius, obstacle.Rotation, obstacle.Label)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	return updated, nil
+}
+
+// DeleteApiaryObstacle is the resolver for the deleteApiaryObstacle field.
+func (r *mutationResolver) DeleteApiaryObstacle(ctx context.Context, id string) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	deleted, err := (&model.ApiaryObstacle{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Delete(id)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	return &deleted, nil
+}
+
 // Hive is the resolver for the hive field.
 func (r *queryResolver) Hive(ctx context.Context, id string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
@@ -969,8 +1038,31 @@ func (r *queryResolver) DebugHiveQueens(ctx context.Context, hiveID string) (*st
 	return &result, err
 }
 
+// HivePlacements is the resolver for the hivePlacements field.
+func (r *queryResolver) HivePlacements(ctx context.Context, apiaryID string) ([]*model.HivePlacement, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.HivePlacement{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListByApiary(apiaryID)
+}
+
+// ApiaryObstacles is the resolver for the apiaryObstacles field.
+func (r *queryResolver) ApiaryObstacles(ctx context.Context, apiaryID string) ([]*model.ApiaryObstacle, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.ApiaryObstacle{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListByApiary(apiaryID)
+}
+
 // Apiary returns generated.ApiaryResolver implementation.
 func (r *Resolver) Apiary() generated.ApiaryResolver { return &apiaryResolver{r} }
+
+// ApiaryObstacle returns generated.ApiaryObstacleResolver implementation.
+func (r *Resolver) ApiaryObstacle() generated.ApiaryObstacleResolver {
+	return &apiaryObstacleResolver{r}
+}
 
 // Box returns generated.BoxResolver implementation.
 func (r *Resolver) Box() generated.BoxResolver { return &boxResolver{r} }
@@ -991,6 +1083,7 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type apiaryResolver struct{ *Resolver }
+type apiaryObstacleResolver struct{ *Resolver }
 type boxResolver struct{ *Resolver }
 type familyResolver struct{ *Resolver }
 type frameResolver struct{ *Resolver }

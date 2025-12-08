@@ -21,6 +21,9 @@ type Query {
 
   """ Debug query to check queen tracking for a hive """
   debugHiveQueens(hiveId: ID!): String
+
+  hivePlacements(apiaryId: ID!): [HivePlacement]
+  apiaryObstacles(apiaryId: ID!): [ApiaryObstacle]
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -65,6 +68,11 @@ type Mutation {
   splitHive(sourceHiveId: ID!, queenName: String, queenAction: String!, frameIds: [ID!]!): Hive
 
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
+
+  updateHivePlacement(apiaryId: ID!, hiveId: ID!, x: Float!, y: Float!, rotation: Float!): HivePlacement
+  addApiaryObstacle(apiaryId: ID!, obstacle: ApiaryObstacleInput!): ApiaryObstacle
+  updateApiaryObstacle(id: ID!, obstacle: ApiaryObstacleInput!): ApiaryObstacle
+  deleteApiaryObstacle(id: ID!): Boolean
 }
 
 input TreatmentOfBoxInput {
@@ -253,3 +261,42 @@ type FrameSide @key(fields: "id") {
   id: ID
   frameId: ID
 }
+
+type HivePlacement {
+  id: ID!
+  apiaryId: ID!
+  hiveId: ID!
+  x: Float!
+  y: Float!
+  rotation: Float!
+}
+
+type ApiaryObstacle {
+  id: ID!
+  apiaryId: ID!
+  type: ObstacleType!
+  x: Float!
+  y: Float!
+  width: Float
+  height: Float
+  radius: Float
+  rotation: Float!
+  label: String
+}
+
+enum ObstacleType {
+  CIRCLE
+  RECTANGLE
+}
+
+input ApiaryObstacleInput {
+  type: ObstacleType!
+  x: Float!
+  y: Float!
+  width: Float
+  height: Float
+  radius: Float
+  rotation: Float
+  label: String
+}
+
