@@ -49,3 +49,26 @@ See [graph/TESTING.md](graph/TESTING.md) for detailed testing instructions.
 ```
 just build
 ```
+
+## License
+
+This project is **dual-licensed**:
+
+- **[AGPL v3](LICENSE-AGPL.md)** - For open source use:
+    - ✅ You can use, modify, and distribute the software
+    - ✅ Source code is freely available
+    - ⚠️ If you modify and host a public instance, you must share your modifications
+    - ⚠️ Any derivative work must also be licensed under AGPL v3
+
+- **[Commercial License](LICENSE-COMMERCIAL.md)** - For enterprise customers who need:
+    - 🏢 On-premise deployment without source disclosure
+    - 🔧 Custom modifications without copyleft obligations
+    - 🎨 White-label/rebranding rights
+    - 📞 Priority support and SLA guarantees
+
+### Contributing
+
+If you'd like to contribute, please see our [Contributing Guide](CONTRIBUTING.md) and sign our Contributor License Agreement (CLA).
+
+*   Please refer to the `CODEOWNERS` file for ownership details.
+*   Follow standard GitHub flow: Fork the repository, create a feature branch, make changes, and submit a Pull Request.
