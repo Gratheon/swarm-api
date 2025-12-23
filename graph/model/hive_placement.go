@@ -19,9 +19,13 @@ type HivePlacement struct {
 func (r *HivePlacement) ListByApiary(apiaryID string) ([]*HivePlacement, error) {
 	placements := []*HivePlacement{}
 	err := r.Db.Select(&placements,
-		`SELECT id, user_id, apiary_id, hive_id, x, y, rotation
-		FROM hive_placements 
-		WHERE apiary_id=? AND user_id=?`, apiaryID, r.UserID)
+		`SELECT hp.id, hp.user_id, hp.apiary_id, hp.hive_id, hp.x, hp.y, hp.rotation
+		FROM hive_placements hp
+		INNER JOIN hives h ON hp.hive_id = h.id AND hp.user_id = h.user_id
+		WHERE hp.apiary_id=? AND hp.user_id=? 
+		  AND h.active=1 
+		  AND h.collapse_date IS NULL 
+		  AND h.merged_into_hive_id IS NULL`, apiaryID, r.UserID)
 	return placements, err
 }
 
@@ -60,4 +64,11 @@ func (r *HivePlacement) Update(apiaryID string, hiveID string, x float64, y floa
 		`SELECT id, user_id, apiary_id, hive_id, x, y, rotation
 		FROM hive_placements WHERE id=?`, existingID)
 	return placement, err
+}
+
+func (r *HivePlacement) DeleteByHiveID(hiveID string) error {
+	_, err := r.Db.Exec(
+		`DELETE FROM hive_placements WHERE hive_id=? AND user_id=?`,
+		hiveID, r.UserID)
+	return err
 }

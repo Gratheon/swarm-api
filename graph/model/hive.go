@@ -57,7 +57,7 @@ func (r *Hive) List(userID string) ([]*Hive, error) {
 		`SELECT id, user_id, apiary_id, active, hive_number, notes, color, status, added, 
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
-		WHERE user_id=? AND active=1`, userID)
+		WHERE user_id=? AND active=1 AND collapse_date IS NULL AND merged_into_hive_id IS NULL`, userID)
 	return hives, err2
 }
 
@@ -67,7 +67,7 @@ func (r *Hive) ListByApiary(apiaryId int) ([]*Hive, error) {
 		`SELECT id, user_id, apiary_id, active, hive_number, notes, color, status, added, 
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
-		WHERE apiary_id=? AND user_id=? AND active=1`, apiaryId, r.UserID)
+		WHERE apiary_id=? AND user_id=? AND active=1 AND collapse_date IS NULL AND merged_into_hive_id IS NULL`, apiaryId, r.UserID)
 	return hives, err2
 }
 
@@ -201,6 +201,16 @@ func (r *Hive) MarkAsCollapsed(id string, collapseDate time.Time, collapseCause 
 	)
 
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(
+		`DELETE FROM hive_placements WHERE hive_id=? AND user_id=?`,
+		id, r.UserID)
+
+	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -295,6 +305,16 @@ func (r *Hive) MarkAsMerged(sourceHiveID string, targetHiveID string, mergeDate 
 	)
 
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(
+		`DELETE FROM hive_placements WHERE hive_id=? AND user_id=?`,
+		sourceHiveID, r.UserID)
+
+	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
