@@ -26,6 +26,7 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 
 func cleanupTestData(t *testing.T, db *sqlx.DB, userID string) {
 	db.Exec("DELETE FROM frames WHERE user_id=?", userID)
+	db.Exec("DELETE FROM frames_sides WHERE user_id=?", userID)
 	db.Exec("DELETE FROM boxes WHERE user_id=?", userID)
 	db.Exec("DELETE FROM families WHERE user_id=?", userID)
 	db.Exec("DELETE FROM hives WHERE user_id=?", userID)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/Gratheon/swarm-api/graph/model"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 )
 
 func TestDataLoader_BatchesHiveQueries(t *testing.T) {
@@ -343,4 +344,161 @@ func TestDataLoader_IntegrationWithResolvers(t *testing.T) {
 			t.Errorf("Expected frames for box")
 		}
 	}
+}
+
+func TestDataLoader_FrameSidesLoading(t *testing.T) {
+	t.Parallel()
+
+	db := setupTestDB(t)
+	if db == nil {
+		return
+	}
+	defer db.Close()
+
+	userID := "999105"
+	defer cleanupTestData(t, db, userID)
+
+	apiaryID := createTestApiary(t, db, userID)
+	hiveID := createTestHive(t, db, userID, apiaryID)
+	boxID := createTestBox(t, db, userID, hiveID)
+
+	leftSideID1 := createTestFrameSide(t, db, userID)
+	rightSideID1 := createTestFrameSide(t, db, userID)
+	leftSideID2 := createTestFrameSide(t, db, userID)
+	rightSideID2 := createTestFrameSide(t, db, userID)
+
+	frame1ID := createTestFrameWithSides(t, db, userID, boxID, 0, leftSideID1, rightSideID1)
+	frame2ID := createTestFrameWithSides(t, db, userID, boxID, 1, leftSideID2, rightSideID2)
+
+	ctx := context.WithValue(context.Background(), "userID", userID)
+	ctx = context.WithValue(ctx, LoadersKey, &Loaders{
+		FrameSideLoader: NewFrameSideLoader(db),
+	})
+
+	loader := NewFrameSideLoader(db)
+
+	resultChan1 := make(chan *model.FrameSide, 1)
+	resultChan2 := make(chan *model.FrameSide, 1)
+
+	go func() {
+		leftSide, err := loader.Load(ctx, &leftSideID1, userID)
+		if err != nil {
+			t.Errorf("Failed to load left side for frame1: %v", err)
+		}
+		resultChan1 <- leftSide
+	}()
+
+	go func() {
+		rightSide, err := loader.Load(ctx, &rightSideID1, userID)
+		if err != nil {
+			t.Errorf("Failed to load right side for frame1: %v", err)
+		}
+		resultChan2 <- rightSide
+	}()
+
+	leftSide1 := <-resultChan1
+	rightSide1 := <-resultChan2
+
+	if leftSide1 == nil {
+		t.Error("Expected left side to be loaded, got nil")
+	}
+
+	if rightSide1 == nil {
+		t.Error("Expected right side to be loaded, got nil")
+	}
+
+	if leftSide1 != nil && leftSide1.ID != nil {
+		if *leftSide1.ID != fmt.Sprintf("%d", leftSideID1) {
+			t.Errorf("Expected left side ID %d, got %s", leftSideID1, *leftSide1.ID)
+		}
+	}
+
+	if rightSide1 != nil && rightSide1.ID != nil {
+		if *rightSide1.ID != fmt.Sprintf("%d", rightSideID1) {
+			t.Errorf("Expected right side ID %d, got %s", rightSideID1, *rightSide1.ID)
+		}
+	}
+
+	_, _, _, _ = frame1ID, frame2ID, leftSideID2, rightSideID2
+}
+
+func TestDataLoader_FrameSidesWithResolvers(t *testing.T) {
+	t.Parallel()
+
+	db := setupTestDB(t)
+	if db == nil {
+		return
+	}
+	defer db.Close()
+
+	userID := "999106"
+	defer cleanupTestData(t, db, userID)
+
+	apiaryID := createTestApiary(t, db, userID)
+	hiveID := createTestHive(t, db, userID, apiaryID)
+	boxID := createTestBox(t, db, userID, hiveID)
+
+	leftSideID := createTestFrameSide(t, db, userID)
+	rightSideID := createTestFrameSide(t, db, userID)
+	frameID := createTestFrameWithSides(t, db, userID, boxID, 0, leftSideID, rightSideID)
+
+	ctx := context.WithValue(context.Background(), "userID", userID)
+	ctx = context.WithValue(ctx, LoadersKey, &Loaders{
+		FrameSideLoader: NewFrameSideLoader(db),
+	})
+
+	resolver := &Resolver{Db: db}
+	frameResolver := &frameResolver{Resolver: resolver}
+
+	frame := &model.Frame{
+		Db:      db,
+		ID:      frameID,
+		UserID:  userID,
+		LeftID:  &leftSideID,
+		RightID: &rightSideID,
+	}
+
+	leftSide, err := frameResolver.LeftSide(ctx, frame)
+	if err != nil {
+		t.Fatalf("Failed to resolve left side: %v", err)
+	}
+
+	if leftSide == nil {
+		t.Fatal("Expected left side to be loaded, got nil")
+	}
+
+	if leftSide.ID == nil || *leftSide.ID != fmt.Sprintf("%d", leftSideID) {
+		t.Errorf("Expected left side ID %d, got %v", leftSideID, leftSide.ID)
+	}
+
+	rightSide, err := frameResolver.RightSide(ctx, frame)
+	if err != nil {
+		t.Fatalf("Failed to resolve right side: %v", err)
+	}
+
+	if rightSide == nil {
+		t.Fatal("Expected right side to be loaded, got nil")
+	}
+
+	if rightSide.ID == nil || *rightSide.ID != fmt.Sprintf("%d", rightSideID) {
+		t.Errorf("Expected right side ID %d, got %v", rightSideID, rightSide.ID)
+	}
+}
+
+func createTestFrameSide(t *testing.T, db *sqlx.DB, userID string) int {
+	result := db.MustExec(
+		"INSERT INTO frames_sides (user_id) VALUES (?)",
+		userID,
+	)
+	id, _ := result.LastInsertId()
+	return int(id)
+}
+
+func createTestFrameWithSides(t *testing.T, db *sqlx.DB, userID string, boxID int, position int, leftSideID int, rightSideID int) int {
+	result := db.MustExec(
+		"INSERT INTO frames (user_id, box_id, position, type, active, left_id, right_id) VALUES (?, ?, ?, 'EMPTY_COMB', 1, ?, ?)",
+		userID, boxID, position, leftSideID, rightSideID,
+	)
+	id, _ := result.LastInsertId()
+	return int(id)
 }
