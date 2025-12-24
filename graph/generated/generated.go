@@ -185,7 +185,6 @@ type ComplexityRoot struct {
 		Apiaries           func(childComplexity int) int
 		Apiary             func(childComplexity int, id string) int
 		ApiaryObstacles    func(childComplexity int, apiaryID string) int
-		DebugHiveQueens    func(childComplexity int, hiveID string) int
 		Hive               func(childComplexity int, id string) int
 		HiveFrame          func(childComplexity int, id string) int
 		HiveFrameSide      func(childComplexity int, id string) int
@@ -285,7 +284,6 @@ type QueryResolver interface {
 	Inspection(ctx context.Context, inspectionID string) (*model.Inspection, error)
 	RandomHiveName(ctx context.Context, language *string) (*string, error)
 	Inspections(ctx context.Context, hiveID string, limit *int) ([]*model.Inspection, error)
-	DebugHiveQueens(ctx context.Context, hiveID string) (*string, error)
 	HivePlacements(ctx context.Context, apiaryID string) ([]*model.HivePlacement, error)
 	ApiaryObstacles(ctx context.Context, apiaryID string) ([]*model.ApiaryObstacle, error)
 }
@@ -1047,17 +1045,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.ApiaryObstacles(childComplexity, args["apiaryId"].(string)), true
-	case "Query.debugHiveQueens":
-		if e.complexity.Query.DebugHiveQueens == nil {
-			break
-		}
-
-		args, err := ec.field_Query_debugHiveQueens_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.DebugHiveQueens(childComplexity, args["hiveId"].(string)), true
 	case "Query.hive":
 		if e.complexity.Query.Hive == nil {
 			break
@@ -1333,8 +1320,6 @@ type Query {
   randomHiveName(language: String): String
   inspections(hiveId: ID!, limit: Int): [Inspection]
 
-  """ Debug query to check queen tracking for a hive """
-  debugHiveQueens(hiveId: ID!): String
 
   hivePlacements(apiaryId: ID!): [HivePlacement]
   apiaryObstacles(apiaryId: ID!): [ApiaryObstacle]
@@ -2103,17 +2088,6 @@ func (ec *executionContext) field_Query_apiary_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_debugHiveQueens_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "hiveId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["hiveId"] = arg0
 	return args, nil
 }
 
@@ -6453,47 +6427,6 @@ func (ec *executionContext) fieldContext_Query_inspections(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_debugHiveQueens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_debugHiveQueens,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().DebugHiveQueens(ctx, fc.Args["hiveId"].(string))
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_debugHiveQueens(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_debugHiveQueens_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Query_hivePlacements(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8988,7 +8921,11 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 		}
 		return ec._FrameSide(ctx, sel, obj)
 	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
+		if obj, ok := obj.(graphql.Marshaler); ok {
+			return obj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of _Entity must implement graphql.Marshaler", obj))
+		}
 	}
 }
 
@@ -10471,25 +10408,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_inspections(ctx, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "debugHiveQueens":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_debugHiveQueens(ctx, field)
 				return res
 			}
 

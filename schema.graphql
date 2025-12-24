@@ -19,8 +19,6 @@ type Query {
   randomHiveName(language: String): String
   inspections(hiveId: ID!, limit: Int): [Inspection]
 
-  """ Debug query to check queen tracking for a hive """
-  debugHiveQueens(hiveId: ID!): String
 
   hivePlacements(apiaryId: ID!): [HivePlacement]
   apiaryObstacles(apiaryId: ID!): [ApiaryObstacle]
