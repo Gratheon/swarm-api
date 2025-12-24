@@ -121,30 +121,10 @@ Tests cover all split hive scenarios:
 - Source hive keeps its queen
 - Frames are moved correctly
 
-
-## Debug Query
-
-Use the `debugHiveQueens` query to inspect queen relationships:
-
-```graphql
-query {
-  debugHiveQueens(hiveId: "123")
-}
-```
-
-This returns detailed information about:
-- `hives.family_id` value
-- Queen name via legacy relationship
-- `families.hive_id` value for the queen
-- Queens found via `families.hive_id` 
-- Direct database query count
-
 ## Troubleshooting
 
 If you're getting "source hive has no queen to take" errors:
 
-1. Run the debug query to check both relationship types
-2. Check if the queen has `hive_id` set in the families table
-3. Check if the hive has `family_id` set in the hives table
-4. Run the migration if needed: `just migrate-db-dev`
+1. Check if the queen has `hive_id` set in the families table
+2. Run the migration if needed: `just migrate-db-dev`
 

@@ -9,48 +9,94 @@ schema {
 
 "The query type, represents all of the entry points into our object graph"
 type Query {
+  "Get a single hive by ID, returns null if not found or user doesn't have access"
   hive(id: ID!): Hive
+
+  "Get a single apiary (beekeeping location) by ID"
   apiary(id: ID!): Apiary
+
+  "Get a single frame by ID"
   hiveFrame(id: ID!): Frame
+
+  "Get a single frame side by ID, used by vision-api for image analysis"
   hiveFrameSide(id: ID!): FrameSide
+
+  "List all apiaries for the authenticated user, excludes deactivated ones"
   apiaries: [Apiary]
 
+  "Get a specific inspection record by ID"
   inspection(inspectionId: ID!): Inspection
+
+  "Generate a random name for a new hive queen in the specified language"
   randomHiveName(language: String): String
+
+  "List inspections for a specific hive, ordered by date descending"
   inspections(hiveId: ID!, limit: Int): [Inspection]
 
-
+  "Get spatial placements of hives within an apiary for visualization"
   hivePlacements(apiaryId: ID!): [HivePlacement]
+
+  "Get obstacles (trees, buildings) within an apiary for spatial planning"
   apiaryObstacles(apiaryId: ID!): [ApiaryObstacle]
 }
 
 "The mutation type, represents all updates we can make to our data"
 type Mutation {
+  "Create a new apiary (beekeeping location)"
   addApiary(apiary: ApiaryInput!): Apiary
+
+  "Update existing apiary details (name, coordinates)"
   updateApiary(id: ID!, apiary: ApiaryInput!): Apiary
+
+  "Soft-delete an apiary and all its hives"
 	deactivateApiary(id: ID!): Boolean
 
+  "Create a new hive with boxes, frames and initial queen family"
   addHive(hive: HiveInput!): Hive
+
+  "Update hive metadata (number, notes) and queen family details"
   updateHive(hive: HiveUpdateInput!): Hive
+
+  "Soft-delete a hive, preserving historical data"
   deactivateHive(id: ID!): Boolean
 
+  "Add a new box (super, deep, feeder) to a hive at specified position"
   addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
+
+  "Update the visual color marker of a box"
   updateBoxColor(id: ID!, color: String): Boolean!
+
+  "Soft-delete a box from a hive"
   deactivateBox(id: ID!): Boolean
+
+  "Exchange positions of two boxes within a hive"
   swapBoxPositions(id: ID!, id2: ID!): Boolean
 
+  "Add a new frame to a box at specified position"
   addFrame(boxId: ID!, type: String!, position: Int!): Frame!
+
+  "Bulk update frame positions and types within boxes"
   updateFrames(frames: [FrameInput]!) : [Frame]
+
+  "Soft-delete a frame from a box"
   deactivateFrame(id: ID!): Boolean
 
+  "Record an inspection with JSON data containing observations"
   addInspection(inspection: InspectionInput!): Inspection
 
+  "Add a new queen (family) to a hive, allows multiple queens per hive"
   addQueenToHive(hiveId: ID!, queen: FamilyInput!): Family
+
+  "Remove a queen family from a hive"
   removeQueenFromHive(hiveId: ID!, familyId: ID!): Boolean
 
+  "Apply anti-varroa treatment to entire hive, tracked per queen family"
   treatHive(treatment: TreatmentOfHiveInput!): Boolean
+
+  "Apply treatment to specific box, tracked per queen family"
   treatBox(treatment: TreatmentOfBoxInput!): Boolean
 
+  "Mark a hive as collapsed (dead colony) with date and cause"
   markHiveAsCollapsed(id: ID!, collapseDate: DateTime!, collapseCause: String!): Hive
 
   """
@@ -65,144 +111,225 @@ type Mutation {
   """
   splitHive(sourceHiveId: ID!, queenName: String, queenAction: String!, frameIds: [ID!]!): Hive
 
+  """
+  Merge two hives together by moving boxes from source to target.
+
+  mergeType options:
+  - "both_queens": Keep both queens (create multi-queen colony)
+  - "source_queen_kept": Keep source queen, remove target queen
+  - "target_queen_kept": Keep target queen, remove source queen
+
+  Bottom boards and gates remain in source hive, all other boxes are moved to target.
+  """
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 
+  "Update the visual placement (x, y coordinates and rotation) of a hive in apiary view"
   updateHivePlacement(apiaryId: ID!, hiveId: ID!, x: Float!, y: Float!, rotation: Float!): HivePlacement
+
+  "Add an obstacle (tree, building) to apiary for spatial planning"
   addApiaryObstacle(apiaryId: ID!, obstacle: ApiaryObstacleInput!): ApiaryObstacle
+
+  "Update obstacle properties (position, size, label)"
   updateApiaryObstacle(id: ID!, obstacle: ApiaryObstacleInput!): ApiaryObstacle
+
+  "Remove an obstacle from apiary"
   deleteApiaryObstacle(id: ID!): Boolean
 }
 
+"Input for treating a specific box with anti-varroa medication"
 input TreatmentOfBoxInput {
   hiveId: ID!
   boxId: ID!
+  "Type of treatment (e.g., 'oxalic_acid', 'formic_acid', 'amitraz')"
   type: String!
 }
 
+"Input for treating entire hive with anti-varroa medication"
 input TreatmentOfHiveInput {
   hiveId: ID!
+  "Type of treatment (e.g., 'oxalic_acid', 'formic_acid', 'amitraz')"
   type: String!
 }
 
+"Input for creating or updating an apiary location"
 input ApiaryInput {
+  "Display name of the apiary"
   name: String!
+  "Latitude coordinate as string"
   lat: String
+  "Longitude coordinate as string"
   lng: String
 }
 
+"Represents a beekeeping location containing multiple hives"
 type Apiary {
   id: ID!
   name: String
+  "List of active hives in this apiary"
   hives: [Hive]
+  "Computed from lat/lng coordinates"
   location: String
   lat: String
   lng: String
 }
 
+"Input for creating a new hive with initial configuration"
 input HiveInput {
+  "Parent apiary location ID"
   apiaryId: ID!
+  "Optional custom name for the queen (bee family)"
   queenName: String
+  "Year the queen was introduced (defaults to current year)"
   queenYear: String
+  "Custom queen marking color (overrides year-based marking)"
   queenColor: String
+  "Optional identifier number for this hive"
   hiveNumber: Int
+  "Number of boxes to create (e.g., 2 for deep+super)"
   boxCount: Int!
+  "Number of frames per box"
   frameCount: Int!
+  "Color markers for each box"
   colors: [String]
 }
 
+"Input for updating existing hive details"
 input HiveUpdateInput {
   id: ID!
+  "Hive identifier number visible to beekeeper"
   hiveNumber: Int
+  "Free-form notes about the hive"
 	notes: String
+  "Update queen/family information"
   family: FamilyInput
 }
 
-""" Hive name is now stored in Family.name """
+"Hive name is now stored in Family.name"
 type Hive @key(fields: "id") {
   id: ID!
+  "Hive identifier number for easy reference"
   hiveNumber: Int
+  "Free-form notes about hive condition or observations"
   notes: String
+  "Ordered list of boxes (position 0 is bottom)"
   boxes: [Box]
+  "Primary/current queen family in the hive"
   family: Family
+  "All queen families in the hive (supports multi-queen colonies)"
   families: [Family]
 
+  "Total number of boxes in the hive"
   boxCount: Int!
+  "Total number of inspections recorded for this hive"
   inspectionCount: Int!
 
+  "Current status (e.g., 'active', 'queenless', 'weak')"
   status: String
+  "Timestamp when hive was created"
   added: DateTime!
 
-  """ true if added < 1 day """
+  "true if added < 1 day"
   isNew: Boolean!
+  "Timestamp of most recent inspection"
   lastInspection: DateTime
+  "Date when colony collapsed/died"
   collapse_date: DateTime
+  "Reason for colony collapse (e.g., 'varroa', 'starvation', 'queenless')"
   collapse_cause: String
+  "Reference to parent hive if this was created via split"
   parentHive: Hive
+  "Date when this hive was split from parent"
   splitDate: DateTime
+  "Hives created by splitting this hive"
   childHives: [Hive]
+  "Target hive this was merged into"
   mergedIntoHive: Hive
+  "Date when this hive was merged"
   mergeDate: DateTime
+  "Strategy used for merging: 'both_queens', 'source_queen_kept', or 'target_queen_kept'"
   mergeType: String
+  "Source hives that were merged into this one"
   mergedFromHives: [Hive]
 }
 
+"Input for creating or updating a queen family"
 input FamilyInput{
+  "Family ID for updates"
   id: ID
+  "Name of the queen bee"
   name: String
+  "Bee race/breed (e.g., 'Carniolan', 'Italian', 'Buckfast')"
   race: String
+  "Year when queen was introduced"
   added: String
+  "Custom queen marking color (overrides standard year-based color)"
   color: String
 }
 
+"Input for creating or updating a box in a hive"
 input BoxInput{
   id: ID
+  "Position in hive (0=bottom, increases upward)"
   position: Int!
+  "Visual color marker painted on box"
   color: String
+  "Type of box (determines height and usage)"
   type: BoxType!
   "ignored, added for frontend ease"
   hiveId: Int
   family: FamilyInput
 }
 
+"Anti-varroa treatment record linked to a specific queen family"
 type Treatment {
   id: ID!
+  "Treatment type (e.g., 'oxalic_acid', 'formic_acid', 'amitraz')"
   type: String!
+  "Timestamp when treatment was applied"
   added: DateTime!
   
+  "Hive where treatment was applied"
   hiveId: ID!
+  "Specific box treated (if box-level treatment)"
   boxId: ID!
+  "Queen family being treated (enables tracking across hive moves)"
   familyId: ID!
 }
 
+"Queen bee family - represents a queen and her colony genetics"
 type Family{
   id: ID!
 
-  """ name of the queen """
+  "name of the queen"
   name: String
 
-  """ freeform race of the queen """
+  "freeform race of the queen"
   race: String
 
-  """ year when queen was added """
+  "year when queen was added"
   added: String
 
-  """ custom color for queen marking, overrides year-based color if set """
+  "custom color for queen marking, overrides year-based color if set"
   color: String
 
-  """ queen age in years, depends on added date"""
+  "queen age in years, depends on added date"
   age: Int
 
-  """ aggregate info about Treatments """
+  "aggregate info about Treatments"
   lastTreatment: DateTime
 
-  """Anti-varroa medical treatments of a hive or a box are linked to a family to track history even if family is moved to another hive or ownership is changed"""
+  "Anti-varroa medical treatments of a hive or a box are linked to a family to track history even if family is moved to another hive or ownership is changed"
   treatments: [Treatment]
 }
 
+"Inspection record with flexible JSON data structure"
 type Inspection {
   id: ID!
+  "Hive being inspected"
   hiveId: ID!
+  "Flexible inspection data (temperature, observations, queen seen, etc.)"
   data: JSON!
+  "Timestamp of inspection"
   added: DateTime!
 }
 
@@ -211,17 +338,25 @@ input InspectionInput{
   data: JSON!
 }
 
+"Box (super/deep/feeder) container holding frames"
 type Box{
   id: ID
+  "Position in hive stack (0=bottom)"
   position: Int
+  "Visual color marker on box exterior"
   color: String
+  "Box type determining height and purpose"
   type: BoxType!
+  "Frames contained in this box"
   frames: [Frame]
 }
 
+"Input for updating frame properties"
 input FrameInput{
   id: ID!
+  "Position within box (0-based index)"
   position: Int!
+  "Frame content type"
   type: FrameType!
   "ignored, added for frontend ease"
   boxId: ID!
@@ -229,72 +364,121 @@ input FrameInput{
   hiveId: Int
 }
 
+"Individual frame within a box, has two analyzable sides"
 type Frame{
   id: ID
+  "Position within parent box"
   position: Int!
+  "Content/construction type of frame"
   type: FrameType!
+  "Left side of frame (for image analysis)"
   leftSide: FrameSide,
+  "Right side of frame (for image analysis)"
   rightSide: FrameSide
 }
 
+"Box types with different heights and purposes"
 enum BoxType {
+  "Deep box for brood (10 frames, 9-5/8\" tall)"
   DEEP
+  "Shallow box for honey (10 frames, 5-11/16\" tall)"
   SUPER
+  "Entrance management/reducer gate"
   GATE
+  "Ventilation screen for airflow"
   VENTILATION
+  "Metal grid to exclude queen from honey supers"
   QUEEN_EXCLUDER
+  "Top-mounted syrup feeder"
   HORIZONTAL_FEEDER
+  "Bottom board/floor of hive"
   BOTTOM
 }
 
+"Frame content types indicating what's inside the frame"
 enum FrameType {
+  "Empty slot with no frame"
   VOID
+  "New wax foundation sheet for bees to build on"
   FOUNDATION
+  "Built comb with no current contents"
   EMPTY_COMB
+  "Divider board to reduce hive space"
   PARTITION
+  "In-frame syrup feeder"
   FEEDER
 }
 
+"One side of a frame, used by vision-api for image analysis"
 type FrameSide @key(fields: "id") {
   id: ID
+  "Parent frame ID"
   frameId: ID
 }
 
+"2D placement of a hive within an apiary for visualization"
 type HivePlacement {
   id: ID!
+  "Parent apiary"
   apiaryId: ID!
+  "Hive being placed"
   hiveId: ID!
+  "X coordinate in apiary view (meters or pixels)"
   x: Float!
+  "Y coordinate in apiary view (meters or pixels)"
   y: Float!
+  "Rotation angle in degrees (0-360)"
   rotation: Float!
 }
 
+"Physical obstacle in apiary (tree, building, fence, etc.)"
 type ApiaryObstacle {
   id: ID!
+  "Parent apiary"
   apiaryId: ID!
+  "Shape type of obstacle"
   type: ObstacleType!
+  "X coordinate of obstacle center/corner"
   x: Float!
+  "Y coordinate of obstacle center/corner"
   y: Float!
+  "Width for rectangular obstacles"
   width: Float
+  "Height for rectangular obstacles"
   height: Float
+  "Radius for circular obstacles"
   radius: Float
+  "Rotation angle for rectangles (degrees)"
   rotation: Float!
+  "Optional text label (e.g., 'Oak Tree', 'Shed')"
   label: String
 }
 
+"Shape types for apiary obstacles"
 enum ObstacleType {
+  "Circular obstacle (tree, well, etc.)"
   CIRCLE
+  "Rectangular obstacle (building, fence, etc.)"
   RECTANGLE
 }
 
+"Input for creating or updating an apiary obstacle"
 input ApiaryObstacleInput {
+  "Shape type"
   type: ObstacleType!
+  "X coordinate"
   x: Float!
+  "Y coordinate"
   y: Float!
+  "Width (for rectangles)"
   width: Float
+  "Height (for rectangles)"
   height: Float
+  "Radius (for circles)"
   radius: Float
+  "Rotation angle (for rectangles)"
   rotation: Float
+  "Optional descriptive label"
   label: String
 }
 

@@ -9,67 +9,106 @@ import (
 	"strconv"
 )
 
+// Input for creating or updating an apiary location
 type ApiaryInput struct {
-	Name string  `json:"name"`
-	Lat  *string `json:"lat,omitempty"`
-	Lng  *string `json:"lng,omitempty"`
+	// Display name of the apiary
+	Name string `json:"name"`
+	// Latitude coordinate as string
+	Lat *string `json:"lat,omitempty"`
+	// Longitude coordinate as string
+	Lng *string `json:"lng,omitempty"`
 }
 
+// Input for creating or updating an apiary obstacle
 type ApiaryObstacleInput struct {
-	Type     ObstacleType `json:"type"`
-	X        float64      `json:"x"`
-	Y        float64      `json:"y"`
-	Width    *float64     `json:"width,omitempty"`
-	Height   *float64     `json:"height,omitempty"`
-	Radius   *float64     `json:"radius,omitempty"`
-	Rotation *float64     `json:"rotation,omitempty"`
-	Label    *string      `json:"label,omitempty"`
+	// Shape type
+	Type ObstacleType `json:"type"`
+	// X coordinate
+	X float64 `json:"x"`
+	// Y coordinate
+	Y float64 `json:"y"`
+	// Width (for rectangles)
+	Width *float64 `json:"width,omitempty"`
+	// Height (for rectangles)
+	Height *float64 `json:"height,omitempty"`
+	// Radius (for circles)
+	Radius *float64 `json:"radius,omitempty"`
+	// Rotation angle (for rectangles)
+	Rotation *float64 `json:"rotation,omitempty"`
+	// Optional descriptive label
+	Label *string `json:"label,omitempty"`
 }
 
+// Input for creating or updating a box in a hive
 type BoxInput struct {
-	ID       *string `json:"id,omitempty"`
-	Position int     `json:"position"`
-	Color    *string `json:"color,omitempty"`
-	Type     BoxType `json:"type"`
+	ID *string `json:"id,omitempty"`
+	// Position in hive (0=bottom, increases upward)
+	Position int `json:"position"`
+	// Visual color marker painted on box
+	Color *string `json:"color,omitempty"`
+	// Type of box (determines height and usage)
+	Type BoxType `json:"type"`
 	// ignored, added for frontend ease
 	HiveID *int         `json:"hiveId,omitempty"`
 	Family *FamilyInput `json:"family,omitempty"`
 }
 
+// Input for creating or updating a queen family
 type FamilyInput struct {
-	ID    *string `json:"id,omitempty"`
-	Name  *string `json:"name,omitempty"`
-	Race  *string `json:"race,omitempty"`
+	// Family ID for updates
+	ID *string `json:"id,omitempty"`
+	// Name of the queen bee
+	Name *string `json:"name,omitempty"`
+	// Bee race/breed (e.g., 'Carniolan', 'Italian', 'Buckfast')
+	Race *string `json:"race,omitempty"`
+	// Year when queen was introduced
 	Added *string `json:"added,omitempty"`
+	// Custom queen marking color (overrides standard year-based color)
 	Color *string `json:"color,omitempty"`
 }
 
+// Input for updating frame properties
 type FrameInput struct {
-	ID       string    `json:"id"`
-	Position int       `json:"position"`
-	Type     FrameType `json:"type"`
+	ID string `json:"id"`
+	// Position within box (0-based index)
+	Position int `json:"position"`
+	// Frame content type
+	Type FrameType `json:"type"`
 	// ignored, added for frontend ease
 	BoxID string `json:"boxId"`
 	// ignored, added for frontend ease
 	HiveID *int `json:"hiveId,omitempty"`
 }
 
+// Input for creating a new hive with initial configuration
 type HiveInput struct {
-	ApiaryID   string    `json:"apiaryId"`
-	QueenName  *string   `json:"queenName,omitempty"`
-	QueenYear  *string   `json:"queenYear,omitempty"`
-	QueenColor *string   `json:"queenColor,omitempty"`
-	HiveNumber *int      `json:"hiveNumber,omitempty"`
-	BoxCount   int       `json:"boxCount"`
-	FrameCount int       `json:"frameCount"`
-	Colors     []*string `json:"colors,omitempty"`
+	// Parent apiary location ID
+	ApiaryID string `json:"apiaryId"`
+	// Optional custom name for the queen (bee family)
+	QueenName *string `json:"queenName,omitempty"`
+	// Year the queen was introduced (defaults to current year)
+	QueenYear *string `json:"queenYear,omitempty"`
+	// Custom queen marking color (overrides year-based marking)
+	QueenColor *string `json:"queenColor,omitempty"`
+	// Optional identifier number for this hive
+	HiveNumber *int `json:"hiveNumber,omitempty"`
+	// Number of boxes to create (e.g., 2 for deep+super)
+	BoxCount int `json:"boxCount"`
+	// Number of frames per box
+	FrameCount int `json:"frameCount"`
+	// Color markers for each box
+	Colors []*string `json:"colors,omitempty"`
 }
 
+// Input for updating existing hive details
 type HiveUpdateInput struct {
-	ID         string       `json:"id"`
-	HiveNumber *int         `json:"hiveNumber,omitempty"`
-	Notes      *string      `json:"notes,omitempty"`
-	Family     *FamilyInput `json:"family,omitempty"`
+	ID string `json:"id"`
+	// Hive identifier number visible to beekeeper
+	HiveNumber *int `json:"hiveNumber,omitempty"`
+	// Free-form notes about the hive
+	Notes *string `json:"notes,omitempty"`
+	// Update queen/family information
+	Family *FamilyInput `json:"family,omitempty"`
 }
 
 type InspectionInput struct {
@@ -85,27 +124,39 @@ type Mutation struct {
 type Query struct {
 }
 
+// Input for treating a specific box with anti-varroa medication
 type TreatmentOfBoxInput struct {
 	HiveID string `json:"hiveId"`
 	BoxID  string `json:"boxId"`
-	Type   string `json:"type"`
+	// Type of treatment (e.g., 'oxalic_acid', 'formic_acid', 'amitraz')
+	Type string `json:"type"`
 }
 
+// Input for treating entire hive with anti-varroa medication
 type TreatmentOfHiveInput struct {
 	HiveID string `json:"hiveId"`
-	Type   string `json:"type"`
+	// Type of treatment (e.g., 'oxalic_acid', 'formic_acid', 'amitraz')
+	Type string `json:"type"`
 }
 
+// Box types with different heights and purposes
 type BoxType string
 
 const (
-	BoxTypeDeep             BoxType = "DEEP"
-	BoxTypeSuper            BoxType = "SUPER"
-	BoxTypeGate             BoxType = "GATE"
-	BoxTypeVentilation      BoxType = "VENTILATION"
-	BoxTypeQueenExcluder    BoxType = "QUEEN_EXCLUDER"
+	// Deep box for brood (10 frames, 9-5/8" tall)
+	BoxTypeDeep BoxType = "DEEP"
+	// Shallow box for honey (10 frames, 5-11/16" tall)
+	BoxTypeSuper BoxType = "SUPER"
+	// Entrance management/reducer gate
+	BoxTypeGate BoxType = "GATE"
+	// Ventilation screen for airflow
+	BoxTypeVentilation BoxType = "VENTILATION"
+	// Metal grid to exclude queen from honey supers
+	BoxTypeQueenExcluder BoxType = "QUEEN_EXCLUDER"
+	// Top-mounted syrup feeder
 	BoxTypeHorizontalFeeder BoxType = "HORIZONTAL_FEEDER"
-	BoxTypeBottom           BoxType = "BOTTOM"
+	// Bottom board/floor of hive
+	BoxTypeBottom BoxType = "BOTTOM"
 )
 
 var AllBoxType = []BoxType{
@@ -161,14 +212,20 @@ func (e BoxType) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Frame content types indicating what's inside the frame
 type FrameType string
 
 const (
-	FrameTypeVoid       FrameType = "VOID"
+	// Empty slot with no frame
+	FrameTypeVoid FrameType = "VOID"
+	// New wax foundation sheet for bees to build on
 	FrameTypeFoundation FrameType = "FOUNDATION"
-	FrameTypeEmptyComb  FrameType = "EMPTY_COMB"
-	FrameTypePartition  FrameType = "PARTITION"
-	FrameTypeFeeder     FrameType = "FEEDER"
+	// Built comb with no current contents
+	FrameTypeEmptyComb FrameType = "EMPTY_COMB"
+	// Divider board to reduce hive space
+	FrameTypePartition FrameType = "PARTITION"
+	// In-frame syrup feeder
+	FrameTypeFeeder FrameType = "FEEDER"
 )
 
 var AllFrameType = []FrameType{
@@ -222,10 +279,13 @@ func (e FrameType) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Shape types for apiary obstacles
 type ObstacleType string
 
 const (
-	ObstacleTypeCircle    ObstacleType = "CIRCLE"
+	// Circular obstacle (tree, well, etc.)
+	ObstacleTypeCircle ObstacleType = "CIRCLE"
+	// Rectangular obstacle (building, fence, etc.)
 	ObstacleTypeRectangle ObstacleType = "RECTANGLE"
 )
 
