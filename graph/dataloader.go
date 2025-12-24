@@ -444,7 +444,7 @@ func (l *FrameSideLoader) processBatch(userID string) {
 	}
 
 	query, args, err := sqlx.In(
-		`SELECT * FROM frame_side 
+		`SELECT * FROM frames_sides 
 		WHERE id IN (?) AND user_id=?`,
 		frameSideIDs, userID)
 
