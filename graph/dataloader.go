@@ -18,6 +18,8 @@ type Loaders struct {
 	HivesByApiaryLoader *HiveLoader
 	BoxesByHiveLoader   *BoxLoader
 	FamilyByHiveLoader  *FamilyLoader
+	FramesByBoxLoader   *FrameLoader
+	FrameSideLoader     *FrameSideLoader
 }
 
 func GetLoaders(ctx context.Context) *Loaders {
@@ -288,5 +290,194 @@ func (l *FamilyLoader) processBatch(userID string) {
 	for hiveID, ch := range batch {
 		family := familiesByHive[hiveID]
 		ch <- family
+	}
+}
+
+type FrameLoader struct {
+	db    *sqlx.DB
+	mu    sync.Mutex
+	batch map[string]chan []*model.Frame
+	timer *time.Timer
+	wait  time.Duration
+}
+
+func NewFrameLoader(db *sqlx.DB) *FrameLoader {
+	return &FrameLoader{
+		db:    db,
+		batch: make(map[string]chan []*model.Frame),
+		wait:  1 * time.Millisecond,
+	}
+}
+
+func (l *FrameLoader) Load(ctx context.Context, boxID string, userID string) ([]*model.Frame, error) {
+	resultChan := make(chan []*model.Frame, 1)
+
+	l.mu.Lock()
+	needsScheduling := len(l.batch) == 0
+	l.batch[boxID] = resultChan
+
+	if needsScheduling {
+		l.timer = time.AfterFunc(l.wait, func() {
+			l.processBatch(userID)
+		})
+	}
+	l.mu.Unlock()
+
+	select {
+	case result := <-resultChan:
+		return result, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (l *FrameLoader) processBatch(userID string) {
+	l.mu.Lock()
+	batch := l.batch
+	l.batch = make(map[string]chan []*model.Frame)
+	l.mu.Unlock()
+
+	if len(batch) == 0 {
+		return
+	}
+
+	boxIDs := make([]string, 0, len(batch))
+	for boxID := range batch {
+		boxIDs = append(boxIDs, boxID)
+	}
+
+	query, args, err := sqlx.In(
+		`SELECT * FROM frames 
+		WHERE active=1 AND box_id IN (?) AND user_id=? 
+		ORDER BY box_id, position`,
+		boxIDs, userID)
+
+	if err != nil {
+		for _, ch := range batch {
+			close(ch)
+		}
+		return
+	}
+
+	query = l.db.Rebind(query)
+
+	var allFrames []*model.Frame
+	err = l.db.Select(&allFrames, query, args...)
+
+	if err != nil {
+		for _, ch := range batch {
+			close(ch)
+		}
+		return
+	}
+
+	framesByBox := make(map[string][]*model.Frame)
+	for _, frame := range allFrames {
+		boxIDStr := fmt.Sprintf("%d", frame.BoxId)
+		framesByBox[boxIDStr] = append(framesByBox[boxIDStr], frame)
+	}
+
+	for boxID, ch := range batch {
+		frames := framesByBox[boxID]
+		if frames == nil {
+			frames = []*model.Frame{}
+		}
+		ch <- frames
+	}
+}
+
+type FrameSideLoader struct {
+	db    *sqlx.DB
+	mu    sync.Mutex
+	batch map[int]chan *model.FrameSide
+	timer *time.Timer
+	wait  time.Duration
+}
+
+func NewFrameSideLoader(db *sqlx.DB) *FrameSideLoader {
+	return &FrameSideLoader{
+		db:    db,
+		batch: make(map[int]chan *model.FrameSide),
+		wait:  1 * time.Millisecond,
+	}
+}
+
+func (l *FrameSideLoader) Load(ctx context.Context, frameSideID *int, userID string) (*model.FrameSide, error) {
+	if frameSideID == nil {
+		return nil, nil
+	}
+
+	resultChan := make(chan *model.FrameSide, 1)
+
+	l.mu.Lock()
+	needsScheduling := len(l.batch) == 0
+	l.batch[*frameSideID] = resultChan
+
+	if needsScheduling {
+		l.timer = time.AfterFunc(l.wait, func() {
+			l.processBatch(userID)
+		})
+	}
+	l.mu.Unlock()
+
+	select {
+	case result := <-resultChan:
+		return result, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (l *FrameSideLoader) processBatch(userID string) {
+	l.mu.Lock()
+	batch := l.batch
+	l.batch = make(map[int]chan *model.FrameSide)
+	l.mu.Unlock()
+
+	if len(batch) == 0 {
+		return
+	}
+
+	frameSideIDs := make([]int, 0, len(batch))
+	for frameSideID := range batch {
+		frameSideIDs = append(frameSideIDs, frameSideID)
+	}
+
+	query, args, err := sqlx.In(
+		`SELECT * FROM frame_side 
+		WHERE id IN (?) AND user_id=?`,
+		frameSideIDs, userID)
+
+	if err != nil {
+		for _, ch := range batch {
+			close(ch)
+		}
+		return
+	}
+
+	query = l.db.Rebind(query)
+
+	var allFrameSides []*model.FrameSide
+	err = l.db.Select(&allFrameSides, query, args...)
+
+	if err != nil {
+		for _, ch := range batch {
+			close(ch)
+		}
+		return
+	}
+
+	frameSidesMap := make(map[int]*model.FrameSide)
+	for _, frameSide := range allFrameSides {
+		if frameSide.ID != nil {
+			var id int
+			fmt.Sscanf(*frameSide.ID, "%d", &id)
+			frameSidesMap[id] = frameSide
+		}
+	}
+
+	for frameSideID, ch := range batch {
+		frameSide := frameSidesMap[frameSideID]
+		ch <- frameSide
 	}
 }

@@ -74,6 +74,8 @@ func main() {
 				HivesByApiaryLoader: graph.NewHiveLoader(rootResolver.Db),
 				BoxesByHiveLoader:   graph.NewBoxLoader(rootResolver.Db),
 				FamilyByHiveLoader:  graph.NewFamilyLoader(rootResolver.Db),
+				FramesByBoxLoader:   graph.NewFrameLoader(rootResolver.Db),
+				FrameSideLoader:     graph.NewFrameSideLoader(rootResolver.Db),
 			}
 			ctx := context.WithValue(r.Context(), graph.LoadersKey, loaders)
 			r = r.WithContext(ctx)

@@ -39,6 +39,10 @@ func (r *apiaryObstacleResolver) Type(ctx context.Context, obj *model.ApiaryObst
 // Frames is the resolver for the frames field.
 func (r *boxResolver) Frames(ctx context.Context, obj *model.Box) ([]*model.Frame, error) {
 	uid := ctx.Value("userID").(string)
+	loaders := GetLoaders(ctx)
+	if loaders != nil && loaders.FramesByBoxLoader != nil {
+		return loaders.FramesByBoxLoader.Load(ctx, *obj.ID, uid)
+	}
 	return (&model.Frame{
 		Db:     r.Resolver.Db,
 		UserID: uid,
@@ -79,6 +83,10 @@ func (r *familyResolver) Treatments(ctx context.Context, obj *model.Family) ([]*
 // LeftSide is the resolver for the leftSide field.
 func (r *frameResolver) LeftSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error) {
 	uid := ctx.Value("userID").(string)
+	loaders := GetLoaders(ctx)
+	if loaders != nil && loaders.FrameSideLoader != nil {
+		return loaders.FrameSideLoader.Load(ctx, obj.LeftID, uid)
+	}
 	return (&model.FrameSide{
 		Db:     r.Resolver.Db,
 		UserID: uid,
@@ -88,6 +96,10 @@ func (r *frameResolver) LeftSide(ctx context.Context, obj *model.Frame) (*model.
 // RightSide is the resolver for the rightSide field.
 func (r *frameResolver) RightSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error) {
 	uid := ctx.Value("userID").(string)
+	loaders := GetLoaders(ctx)
+	if loaders != nil && loaders.FrameSideLoader != nil {
+		return loaders.FrameSideLoader.Load(ctx, obj.RightID, uid)
+	}
 	return (&model.FrameSide{
 		Db:     r.Resolver.Db,
 		UserID: uid,
