@@ -1,7 +1,7 @@
 package graph
 
 import (
-	_ "embed"         // Blank import for embed directive
+	_ "embed"       // Blank import for embed directive
 	"encoding/json" // Import encoding/json
 	"fmt"
 	"math/rand" // Import math/rand
@@ -27,12 +27,10 @@ type Resolver struct {
 }
 
 func (r *Resolver) ConnectToDB() {
-	// Parse the embedded JSON string during initialization
-	err := json.Unmarshal([]byte(femaleNamesJSONString), &r.femaleNamesMap) // Unmarshal into resolver map
+	err := json.Unmarshal([]byte(femaleNamesJSONString), &r.femaleNamesMap)
 	if err != nil {
-		logger.Fatal(err.Error()) // Use LogFatal
+		logger.Fatal(err.Error())
 	}
-	// Seed the random number generator once
 	rand.Seed(time.Now().UnixNano())
 
 	dsn := viper.GetString("db_dsn")
@@ -43,6 +41,11 @@ func (r *Resolver) ConnectToDB() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(time.Hour)
+	db.SetConnMaxIdleTime(10 * time.Minute)
 
 	r.Db = db
 }
