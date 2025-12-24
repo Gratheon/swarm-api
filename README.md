@@ -38,12 +38,55 @@ just gen
 
 ## Testing
 
-Run e2e tests for split hive functionality:
+### Test Organization
+
+Tests are organized by type using file suffixes:
+- `*_unit_test.go` - Unit tests that don't require external dependencies
+- `*_integration_test.go` - Integration tests that require database/external services
+- `*_e2e_test.go` - End-to-end tests
+
+### Test Structure Guidelines
+
+- Tests use human-readable names that clearly describe what is being tested
+- Tests use `t.Run()` nesting to organize test cases and scenarios
+- Each test includes `// ARRANGE`, `// ACT`, and `// ASSERT` comments for clarity
+- Integration tests use `t.Parallel()` to run concurrently where possible
+- Assertions use `github.com/stretchr/testify/assert` for type-safe, readable checks
+
+### Running Tests
+
+Run all tests:
 ```bash
-just test
+cd graph && go test -v ./...
 ```
 
-See [graph/TESTING.md](graph/TESTING.md) for detailed testing instructions.
+Run specific test type:
+```bash
+cd graph && go test -v -run TestDataLoader
+cd graph && go test -v -run TestSplitHive
+```
+
+Run tests for a specific function:
+```bash
+cd graph && go test -v -run "TestSplitHiveMutation/split_hive_with_new_queen"
+```
+
+### Prerequisites
+
+Integration tests require a running MySQL database from the [mysql repo](https://github.com/Gratheon/mysql).
+
+Start MySQL and run migrations:
+```bash
+cd ../mysql && just start
+cd ../swarm-api && just migrate-db-dev
+```
+
+Configure database connection (optional):
+```bash
+export TEST_DB_DSN="root:test@tcp(localhost:5100)/swarm-api?parseTime=true"
+```
+
+See [graph/TESTING.md](graph/TESTING.md) for detailed testing documentation.
 
 ## Building
 ```

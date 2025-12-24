@@ -40,16 +40,21 @@ gen:
     @echo "Schema generation complete! Version:" $(cat .version)
     @echo "⚠️  Remember to restart swarm-api to push the new schema to the registry"
 
-test-specific:
-    @echo "Running split hive e2e tests..."
-    @echo "Make sure mysql is running: cd ../mysql && just start"
-    cd graph && TESTING=true go test -v -run TestSplitHive
-
-test-specific-verbose:
-    @echo "Running split hive tests with verbose output..."
-    cd graph && TESTING=true go test -v -run TestSplitHive -test.v
-
 test:
     @echo "Running all tests..."
+    @echo "Make sure mysql is running: cd ../mysql && just start"
     TESTING=true go test -v ./...
+
+test-integration:
+    @echo "Running integration tests..."
+    @echo "Make sure mysql is running: cd ../mysql && just start"
+    cd graph && TESTING=true go test -v -run Integration
+
+test-dataloader:
+    @echo "Running dataloader integration tests..."
+    cd graph && TESTING=true go test -v -run TestDataLoader
+
+test-split-hive:
+    @echo "Running split hive integration tests..."
+    cd graph && TESTING=true go test -v -run TestSplitHive
 

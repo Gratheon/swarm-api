@@ -1,82 +1,126 @@
-# Split Hive E2E Tests
+# Testing Documentation
 
-## Prerequisites
+## Test Organization
 
-Tests require a running MySQL database from the [mysql repo](https://github.com/Gratheon/mysql).
+Tests are organized by type:
+- **Unit Tests** (`*_unit_test.go`) - No external dependencies
+- **Integration Tests** (`*_integration_test.go`) - Require database/services
+- **E2E Tests** (`*_e2e_test.go`) - Full end-to-end scenarios
 
-### 1. Start MySQL
-```bash
-cd ../mysql
-just start
-```
+## Test Structure Standards
 
-### 2. Configure Database Connection
-Update `config/config.dev.json` with the mysql repo credentials:
+All tests follow these guidelines:
 
-```json
-{
-  "db_dsn": "root:test@tcp(localhost:5100)/swarm-api?parseTime=true"
+1. **Human-readable names** - Test names clearly describe what is being tested
+2. **Nested structure** - Use `t.Run()` to organize test cases
+3. **AAA pattern** - Include `// ARRANGE`, `// ACT`, `// ASSERT` comments
+4. **Parallel execution** - Use `t.Parallel()` for independent tests
+
+Example:
+```go
+func TestSplitHiveMutation(t *testing.T) {
+    t.Parallel()
+
+    t.Run("split hive with new queen", func(t *testing.T) {
+        t.Parallel()
+
+        t.Run("creates new hive with new queen and moves frames", func(t *testing.T) {
+            t.Parallel()
+
+            // ARRANGE
+            db := setupTestDB(t)
+            // ... setup code
+
+            // ACT
+            result, err := resolver.SplitHive(ctx, ...)
+
+            // ASSERT
+            if err != nil {
+                t.Fatalf("SplitHive failed: %v", err)
+            }
+        })
+    })
 }
 ```
 
-Or set the environment variable:
+## Prerequisites
+
+Integration tests require a running MySQL database from the [mysql repo](https://github.com/Gratheon/mysql).
+
+### 1. Start MySQL
+```bash
+cd ../mysql && just start
+```
+
+### 2. Run Migrations
+```bash
+cd ../swarm-api && just migrate-db-dev
+```
+
+### 3. Configure Database Connection (Optional)
+Set environment variable:
 ```bash
 export TEST_DB_DSN="root:test@tcp(localhost:5100)/swarm-api?parseTime=true"
 ```
 
-### 3. Run Migrations
-```bash
-just migrate-db-dev
-```
-
 ## Running Tests
 
-Run all split hive tests:
+Run all tests:
 ```bash
-just test-split
+cd graph && go test -v ./...
 ```
 
-Or manually:
+Run specific test file:
 ```bash
-cd graph
-go test -v -run TestSplitHive
+cd graph && go test -v -run TestSplitHive
+cd graph && go test -v -run TestDataLoader
 ```
 
-Run a specific test:
+Run specific test case:
 ```bash
-cd graph
-go test -v -run TestSplitHive_TakeOldQueen
+cd graph && go test -v -run "TestSplitHiveMutation/split_hive_with_new_queen"
+cd graph && go test -v -run "TestSplitHiveMutation/split_hive_by_taking_old_queen/moves_existing_queen"
+```
+
+Run tests with short timeout (skip slow integration tests):
+```bash
+cd graph && go test -v -short
 ```
 
 ## Test Coverage
 
-### TestSplitHive_NewQueen
-Tests creating a split with a new queen:
-- Source hive keeps its original queen
-- New hive gets a queen with the specified name
-- Frames are moved correctly
+### DataLoader Integration Tests (`dataloader_integration_test.go`)
 
-### TestSplitHive_TakeOldQueen  
-Tests moving the old queen to the new hive:
+Tests verify that DataLoaders batch concurrent queries correctly:
+
+- **Hive Loader** - Batches queries for hives by apiary
+- **Box Loader** - Batches queries for boxes by hive
+- **Family Loader** - Batches queries for queens/families, handles missing families
+- **Frame Loader** - Batches queries for frames by box
+- **Frame Side Loader** - Batches queries for frame sides
+
+Integration tests also verify DataLoaders work correctly with GraphQL resolvers.
+
+### Split Hive Integration Tests (`split_hive_integration_test.go`)
+
+Tests cover all split hive scenarios:
+
+**Split with new queen:**
+- Creates new hive with new queen
+- Source hive keeps original queen
+- Frames are moved correctly
+- New queen has specified name
+
+**Split by taking old queen:**
 - Old queen is moved to new hive
 - Source hive becomes queenless
-- Both `hives.family_id` and `families.hive_id` are updated correctly
+- Returns error when source has no queen
 
-### TestSplitHive_NoQueen
-Tests creating a queenless split:
+**Split without queen:**
+- New hive is queenless
 - Source hive keeps its queen
-- New hive has no queen
 - Frames are moved correctly
 
-### TestSplitHive_TakeOldQueen_NoQueenInSource
-Tests error handling:
-- Attempting to take queen from queenless hive fails with appropriate error
-
-### TestSplitHive_LegacyQueenTracking
-Tests backward compatibility:
-- Handles queens tracked only via `hives.family_id` (legacy)
-- Properly migrates to `families.hive_id` tracking
-- Cleans up `hives.family_id` reference
 
 ## Debug Query
 
