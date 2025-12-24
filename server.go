@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"log"
 	"net/http"
@@ -66,7 +67,21 @@ func main() {
 
 	gqlGenConfig := generated.Config{Resolvers: rootResolver}
 	gqlGenServer := handler.NewDefaultServer(generated.NewExecutableSchema(gqlGenConfig))
-	router.Handle("/graphql", graphqlLoggingMiddleware(gqlGenServer))
+
+	dataLoaderMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			loaders := &graph.Loaders{
+				HivesByApiaryLoader: graph.NewHiveLoader(rootResolver.Db),
+				BoxesByHiveLoader:   graph.NewBoxLoader(rootResolver.Db),
+				FamilyByHiveLoader:  graph.NewFamilyLoader(rootResolver.Db),
+			}
+			ctx := context.WithValue(r.Context(), graph.LoadersKey, loaders)
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	router.Handle("/graphql", dataLoaderMiddleware(graphqlLoggingMiddleware(gqlGenServer)))
 
 	httpHost := "0.0.0.0:8100"
 

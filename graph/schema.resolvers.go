@@ -21,6 +21,10 @@ import (
 // Hives is the resolver for the hives field.
 func (r *apiaryResolver) Hives(ctx context.Context, obj *model.Apiary) ([]*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
+	loaders := GetLoaders(ctx)
+	if loaders != nil && loaders.HivesByApiaryLoader != nil {
+		return loaders.HivesByApiaryLoader.Load(ctx, obj.ID, uid)
+	}
 	return (&model.Hive{
 		Db:     r.Resolver.Db,
 		UserID: uid,
@@ -93,6 +97,10 @@ func (r *frameResolver) RightSide(ctx context.Context, obj *model.Frame) (*model
 // Boxes is the resolver for the boxes field.
 func (r *hiveResolver) Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box, error) {
 	uid := ctx.Value("userID").(string)
+	loaders := GetLoaders(ctx)
+	if loaders != nil && loaders.BoxesByHiveLoader != nil {
+		return loaders.BoxesByHiveLoader.Load(ctx, obj.ID, uid)
+	}
 	return (&model.Box{
 		Db:     r.Resolver.Db,
 		UserID: uid,
@@ -102,6 +110,11 @@ func (r *hiveResolver) Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box
 // Family is the resolver for the family field.
 func (r *hiveResolver) Family(ctx context.Context, obj *model.Hive) (*model.Family, error) {
 	uid := ctx.Value("userID").(string)
+
+	loaders := GetLoaders(ctx)
+	if loaders != nil && loaders.FamilyByHiveLoader != nil {
+		return loaders.FamilyByHiveLoader.Load(ctx, obj.ID, uid)
+	}
 
 	families, err := (&model.Family{
 		Db:     r.Resolver.Db,
