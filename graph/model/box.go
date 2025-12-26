@@ -143,8 +143,23 @@ func (r *Box) Count(hiveId string) (int, error) {
 
 func (r *Box) SwapBoxPositions(box1ID string, box2ID string) (*bool, error) {
 	ok := true
-	box1, _ := r.Get(box1ID)
-	box2, _ := r.Get(box2ID)
+	box1, err := r.Get(box1ID)
+	if err != nil {
+		return nil, err
+	}
+	if box1 == nil {
+		ok = false
+		return &ok, nil
+	}
+
+	box2, err := r.Get(box2ID)
+	if err != nil {
+		return nil, err
+	}
+	if box2 == nil {
+		ok = false
+		return &ok, nil
+	}
 
 	tmpPosition := *box1.Position
 	box1.Position = box2.Position
