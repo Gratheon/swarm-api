@@ -43,9 +43,9 @@ func (r *Resolver) ConnectToDB() {
 	}
 
 	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(10)
-	db.SetConnMaxLifetime(time.Hour)
-	db.SetConnMaxIdleTime(10 * time.Minute)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(2 * time.Minute)
 
 	r.Db = db
 }

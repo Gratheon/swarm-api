@@ -12,7 +12,7 @@ import (
 func setupTestDB(t *testing.T) *sqlx.DB {
 	dsn := os.Getenv("TEST_DB_DSN")
 	if dsn == "" {
-		dsn = "root:test@tcp(localhost:5100)/swarm-api?parseTime=true"
+		dsn = "root:test@tcp(localhost:5100)/swarm-api?parseTime=true&timeout=5s&readTimeout=30s&writeTimeout=30s"
 	}
 
 	db, err := sqlx.Connect("mysql", dsn)
