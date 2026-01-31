@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	_ "embed"
-	"log"
 	"net/http"
 	"os"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/Gratheon/swarm-api/redisPubSub"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/rs/cors"
 )
 
@@ -35,6 +35,9 @@ func main() {
 	logger.Info("Initializing router")
 	router := chi.NewRouter()
 
+	// Add request ID middleware first so all logs include it
+	router.Use(middleware.RequestID)
+
 	if os.Getenv("TESTING") != "true" {
 		err := RegisterGraphQLSchema(graphqlSchema)
 		if err != nil {
@@ -50,7 +53,7 @@ func main() {
 		AllowedOrigins:   []string{"*"},
 		AllowedHeaders:   []string{"*", "token"},
 		AllowCredentials: true,
-		Debug:            true,
+		Debug:            os.Getenv("ENV_ID") == "dev",
 	}).Handler)
 
 	router.Use(authMiddleware)
@@ -87,7 +90,7 @@ func main() {
 
 	httpHost := "0.0.0.0:8100"
 
-	log.Printf("Server running on http://%s/graphql", httpHost)
+	logger.Info("Server running on http://" + httpHost + "/graphql")
 
 	err := http.ListenAndServe(httpHost, router)
 

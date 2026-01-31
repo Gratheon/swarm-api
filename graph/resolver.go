@@ -3,9 +3,8 @@ package graph
 import (
 	_ "embed"       // Blank import for embed directive
 	"encoding/json" // Import encoding/json
-	"fmt"
-	"math/rand" // Import math/rand
-	"time"      // Import time
+	"math/rand"     // Import math/rand
+	"time"          // Import time
 
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/jmoiron/sqlx"
@@ -35,7 +34,7 @@ func (r *Resolver) ConnectToDB() {
 
 	dsn := viper.GetString("db_dsn")
 
-	logger.Info(fmt.Sprintf("Connecting to DB %s", dsn))
+	logger.Info("Connecting to DB")
 	db, err := sqlx.Connect("mysql", dsn)
 
 	if err != nil {

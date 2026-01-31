@@ -42,13 +42,13 @@ func authMiddleware(next http.Handler) http.Handler {
 
 			// IMPROVED: Better error handling
 			if err != nil {
-				logger.Error(fmt.Sprintf("JWT parse error: %v", err))
+				logger.ErrorWithRequest(r, fmt.Sprintf("JWT parse error: %v", err))
 				http.Error(w, unauthorizedBodyResponse, http.StatusForbidden)
 				return
 			}
 
 			if token == nil || !token.Valid {
-				logger.Error("Invalid or nil token")
+				logger.ErrorWithRequest(r, "Invalid or nil token")
 				http.Error(w, unauthorizedBodyResponse, http.StatusForbidden)
 				return
 			}
@@ -56,13 +56,13 @@ func authMiddleware(next http.Handler) http.Handler {
 			claims, ok := token.Claims.(jwt.MapClaims)
 
 			if !ok {
-				logger.Error("Failed to parse JWT claims")
+				logger.ErrorWithRequest(r, "Failed to parse JWT claims")
 				http.Error(w, unauthorizedBodyResponse, http.StatusForbidden)
 				return
 			}
 
 			if claims["user_id"] == nil {
-				logger.Error("Missing user_id in JWT claims")
+				logger.ErrorWithRequest(r, "Missing user_id in JWT claims")
 				http.Error(w, unauthorizedBodyResponse, http.StatusForbidden)
 				return
 			}

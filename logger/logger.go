@@ -1,10 +1,13 @@
 package logger
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 )
 
@@ -114,4 +117,38 @@ func toFields(meta ...interface{}) logrus.Fields {
 		fields["meta_"+string(rune(i+'0'))] = m
 	}
 	return fields
+}
+
+// ErrorWithRequest logs an error with request correlation fields
+func ErrorWithRequest(r *http.Request, message string) {
+	fields := logrus.Fields{}
+
+	// Add request ID if available
+	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
+		fields["req_id"] = reqID
+	}
+
+	// Add user ID if available
+	if userID, ok := r.Context().Value("userID").(string); ok {
+		fields["user_id"] = userID
+	}
+
+	logger.WithFields(fields).Error(message)
+}
+
+// ErrorWithContext logs an error with context correlation fields
+func ErrorWithContext(ctx context.Context, message string) {
+	fields := logrus.Fields{}
+
+	// Add request ID if available
+	if reqID := middleware.GetReqID(ctx); reqID != "" {
+		fields["req_id"] = reqID
+	}
+
+	// Add user ID if available
+	if userID, ok := ctx.Value("userID").(string); ok {
+		fields["user_id"] = userID
+	}
+
+	logger.WithFields(fields).Error(message)
 }

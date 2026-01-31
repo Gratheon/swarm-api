@@ -247,7 +247,7 @@ func (r *mutationResolver) AddApiary(ctx context.Context, apiary model.ApiaryInp
 	}).Create(apiary)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -265,7 +265,7 @@ func (r *mutationResolver) UpdateApiary(ctx context.Context, id string, apiary m
 	}).Update(id, apiary)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -305,7 +305,7 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 	}).Create(hive)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -315,7 +315,7 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 	}).CreateForHive(hiveResult.ID, hive.QueenName, &race, &added, hive.QueenColor)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 	}
 
 	err = (&model.Box{
@@ -324,7 +324,7 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 	}).CreateByHiveId(hiveResult.ID, hive.BoxCount, hive.Colors)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 	}
 
 	boxes, err := (&model.Box{
@@ -342,7 +342,7 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 	}
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 	}
 
 	return hiveResult, err
@@ -364,13 +364,13 @@ func (r *mutationResolver) UpdateHive(ctx context.Context, hive model.HiveUpdate
 
 	familyID, err := familyModel.Upsert(uid, hive)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 	}
 
 	err = hiveModel.Update(hive.ID, hive.Notes, hive.HiveNumber, familyID)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 	}
 
 	return hiveModel.Get(hive.ID)
@@ -397,7 +397,7 @@ func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position i
 	boxID, err := boxModel.Create(hiveID, position, color, typeArg)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 	}
 
 	return boxModel.Get(*boxID)
@@ -414,7 +414,7 @@ func (r *mutationResolver) UpdateBoxColor(ctx context.Context, id string, color 
 	box, err := boxModel.Get(id)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 	}
 
 	box.Color = color
@@ -474,7 +474,7 @@ func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg s
 		frameId, err := frameModel.Create(&boxID, position, model.FrameType(typeArg), leftID, rightID)
 
 		if err != nil {
-			logger.Error(err.Error())
+			logger.ErrorWithContext(ctx, err.Error())
 			return nil, err
 		}
 
@@ -484,7 +484,7 @@ func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg s
 		frameId, err := frameModel.Create(&boxID, position, model.FrameType(typeArg), nil, nil)
 
 		if err != nil {
-			logger.Error(err.Error())
+			logger.ErrorWithContext(ctx, err.Error())
 		}
 
 		return frameModel.Get(*frameId)
@@ -555,7 +555,7 @@ func (r *mutationResolver) AddQueenToHive(ctx context.Context, hiveID string, qu
 
 	familyID, err := familyModel.CreateForHive(hiveID, queen.Name, queen.Race, queen.Added, queen.Color)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -572,7 +572,7 @@ func (r *mutationResolver) RemoveQueenFromHive(ctx context.Context, hiveID strin
 	)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		success := false
 		return &success, err
 	}
@@ -596,7 +596,7 @@ func (r *mutationResolver) TreatHive(ctx context.Context, treatment model.Treatm
 	}
 	families, err := familyModel.ListByHive(treatment.HiveID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		ok := false
 		return &ok, err
 	}
@@ -610,7 +610,7 @@ func (r *mutationResolver) TreatHive(ctx context.Context, treatment model.Treatm
 	ok := err2 == nil
 
 	if err2 != nil {
-		logger.Error(err2.Error())
+		logger.ErrorWithContext(ctx, err2.Error())
 	}
 
 	return &ok, err
@@ -630,7 +630,7 @@ func (r *mutationResolver) TreatBox(ctx context.Context, treatment model.Treatme
 	}
 	families, err := familyModel.ListByHive(treatment.HiveID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		ok := false
 		return &ok, err
 	}
@@ -643,7 +643,7 @@ func (r *mutationResolver) TreatBox(ctx context.Context, treatment model.Treatme
 	_, err2 := treatmentModel.TreatHiveBox(treatment, familyID)
 	ok := err2 == nil
 	if err2 != nil {
-		logger.Error(err2.Error())
+		logger.ErrorWithContext(ctx, err2.Error())
 	}
 	return &ok, err
 }
@@ -660,20 +660,20 @@ func (r *mutationResolver) MarkHiveAsCollapsed(ctx context.Context, id string, c
 	if err != nil {
 		parsedCollapseDate, err = time.Parse("2006-01-02", collapseDate)
 		if err != nil {
-			logger.Error("Invalid collapseDate format: " + err.Error())
+			logger.ErrorWithContext(ctx, "Invalid collapseDate format: " + err.Error())
 			return nil, errors.New("Invalid collapseDate format, must be RFC3339 or YYYY-MM-DD")
 		}
 	}
 
 	err = hiveModel.MarkAsCollapsed(id, parsedCollapseDate, collapseCause)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
 	updatedHive, err := hiveModel.Get(id)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -704,7 +704,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 	sourceHive, err := hiveModel.Get(sourceHiveID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 	if sourceHive == nil {
@@ -713,7 +713,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 	newHive, err := hiveModel.Split(sourceHiveID, sourceHive.ApiaryID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -728,7 +728,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 		}
 		_, err = familyModel.CreateForHive(newHive.ID, queenName, nil, nil, nil)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.ErrorWithContext(ctx, err.Error())
 			return nil, err
 		}
 	} else if queenAction == "take_old_queen" {
@@ -736,7 +736,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 		families, err := familyModel.ListByHive(sourceHiveID)
 		if err != nil {
-			logger.Error("Error listing families for source hive " + sourceHiveID + ": " + err.Error())
+			logger.ErrorWithContext(ctx, "Error listing families for source hive " + sourceHiveID + ": " + err.Error())
 			return nil, err
 		}
 
@@ -751,7 +751,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 		newHiveIDInt, err := strconv.Atoi(newHive.ID)
 		if err != nil {
-			logger.Error("Error converting new hive ID: " + err.Error())
+			logger.ErrorWithContext(ctx, "Error converting new hive ID: " + err.Error())
 			return nil, err
 		}
 
@@ -760,7 +760,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 			newHiveIDInt, oldQueen.ID, uid,
 		)
 		if err != nil {
-			logger.Error("Error updating queen hive_id: " + err.Error())
+			logger.ErrorWithContext(ctx, "Error updating queen hive_id: " + err.Error())
 			return nil, err
 		}
 	}
@@ -772,7 +772,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 	newBoxID, err := boxModel.CreateSingleBox(newHive.ID, 0, "#ffc848", model.BoxTypeDeep)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -783,7 +783,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 	err = frameModel.MoveFramesToBox(frameIds, newBoxID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -812,7 +812,7 @@ func (r *mutationResolver) JoinHives(ctx context.Context, sourceHiveID string, t
 
 	sourceHive, err := hiveModel.Get(sourceHiveID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 	if sourceHive == nil {
@@ -821,7 +821,7 @@ func (r *mutationResolver) JoinHives(ctx context.Context, sourceHiveID string, t
 
 	targetHive, err := hiveModel.Get(targetHiveID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 	if targetHive == nil {
@@ -835,13 +835,13 @@ func (r *mutationResolver) JoinHives(ctx context.Context, sourceHiveID string, t
 
 	sourceBoxes, err := boxModel.ListByHive(sourceHiveID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
 	boxesToKeepInSource, err := boxModel.GetBoxesByTypeForHive(sourceHiveID, []model.BoxType{model.BoxTypeBottom, model.BoxTypeGate})
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -862,13 +862,13 @@ func (r *mutationResolver) JoinHives(ctx context.Context, sourceHiveID string, t
 	if len(boxIDsToMove) > 0 {
 		maxPos, err := boxModel.GetMaxPosition(targetHiveID)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.ErrorWithContext(ctx, err.Error())
 			return nil, err
 		}
 
 		err = boxModel.MoveBoxesToHive(boxIDsToMove, targetHiveID, maxPos+1)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.ErrorWithContext(ctx, err.Error())
 			return nil, err
 		}
 	}
@@ -876,13 +876,13 @@ func (r *mutationResolver) JoinHives(ctx context.Context, sourceHiveID string, t
 	now := time.Now()
 	err = hiveModel.MarkAsMerged(sourceHiveID, targetHiveID, now, mergeType)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
 	updatedTargetHive, err := hiveModel.Get(targetHiveID)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -901,7 +901,7 @@ func (r *mutationResolver) UpdateHivePlacement(ctx context.Context, apiaryID str
 	}).Update(apiaryID, hiveID, x, y, rotation)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -917,7 +917,7 @@ func (r *mutationResolver) AddApiaryObstacle(ctx context.Context, apiaryID strin
 	}).Create(apiaryID, string(obstacle.Type), obstacle.X, obstacle.Y, obstacle.Width, obstacle.Height, obstacle.Radius, obstacle.Rotation, obstacle.Label)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -933,7 +933,7 @@ func (r *mutationResolver) UpdateApiaryObstacle(ctx context.Context, id string, 
 	}).Update(id, string(obstacle.Type), obstacle.X, obstacle.Y, obstacle.Width, obstacle.Height, obstacle.Radius, obstacle.Rotation, obstacle.Label)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -949,7 +949,7 @@ func (r *mutationResolver) DeleteApiaryObstacle(ctx context.Context, id string) 
 	}).Delete(id)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
 
@@ -1035,7 +1035,7 @@ func (r *queryResolver) RandomHiveName(ctx context.Context, language *string) (*
 		names, ok = r.Resolver.femaleNamesMap["en"]
 		if !ok || len(names) == 0 {
 			// Should not happen if en names exist in the json
-			logger.Error(errors.New("fallback to 'en' names failed or 'en' list is empty").Error()) // Log specific error
+			logger.ErrorWithContext(ctx, errors.New("fallback to 'en' names failed or 'en' list is empty").Error()) // Log specific error
 			defaultName := "Bee"                                                                    // Provide a fallback name
 			return &defaultName, nil
 		}

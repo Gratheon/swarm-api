@@ -33,8 +33,6 @@ func RegisterGraphQLSchema(graphqlSchema string) error {
 	if os.Getenv("ENV_ID") == "dev" {
 		tmpVersion = "latest"
 	}
-	logger.Info(fmt.Sprintf("tmpVersion  %s", tmpVersion))
-
 	requestBody, err := json.Marshal(map[string]string{
 		"name":      "swarm-api",
 		"version":   tmpVersion,
@@ -47,8 +45,6 @@ func RegisterGraphQLSchema(graphqlSchema string) error {
 		return err
 	}
 
-	logger.Info(fmt.Sprintf("Sending request to to  %v/schema/push", service))
-
 	response, err := client.Post(
 		fmt.Sprintf("%v/schema/push", service),
 		"application/json",
@@ -60,18 +56,15 @@ func RegisterGraphQLSchema(graphqlSchema string) error {
 		return err
 	}
 
-	logger.Info(fmt.Sprintf("schema registry response status: %s", response.Status))
+	defer response.Body.Close()
 
 	var res map[string]interface{}
-
-	_ = json.NewDecoder(response.Body).Decode(&res)
-
-	logger.Info(fmt.Sprintf("schema registry response: %s", response.Body))
-
-	if jsonMsg, ok := res["json"].(string); ok {
-		logger.Info(jsonMsg)
-	} else {
-		logger.Info(fmt.Sprintf("schema registry response json: %v", res["json"]))
+	err = json.NewDecoder(response.Body).Decode(&res)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to parse schema registry response: %v", err))
+		return err
 	}
+
+	logger.Info(fmt.Sprintf("Schema registered successfully (version: %s, status: %s)", tmpVersion, response.Status))
 	return nil
 }

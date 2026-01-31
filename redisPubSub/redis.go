@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
@@ -19,7 +20,7 @@ var client *redis.Client
 
 func InitRedis() *redis.Client {
 	redisAddress := viper.GetString("redis_address")
-	fmt.Printf("connecting to %s", redisAddress)
+	logger.Info("Connecting to Redis at " + redisAddress)
 	client := redis.NewClient(&redis.Options{
 		Addr:     redisAddress,
 		Password: viper.GetString("redis_pass"),
@@ -36,18 +37,15 @@ func PublishEvent(uid string, entity string, entityID string, verb string, data 
 	payloadJSON, _ := json.Marshal(data)
 	channel := fmt.Sprintf("%s.%s.%s.%s", uid, entity, entityID, verb)
 
-	logger.Info("publishing event to channel " + channel)
-
 	err := client.Publish(ctx, channel, payloadJSON).Err()
 
 	if err != nil {
-		fmt.Printf("redis publish error %v", err)
+		logger.Error(fmt.Sprintf("Redis publish error on channel %s: %v", channel, err))
 	}
 
-	logger.Info("publishing event to channel " + channel + "." + verb)
-	err = client.Publish(ctx, channel + "." + verb, payloadJSON).Err()
+	err = client.Publish(ctx, channel+"."+verb, payloadJSON).Err()
 
 	if err != nil {
-		fmt.Printf("redis publish error %v", err)
+		logger.Error(fmt.Sprintf("Redis publish error on channel %s.%s: %v", channel, verb, err))
 	}
 }
