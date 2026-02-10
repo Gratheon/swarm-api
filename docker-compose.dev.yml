@@ -1,4 +1,4 @@
-#version: '3.9'
+version: '3.9'
 services:
   swarm-api:
     build:
@@ -12,8 +12,9 @@ services:
       - 8100:8100
     volumes:
       - ./:/app
-#    network_mode: bridge
-#    networks:
-#      - gratheon
-#networks:
-#  gratheon:
+    networks:
+      - gratheon_default
+
+networks:
+  gratheon_default:
+    external: true
