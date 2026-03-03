@@ -14,9 +14,22 @@ update:
 
 migrate-db-dev:
     go install github.com/pressly/goose/v3/cmd/goose@latest
-    DSN=$(jq -r '.db_dsn_migrate' config/config.dev.json) && \
-        echo $DSN && \
-        $(go env GOPATH)/bin/goose -dir migrations mysql "$DSN" up
+    DSN=$(jq -r '.db_dsn_migrate' config/config.dev.json); \
+        GOOSE="$(go env GOPATH)/bin/goose"; \
+        echo "$DSN"; \
+        if ! "$GOOSE" -dir migrations mysql "$DSN" up; then \
+            ALT_DSN=$(echo "$DSN" | sed 's/@tcp(mysql:3306)/@tcp(127.0.0.1:5100)/'); \
+            if [ "$ALT_DSN" != "$DSN" ]; then \
+                echo "migration with docker hostname failed, retrying via host port mapping"; \
+                echo "$ALT_DSN"; \
+                "$GOOSE" -dir migrations mysql "$ALT_DSN" up; \
+            else \
+                exit 1; \
+            fi; \
+        fi
+
+migrate-db-dev-container:
+    COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml run --rm swarm-api sh -lc 'go install github.com/pressly/goose/v3/cmd/goose@latest && DSN=$(jq -r ".db_dsn_migrate" config/config.dev.json) && echo "$DSN" && $(go env GOPATH)/bin/goose -dir migrations mysql "$DSN" up'
 
 build:
     git rev-parse --short HEAD > .version
@@ -57,4 +70,3 @@ test-dataloader:
 test-split-hive:
     @echo "Running split hive integration tests..."
     cd graph && TESTING=true go test -v -run TestSplitHive
-
