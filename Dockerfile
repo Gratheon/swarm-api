@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # ---- Build Stage ----
 FROM golang:1.25-alpine AS builder
 
@@ -8,7 +10,7 @@ RUN apk add --no-cache git
 
 # Copy Go modules and download dependencies
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 # Copy the rest of the source code
 COPY . .
@@ -17,35 +19,34 @@ COPY . .
 RUN ./scripts/update-version.sh
 
 # Build the swarm-api application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o swarm-api *.go
+ARG TARGETOS
+ARG TARGETARCH
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath -ldflags="-s -w" -o swarm-api *.go
 
-# Build the goose migration tool
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+# Build goose with only MySQL support to keep the runtime binary small.
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    GOBIN=/build/bin CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go install -trimpath -ldflags="-s -w" \
+    -tags="no_clickhouse no_libsql no_mssql no_postgres no_sqlite3 no_vertica no_ydb" \
+    github.com/pressly/goose/v3/cmd/goose@v3.27.0
 
 # ---- Final Stage ----
-FROM alpine:3.18
+FROM alpine:3.20
 
 WORKDIR /app
 
-# Install runtime dependencies (jq for entrypoint script)
-RUN apk add --no-cache jq
-
-# Copy the built application binary from the builder stage
-COPY --from=builder /build/swarm-api /app/swarm-api
-
-# Copy the built goose binary from the builder stage
-COPY --from=builder /go/bin/goose /app/goose
-
-# Copy migrations, config, and entrypoint script
-COPY migrations /app/migrations
-COPY config /app/config
-COPY entrypoint.sh /app/entrypoint.sh
-
-# Ensure scripts and binaries are executable
-RUN chmod +x /app/swarm-api /app/goose /app/entrypoint.sh
-
 # Create a non-root user and switch to it
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN apk add --no-cache jq && addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Copy runtime files with final ownership and permissions.
+COPY --from=builder --chown=appuser:appgroup --chmod=0755 /build/swarm-api /app/swarm-api
+COPY --from=builder --chown=appuser:appgroup --chmod=0755 /build/bin/goose /app/goose
+COPY --chown=appuser:appgroup migrations /app/migrations
+COPY --chown=appuser:appgroup config /app/config
+COPY --chown=appuser:appgroup --chmod=0755 entrypoint.sh /app/entrypoint.sh
+
 USER appuser
 
 EXPOSE 8100
