@@ -13,6 +13,9 @@ RUN go mod download
 # Copy the rest of the source code
 COPY . .
 
+# Refresh .version from current git commit before compilation.
+RUN ./scripts/update-version.sh
+
 # Build the swarm-api application
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o swarm-api *.go
 

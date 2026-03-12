@@ -29,12 +29,15 @@ Based on [gqlgen](https://gqlgen.com/getting-started/).
 ```
 cp config/config.example.json config/config.dev.json
 just start
+just setup-git-hooks
 ```
 
 To re-generate graphql -> go resolvers, run: 
 ```
 just gen
 ```
+
+When `schema.graphql` is changed, the pre-commit hook refreshes `.version` automatically.
 
 ## Testing
 

@@ -5,7 +5,7 @@ stop:
     COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml down
 
 develop:
-    git rev-parse --short HEAD > .version
+    ./scripts/update-version.sh
     # go run github.com/99designs/gqlgen generate
     NATIVE=1 ENV_ID=dev go run *.go
 
@@ -32,7 +32,7 @@ migrate-db-dev-container:
     COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml run --rm swarm-api sh -lc 'go install github.com/pressly/goose/v3/cmd/goose@latest && DSN=$(jq -r ".db_dsn_migrate" config/config.dev.json) && echo "$DSN" && $(go env GOPATH)/bin/goose -dir migrations mysql "$DSN" up'
 
 build:
-    git rev-parse --short HEAD > .version
+    ./scripts/update-version.sh
     @echo Building binary:
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build \
@@ -49,9 +49,14 @@ gen:
     @echo Generating schema.resolvers.go based on schema.graphql:
     go run github.com/99designs/gqlgen generate
     @echo Updating version file for schema registry:
-    git rev-parse --short HEAD > .version
+    ./scripts/update-version.sh
     @echo "Schema generation complete! Version:" $(cat .version)
     @echo "⚠️  Remember to restart swarm-api to push the new schema to the registry"
+
+setup-git-hooks:
+    git config core.hooksPath .githooks
+    chmod +x .githooks/pre-commit scripts/update-version.sh
+    @echo "Git hooks enabled for this repo."
 
 test:
     @echo "Running all tests..."

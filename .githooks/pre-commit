@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+if git diff --cached --name-only --diff-filter=ACMR | grep -Fxq "schema.graphql"; then
+  echo "schema.graphql changed; updating .version"
+  ./scripts/update-version.sh
+  git add .version
+fi

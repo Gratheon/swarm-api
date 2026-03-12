@@ -7,8 +7,9 @@ echo ""
 
 # Step 1: Generate version file
 echo "1️⃣  Generating version from git commit..."
-cd /Users/artjom/git/swarm-api
-git rev-parse --short HEAD > .version
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+./scripts/update-version.sh
 VERSION=$(cat .version)
 echo "   Version: $VERSION"
 echo ""
@@ -23,10 +24,10 @@ echo "3️⃣  To update the schema registry, you need to restart swarm-api:"
 echo ""
 echo "   Option A - If running with 'just develop':"
 echo "   • Stop the current process (Ctrl+C)"
-echo "   • Run: cd /Users/artjom/git/swarm-api && just develop"
+echo "   • Run: cd $SCRIPT_DIR && just develop"
 echo ""
 echo "   Option B - If running with docker-compose:"
-echo "   • Run: cd /Users/artjom/git/swarm-api && just stop && just start"
+echo "   • Run: cd $SCRIPT_DIR && just stop && just start"
 echo ""
 echo "   Option C - Quick restart (if already running):"
 echo "   • The schema will auto-register on service startup"
@@ -41,4 +42,3 @@ echo "   - splitDate: DateTime"
 echo ""
 echo "📝 New mutation added:"
 echo "   - splitHive(sourceHiveId: ID!, name: String!, frameIds: [ID!]!): Hive"
-
