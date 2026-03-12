@@ -19,8 +19,25 @@ import (
 )
 
 // Hives is the resolver for the hives field.
-func (r *apiaryResolver) Hives(ctx context.Context, obj *model.Apiary) ([]*model.Hive, error) {
+func (r *apiaryResolver) Hives(ctx context.Context, obj *model.Apiary, sortBy *model.HiveSortBy, sortOrder *model.SortOrder) ([]*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
+	if sortBy != nil || sortOrder != nil {
+		effectiveSortBy := model.HiveSortByHiveNumber
+		if sortBy != nil {
+			effectiveSortBy = *sortBy
+		}
+
+		effectiveSortOrder := model.SortOrderAsc
+		if sortOrder != nil {
+			effectiveSortOrder = *sortOrder
+		}
+
+		return (&model.Hive{
+			Db:     r.Resolver.Db,
+			UserID: uid,
+		}).ListByApiarySorted(obj.ID, effectiveSortBy, effectiveSortOrder)
+	}
+
 	loaders := GetLoaders(ctx)
 	if loaders != nil && loaders.HivesByApiaryLoader != nil {
 		return loaders.HivesByApiaryLoader.Load(ctx, obj.ID, uid)

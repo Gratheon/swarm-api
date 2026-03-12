@@ -166,11 +166,25 @@ type Apiary {
   id: ID!
   name: String
   "List of active hives in this apiary"
-  hives: [Hive]
+  hives(sortBy: HiveSortBy, sortOrder: SortOrder): [Hive]
   "Computed from lat/lng coordinates"
   location: String
   lat: String
   lng: String
+}
+
+enum HiveSortBy {
+  HIVE_NUMBER
+  BEE_COUNT
+  LAST_TREATMENT
+  LAST_INSPECTION
+  STATUS
+  ADDED
+}
+
+enum SortOrder {
+  ASC
+  DESC
 }
 
 "Input for creating a new hive with initial configuration"
@@ -481,4 +495,3 @@ input ApiaryObstacleInput {
   "Optional descriptive label"
   label: String
 }
-

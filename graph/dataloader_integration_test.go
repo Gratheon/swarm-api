@@ -355,7 +355,7 @@ func TestDataLoaderIntegrationWithResolvers(t *testing.T) {
 		apiary := &model.Apiary{ID: apiaryID}
 
 		// ACT
-		hives, err := apiaryResolver.Hives(ctx, apiary)
+		hives, err := apiaryResolver.Hives(ctx, apiary, nil, nil)
 		assert.NoError(t, err, "Failed to resolve hives")
 
 		boxes1, err := hiveResolver.Boxes(ctx, hives[0])

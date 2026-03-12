@@ -55,7 +55,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Apiary struct {
-		Hives    func(childComplexity int) int
+		Hives    func(childComplexity int, sortBy *model.HiveSortBy, sortOrder *model.SortOrder) int
 		ID       func(childComplexity int) int
 		Lat      func(childComplexity int) int
 		Lng      func(childComplexity int) int
@@ -211,7 +211,7 @@ type ComplexityRoot struct {
 }
 
 type ApiaryResolver interface {
-	Hives(ctx context.Context, obj *model.Apiary) ([]*model.Hive, error)
+	Hives(ctx context.Context, obj *model.Apiary, sortBy *model.HiveSortBy, sortOrder *model.SortOrder) ([]*model.Hive, error)
 }
 type ApiaryObstacleResolver interface {
 	Type(ctx context.Context, obj *model.ApiaryObstacle) (model.ObstacleType, error)
@@ -312,7 +312,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Apiary.Hives(childComplexity), true
+		args, err := ec.field_Apiary_hives_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Apiary.Hives(childComplexity, args["sortBy"].(*model.HiveSortBy), args["sortOrder"].(*model.SortOrder)), true
 	case "Apiary.id":
 		if e.complexity.Apiary.ID == nil {
 			break
@@ -1412,7 +1417,16 @@ type Mutation {
   """
   splitHive(sourceHiveId: ID!, queenName: String, queenAction: String!, frameIds: [ID!]!): Hive
 
-  "Merge two hives together, supports different merge strategies"
+  """
+  Merge two hives together by moving boxes from source to target.
+
+  mergeType options:
+  - "both_queens": Keep both queens (create multi-queen colony)
+  - "source_queen_kept": Keep source queen, remove target queen
+  - "target_queen_kept": Keep target queen, remove source queen
+
+  Bottom boards and gates remain in source hive, all other boxes are moved to target.
+  """
   joinHives(sourceHiveId: ID!, targetHiveId: ID!, mergeType: String!): Hive
 
   "Update the visual placement (x, y coordinates and rotation) of a hive in apiary view"
@@ -1458,11 +1472,25 @@ type Apiary {
   id: ID!
   name: String
   "List of active hives in this apiary"
-  hives: [Hive]
+  hives(sortBy: HiveSortBy, sortOrder: SortOrder): [Hive]
   "Computed from lat/lng coordinates"
   location: String
   lat: String
   lng: String
+}
+
+enum HiveSortBy {
+  HIVE_NUMBER
+  BEE_COUNT
+  LAST_TREATMENT
+  LAST_INSPECTION
+  STATUS
+  ADDED
+}
+
+enum SortOrder {
+  ASC
+  DESC
 }
 
 "Input for creating a new hive with initial configuration"
@@ -1538,7 +1566,7 @@ type Hive @key(fields: "id") {
   mergedIntoHive: Hive
   "Date when this hive was merged"
   mergeDate: DateTime
-  "Strategy used for merging (e.g., 'newspaper', 'direct')"
+  "Strategy used for merging: 'both_queens', 'source_queen_kept', or 'target_queen_kept'"
   mergeType: String
   "Source hives that were merged into this one"
   mergedFromHives: [Hive]
@@ -1773,7 +1801,6 @@ input ApiaryObstacleInput {
   "Optional descriptive label"
   label: String
 }
-
 `, BuiltIn: false},
 	{Name: "../../federation/directives.graphql", Input: `
 	directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
@@ -1809,6 +1836,22 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Apiary_hives_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sortBy", ec.unmarshalOHiveSortBy2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveSortBy)
+	if err != nil {
+		return nil, err
+	}
+	args["sortBy"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "sortOrder", ec.unmarshalOSortOrder2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐSortOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["sortOrder"] = arg1
+	return args, nil
+}
 
 func (ec *executionContext) field_Entity_findFrameSideByID_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -2465,7 +2508,8 @@ func (ec *executionContext) _Apiary_hives(ctx context.Context, field graphql.Col
 		field,
 		ec.fieldContext_Apiary_hives,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Apiary().Hives(ctx, obj)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Apiary().Hives(ctx, obj, fc.Args["sortBy"].(*model.HiveSortBy), fc.Args["sortOrder"].(*model.SortOrder))
 		},
 		nil,
 		ec.marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -2474,7 +2518,7 @@ func (ec *executionContext) _Apiary_hives(ctx context.Context, field graphql.Col
 	)
 }
 
-func (ec *executionContext) fieldContext_Apiary_hives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Apiary_hives(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Apiary",
 		Field:      field,
@@ -2527,6 +2571,17 @@ func (ec *executionContext) fieldContext_Apiary_hives(_ context.Context, field g
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Apiary_hives_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -12270,6 +12325,22 @@ func (ec *executionContext) marshalOHivePlacement2ᚖgithubᚗcomᚋGratheonᚋs
 	return ec._HivePlacement(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOHiveSortBy2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveSortBy(ctx context.Context, v any) (*model.HiveSortBy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.HiveSortBy)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOHiveSortBy2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveSortBy(ctx context.Context, sel ast.SelectionSet, v *model.HiveSortBy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalOID2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12382,6 +12453,22 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOSortOrder2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐSortOrder(ctx context.Context, v any) (*model.SortOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.SortOrder)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSortOrder2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐSortOrder(ctx context.Context, sel ast.SelectionSet, v *model.SortOrder) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {

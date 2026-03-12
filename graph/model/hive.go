@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -69,6 +71,63 @@ func (r *Hive) ListByApiary(apiaryId int) ([]*Hive, error) {
 		FROM hives 
 		WHERE apiary_id=? AND user_id=? AND active=1 AND collapse_date IS NULL AND merged_into_hive_id IS NULL`, apiaryId, r.UserID)
 	return hives, err2
+}
+
+func (r *Hive) ListByApiarySorted(apiaryID int, sortBy HiveSortBy, sortOrder SortOrder) ([]*Hive, error) {
+	sortExpr := map[HiveSortBy]string{
+		HiveSortByHiveNumber:     "h.hive_number",
+		HiveSortByBeeCount:       "bee_count",
+		HiveSortByLastTreatment:  "last_treatment",
+		HiveSortByLastInspection: "last_inspection",
+		HiveSortByStatus:         "h.status",
+		HiveSortByAdded:          "h.added",
+	}[sortBy]
+
+	if sortExpr == "" {
+		sortExpr = "h.hive_number"
+	}
+
+	orderDir := "ASC"
+	if sortOrder == SortOrderDesc {
+		orderDir = "DESC"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT h.id, h.user_id, h.apiary_id, h.active, h.hive_number, h.notes, h.color, h.status, h.added,
+		       h.collapse_date, h.collapse_cause, h.parent_hive_id, h.split_date, h.merged_into_hive_id, h.merge_date, h.merge_type
+		FROM hives h
+		LEFT JOIN (
+			SELECT i.hive_id, MAX(i.added) AS last_inspection
+			FROM inspections i
+			WHERE i.user_id=?
+			GROUP BY i.hive_id
+		) li ON li.hive_id = h.id
+		LEFT JOIN (
+			SELECT f.hive_id, MAX(t.added) AS last_treatment
+			FROM families f
+			LEFT JOIN treatments t ON t.family_id = f.id AND t.user_id = ?
+			WHERE f.user_id = ?
+			GROUP BY f.hive_id
+		) lt ON lt.hive_id = h.id
+		LEFT JOIN (
+			SELECT fhr.hive_id,
+			       COALESCE(SUM(fsr.worker_bee_count), 0) + COALESCE(SUM(fsr.drone_count), 0) + COALESCE(SUM(fsr.queen_count), 0) AS bee_count
+			FROM %s.files_hive_rel fhr
+			INNER JOIN %s.files_frame_side_rel fsr ON fsr.file_id = fhr.file_id
+			WHERE fhr.user_id=? AND fsr.inspection_id IS NULL
+			GROUP BY fhr.hive_id
+		) bc ON bc.hive_id = h.id
+		WHERE h.apiary_id=? AND h.user_id=? AND h.active=1 AND h.collapse_date IS NULL AND h.merged_into_hive_id IS NULL
+		ORDER BY %s IS NULL ASC, %s %s, h.id ASC`,
+		"`image-splitter`", "`image-splitter`",
+		sortExpr, sortExpr, orderDir,
+	)
+
+	query = strings.TrimSpace(query)
+
+	hives := []*Hive{}
+	err := r.Db.Select(&hives, query, r.UserID, r.UserID, r.UserID, r.UserID, apiaryID, r.UserID)
+	return hives, err
 }
 
 func (r *Hive) Create(input HiveInput) (*Hive, error) {
