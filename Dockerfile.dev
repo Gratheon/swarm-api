@@ -1,20 +1,14 @@
-# syntax=docker/dockerfile:1.7
-
 # ---- Dev Dockerfile for Hot Reload ----
 FROM golang:1.25.7-alpine
 
 WORKDIR /app
 
 # Install Air for hot reload
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go install github.com/air-verse/air@v1.64.5
+RUN go install github.com/air-verse/air@v1.64.5
 
 # Copy go.mod and go.sum first, then download dependencies
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go mod download
+RUN go mod download
 
 # Runtime source code is bind-mounted via docker-compose.dev.yml.
 COPY .air.toml ./
