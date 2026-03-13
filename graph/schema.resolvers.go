@@ -389,6 +389,15 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 		return hiveResult, fmt.Errorf("failed to create hive roof section: %w", err)
 	}
 
+	_, err = (&model.Box{
+		Db:     r.Db,
+		UserID: uid,
+	}).CreateSingleBox(hiveResult.ID, -1, "#4a4a4a", model.BoxTypeBottom)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return hiveResult, fmt.Errorf("failed to create hive bottom section: %w", err)
+	}
+
 	return hiveResult, err
 }
 
