@@ -1126,6 +1126,21 @@ func (r *mutationResolver) AssignQueenFromWarehouse(ctx context.Context, hiveID 
 	return assigned, nil
 }
 
+// DeleteWarehouseQueen is the resolver for the deleteWarehouseQueen field.
+func (r *mutationResolver) DeleteWarehouseQueen(ctx context.Context, familyID string) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	success, err := (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).DeleteFromWarehouse(familyID)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return &success, nil
+}
+
 // Hive is the resolver for the hive field.
 func (r *queryResolver) Hive(ctx context.Context, id string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)

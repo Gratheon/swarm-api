@@ -170,6 +170,9 @@ type Mutation {
 
   "Assign an existing warehouse queen to a hive without creating a new family"
   assignQueenFromWarehouse(hiveId: ID!, familyId: ID!): Family
+
+  "Soft-delete a queen from warehouse storage"
+  deleteWarehouseQueen(familyId: ID!): Boolean
 }
 
 enum WarehouseModuleType {

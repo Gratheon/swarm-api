@@ -41,6 +41,15 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 		return nil
 	}
 
+	_, err = db.Exec(`
+		ALTER TABLE families
+		ADD COLUMN IF NOT EXISTS active tinyint(1) NOT NULL DEFAULT 1
+	`)
+	if err != nil {
+		t.Skipf("Skipping test - cannot ensure families.active column: %v", err)
+		return nil
+	}
+
 	return db
 }
 
