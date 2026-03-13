@@ -38,6 +38,15 @@ type Query {
 
   "Get obstacles (trees, buildings) within an apiary for spatial planning"
   apiaryObstacles(apiaryId: ID!): [ApiaryObstacle]
+
+  "List all active devices for the authenticated user"
+  devices: [Device]
+
+  "List warehouse module counts for the authenticated user"
+  warehouseModules: [WarehouseModule!]!
+
+  "Warehouse behavior settings for the authenticated user"
+  warehouseSettings: WarehouseSettings!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -134,6 +143,85 @@ type Mutation {
 
   "Remove an obstacle from apiary"
   deleteApiaryObstacle(id: ID!): Boolean
+
+  "Create a new device for telemetry/video integrations"
+  addDevice(device: DeviceInput!): Device
+
+  "Update existing device metadata and token binding"
+  updateDevice(id: ID!, device: DeviceUpdateInput!): Device
+
+  "Soft-delete a device"
+  deactivateDevice(id: ID!): Boolean
+
+  "Set warehouse module count for the authenticated user"
+  setWarehouseModuleCount(moduleType: WarehouseModuleType!, count: Int!): WarehouseModule!
+
+  "Set automatic warehouse count updates from hive structure changes"
+  setWarehouseAutoUpdateFromHives(enabled: Boolean!): WarehouseSettings!
+}
+
+enum WarehouseModuleType {
+  DEEP
+  SUPER
+  ROOF
+  HORIZONTAL_FEEDER
+  QUEEN_EXCLUDER
+  BOTTOM
+  FRAME_FOUNDATION
+  FRAME_EMPTY_COMB
+  FRAME_PARTITION
+  FRAME_FEEDER
+}
+
+type WarehouseModule {
+  moduleType: WarehouseModuleType!
+  count: Int!
+}
+
+type WarehouseSettings {
+  autoUpdateFromHives: Boolean!
+}
+
+enum DeviceType {
+  IOT_SENSOR
+  VIDEO_CAMERA
+}
+
+input DeviceInput {
+  "Display name of the device"
+  name: String!
+  "Device type for downstream integrations"
+  type: DeviceType!
+  "API token bound to this device (must be unique when set)"
+  apiToken: String
+  "Optional hive linked to this device"
+  hiveId: ID
+  "Optional specific hive section (box) linked to this device"
+  boxId: ID
+}
+
+input DeviceUpdateInput {
+  "Display name of the device"
+  name: String
+  "Device type for downstream integrations"
+  type: DeviceType
+  "API token bound to this device (must be unique when set)"
+  apiToken: String
+  "Optional hive linked to this device"
+  hiveId: ID
+  "Optional specific hive section (box) linked to this device"
+  boxId: ID
+}
+
+type Device {
+  id: ID!
+  name: String!
+  type: DeviceType!
+  apiToken: String
+  hiveId: ID
+  boxId: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 "Input for treating a specific box with anti-varroa medication"

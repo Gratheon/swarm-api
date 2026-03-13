@@ -677,7 +677,7 @@ func (r *mutationResolver) MarkHiveAsCollapsed(ctx context.Context, id string, c
 	if err != nil {
 		parsedCollapseDate, err = time.Parse("2006-01-02", collapseDate)
 		if err != nil {
-			logger.ErrorWithContext(ctx, "Invalid collapseDate format: " + err.Error())
+			logger.ErrorWithContext(ctx, "Invalid collapseDate format: "+err.Error())
 			return nil, errors.New("Invalid collapseDate format, must be RFC3339 or YYYY-MM-DD")
 		}
 	}
@@ -753,7 +753,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 		families, err := familyModel.ListByHive(sourceHiveID)
 		if err != nil {
-			logger.ErrorWithContext(ctx, "Error listing families for source hive " + sourceHiveID + ": " + err.Error())
+			logger.ErrorWithContext(ctx, "Error listing families for source hive "+sourceHiveID+": "+err.Error())
 			return nil, err
 		}
 
@@ -768,7 +768,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 
 		newHiveIDInt, err := strconv.Atoi(newHive.ID)
 		if err != nil {
-			logger.ErrorWithContext(ctx, "Error converting new hive ID: " + err.Error())
+			logger.ErrorWithContext(ctx, "Error converting new hive ID: "+err.Error())
 			return nil, err
 		}
 
@@ -777,7 +777,7 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 			newHiveIDInt, oldQueen.ID, uid,
 		)
 		if err != nil {
-			logger.ErrorWithContext(ctx, "Error updating queen hive_id: " + err.Error())
+			logger.ErrorWithContext(ctx, "Error updating queen hive_id: "+err.Error())
 			return nil, err
 		}
 	}
@@ -973,6 +973,81 @@ func (r *mutationResolver) DeleteApiaryObstacle(ctx context.Context, id string) 
 	return &deleted, nil
 }
 
+// AddDevice is the resolver for the addDevice field.
+func (r *mutationResolver) AddDevice(ctx context.Context, device model.DeviceInput) (*model.Device, error) {
+	uid := ctx.Value("userID").(string)
+	created, err := (&model.Device{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Create(device)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return created, nil
+}
+
+// UpdateDevice is the resolver for the updateDevice field.
+func (r *mutationResolver) UpdateDevice(ctx context.Context, id string, device model.DeviceUpdateInput) (*model.Device, error) {
+	uid := ctx.Value("userID").(string)
+	updated, err := (&model.Device{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Update(id, device)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return updated, nil
+}
+
+// DeactivateDevice is the resolver for the deactivateDevice field.
+func (r *mutationResolver) DeactivateDevice(ctx context.Context, id string) (*bool, error) {
+	uid := ctx.Value("userID").(string)
+	deactivated, err := (&model.Device{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Deactivate(id)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return deactivated, nil
+}
+
+// SetWarehouseModuleCount is the resolver for the setWarehouseModuleCount field.
+func (r *mutationResolver) SetWarehouseModuleCount(ctx context.Context, moduleType model.WarehouseModuleType, count int) (*model.WarehouseModule, error) {
+	uid := ctx.Value("userID").(string)
+	updated, err := (&model.WarehouseModule{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Upsert(moduleType, count)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return updated, nil
+}
+
+// SetWarehouseAutoUpdateFromHives is the resolver for the setWarehouseAutoUpdateFromHives field.
+func (r *mutationResolver) SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error) {
+	uid := ctx.Value("userID").(string)
+	updated, err := (&model.WarehouseSettings{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).UpsertAutoUpdate(enabled)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return updated, nil
+}
+
 // Hive is the resolver for the hive field.
 func (r *queryResolver) Hive(ctx context.Context, id string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
@@ -1053,7 +1128,7 @@ func (r *queryResolver) RandomHiveName(ctx context.Context, language *string) (*
 		if !ok || len(names) == 0 {
 			// Should not happen if en names exist in the json
 			logger.ErrorWithContext(ctx, errors.New("fallback to 'en' names failed or 'en' list is empty").Error()) // Log specific error
-			defaultName := "Bee"                                                                    // Provide a fallback name
+			defaultName := "Bee"                                                                                    // Provide a fallback name
 			return &defaultName, nil
 		}
 	}
@@ -1090,6 +1165,33 @@ func (r *queryResolver) ApiaryObstacles(ctx context.Context, apiaryID string) ([
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).ListByApiary(apiaryID)
+}
+
+// Devices is the resolver for the devices field.
+func (r *queryResolver) Devices(ctx context.Context) ([]*model.Device, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Device{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).List()
+}
+
+// WarehouseModules is the resolver for the warehouseModules field.
+func (r *queryResolver) WarehouseModules(ctx context.Context) ([]*model.WarehouseModule, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.WarehouseModule{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).List()
+}
+
+// WarehouseSettings is the resolver for the warehouseSettings field.
+func (r *queryResolver) WarehouseSettings(ctx context.Context) (*model.WarehouseSettings, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.WarehouseSettings{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Get()
 }
 
 // Apiary returns generated.ApiaryResolver implementation.

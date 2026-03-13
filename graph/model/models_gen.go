@@ -53,6 +53,32 @@ type BoxInput struct {
 	Family *FamilyInput `json:"family,omitempty"`
 }
 
+type DeviceInput struct {
+	// Display name of the device
+	Name string `json:"name"`
+	// Device type for downstream integrations
+	Type DeviceType `json:"type"`
+	// API token bound to this device (must be unique when set)
+	APIToken *string `json:"apiToken,omitempty"`
+	// Optional hive linked to this device
+	HiveID *string `json:"hiveId,omitempty"`
+	// Optional specific hive section (box) linked to this device
+	BoxID *string `json:"boxId,omitempty"`
+}
+
+type DeviceUpdateInput struct {
+	// Display name of the device
+	Name *string `json:"name,omitempty"`
+	// Device type for downstream integrations
+	Type *DeviceType `json:"type,omitempty"`
+	// API token bound to this device (must be unique when set)
+	APIToken *string `json:"apiToken,omitempty"`
+	// Optional hive linked to this device
+	HiveID *string `json:"hiveId,omitempty"`
+	// Optional specific hive section (box) linked to this device
+	BoxID *string `json:"boxId,omitempty"`
+}
+
 // Input for creating or updating a queen family
 type FamilyInput struct {
 	// Family ID for updates
@@ -207,6 +233,61 @@ func (e *BoxType) UnmarshalJSON(b []byte) error {
 }
 
 func (e BoxType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type DeviceType string
+
+const (
+	DeviceTypeIotSensor   DeviceType = "IOT_SENSOR"
+	DeviceTypeVideoCamera DeviceType = "VIDEO_CAMERA"
+)
+
+var AllDeviceType = []DeviceType{
+	DeviceTypeIotSensor,
+	DeviceTypeVideoCamera,
+}
+
+func (e DeviceType) IsValid() bool {
+	switch e {
+	case DeviceTypeIotSensor, DeviceTypeVideoCamera:
+		return true
+	}
+	return false
+}
+
+func (e DeviceType) String() string {
+	return string(e)
+}
+
+func (e *DeviceType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DeviceType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DeviceType", str)
+	}
+	return nil
+}
+
+func (e DeviceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *DeviceType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e DeviceType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -450,6 +531,77 @@ func (e *SortOrder) UnmarshalJSON(b []byte) error {
 }
 
 func (e SortOrder) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type WarehouseModuleType string
+
+const (
+	WarehouseModuleTypeDeep             WarehouseModuleType = "DEEP"
+	WarehouseModuleTypeSuper            WarehouseModuleType = "SUPER"
+	WarehouseModuleTypeRoof             WarehouseModuleType = "ROOF"
+	WarehouseModuleTypeHorizontalFeeder WarehouseModuleType = "HORIZONTAL_FEEDER"
+	WarehouseModuleTypeQueenExcluder    WarehouseModuleType = "QUEEN_EXCLUDER"
+	WarehouseModuleTypeBottom           WarehouseModuleType = "BOTTOM"
+	WarehouseModuleTypeFrameFoundation  WarehouseModuleType = "FRAME_FOUNDATION"
+	WarehouseModuleTypeFrameEmptyComb   WarehouseModuleType = "FRAME_EMPTY_COMB"
+	WarehouseModuleTypeFramePartition   WarehouseModuleType = "FRAME_PARTITION"
+	WarehouseModuleTypeFrameFeeder      WarehouseModuleType = "FRAME_FEEDER"
+)
+
+var AllWarehouseModuleType = []WarehouseModuleType{
+	WarehouseModuleTypeDeep,
+	WarehouseModuleTypeSuper,
+	WarehouseModuleTypeRoof,
+	WarehouseModuleTypeHorizontalFeeder,
+	WarehouseModuleTypeQueenExcluder,
+	WarehouseModuleTypeBottom,
+	WarehouseModuleTypeFrameFoundation,
+	WarehouseModuleTypeFrameEmptyComb,
+	WarehouseModuleTypeFramePartition,
+	WarehouseModuleTypeFrameFeeder,
+}
+
+func (e WarehouseModuleType) IsValid() bool {
+	switch e {
+	case WarehouseModuleTypeDeep, WarehouseModuleTypeSuper, WarehouseModuleTypeRoof, WarehouseModuleTypeHorizontalFeeder, WarehouseModuleTypeQueenExcluder, WarehouseModuleTypeBottom, WarehouseModuleTypeFrameFoundation, WarehouseModuleTypeFrameEmptyComb, WarehouseModuleTypeFramePartition, WarehouseModuleTypeFrameFeeder:
+		return true
+	}
+	return false
+}
+
+func (e WarehouseModuleType) String() string {
+	return string(e)
+}
+
+func (e *WarehouseModuleType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = WarehouseModuleType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid WarehouseModuleType", str)
+	}
+	return nil
+}
+
+func (e WarehouseModuleType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *WarehouseModuleType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e WarehouseModuleType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

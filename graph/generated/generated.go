@@ -84,6 +84,17 @@ type ComplexityRoot struct {
 		Type     func(childComplexity int) int
 	}
 
+	Device struct {
+		APIToken  func(childComplexity int) int
+		BoxID     func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		HiveID    func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Name      func(childComplexity int) int
+		Type      func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+	}
+
 	Entity struct {
 		FindFrameSideByID func(childComplexity int, id *string) int
 		FindHiveByID      func(childComplexity int, id string) int
@@ -154,37 +165,43 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddApiary            func(childComplexity int, apiary model.ApiaryInput) int
-		AddApiaryObstacle    func(childComplexity int, apiaryID string, obstacle model.ApiaryObstacleInput) int
-		AddBox               func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
-		AddFrame             func(childComplexity int, boxID string, typeArg string, position int) int
-		AddHive              func(childComplexity int, hive model.HiveInput) int
-		AddInspection        func(childComplexity int, inspection model.InspectionInput) int
-		AddQueenToHive       func(childComplexity int, hiveID string, queen model.FamilyInput) int
-		DeactivateApiary     func(childComplexity int, id string) int
-		DeactivateBox        func(childComplexity int, id string) int
-		DeactivateFrame      func(childComplexity int, id string) int
-		DeactivateHive       func(childComplexity int, id string) int
-		DeleteApiaryObstacle func(childComplexity int, id string) int
-		JoinHives            func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
-		MarkHiveAsCollapsed  func(childComplexity int, id string, collapseDate string, collapseCause string) int
-		RemoveQueenFromHive  func(childComplexity int, hiveID string, familyID string) int
-		SplitHive            func(childComplexity int, sourceHiveID string, queenName *string, queenAction string, frameIds []string) int
-		SwapBoxPositions     func(childComplexity int, id string, id2 string) int
-		TreatBox             func(childComplexity int, treatment model.TreatmentOfBoxInput) int
-		TreatHive            func(childComplexity int, treatment model.TreatmentOfHiveInput) int
-		UpdateApiary         func(childComplexity int, id string, apiary model.ApiaryInput) int
-		UpdateApiaryObstacle func(childComplexity int, id string, obstacle model.ApiaryObstacleInput) int
-		UpdateBoxColor       func(childComplexity int, id string, color *string) int
-		UpdateFrames         func(childComplexity int, frames []*model.FrameInput) int
-		UpdateHive           func(childComplexity int, hive model.HiveUpdateInput) int
-		UpdateHivePlacement  func(childComplexity int, apiaryID string, hiveID string, x float64, y float64, rotation float64) int
+		AddApiary                       func(childComplexity int, apiary model.ApiaryInput) int
+		AddApiaryObstacle               func(childComplexity int, apiaryID string, obstacle model.ApiaryObstacleInput) int
+		AddBox                          func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
+		AddDevice                       func(childComplexity int, device model.DeviceInput) int
+		AddFrame                        func(childComplexity int, boxID string, typeArg string, position int) int
+		AddHive                         func(childComplexity int, hive model.HiveInput) int
+		AddInspection                   func(childComplexity int, inspection model.InspectionInput) int
+		AddQueenToHive                  func(childComplexity int, hiveID string, queen model.FamilyInput) int
+		DeactivateApiary                func(childComplexity int, id string) int
+		DeactivateBox                   func(childComplexity int, id string) int
+		DeactivateDevice                func(childComplexity int, id string) int
+		DeactivateFrame                 func(childComplexity int, id string) int
+		DeactivateHive                  func(childComplexity int, id string) int
+		DeleteApiaryObstacle            func(childComplexity int, id string) int
+		JoinHives                       func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
+		MarkHiveAsCollapsed             func(childComplexity int, id string, collapseDate string, collapseCause string) int
+		RemoveQueenFromHive             func(childComplexity int, hiveID string, familyID string) int
+		SetWarehouseAutoUpdateFromHives func(childComplexity int, enabled bool) int
+		SetWarehouseModuleCount         func(childComplexity int, moduleType model.WarehouseModuleType, count int) int
+		SplitHive                       func(childComplexity int, sourceHiveID string, queenName *string, queenAction string, frameIds []string) int
+		SwapBoxPositions                func(childComplexity int, id string, id2 string) int
+		TreatBox                        func(childComplexity int, treatment model.TreatmentOfBoxInput) int
+		TreatHive                       func(childComplexity int, treatment model.TreatmentOfHiveInput) int
+		UpdateApiary                    func(childComplexity int, id string, apiary model.ApiaryInput) int
+		UpdateApiaryObstacle            func(childComplexity int, id string, obstacle model.ApiaryObstacleInput) int
+		UpdateBoxColor                  func(childComplexity int, id string, color *string) int
+		UpdateDevice                    func(childComplexity int, id string, device model.DeviceUpdateInput) int
+		UpdateFrames                    func(childComplexity int, frames []*model.FrameInput) int
+		UpdateHive                      func(childComplexity int, hive model.HiveUpdateInput) int
+		UpdateHivePlacement             func(childComplexity int, apiaryID string, hiveID string, x float64, y float64, rotation float64) int
 	}
 
 	Query struct {
 		Apiaries           func(childComplexity int) int
 		Apiary             func(childComplexity int, id string) int
 		ApiaryObstacles    func(childComplexity int, apiaryID string) int
+		Devices            func(childComplexity int) int
 		Hive               func(childComplexity int, id string) int
 		HiveFrame          func(childComplexity int, id string) int
 		HiveFrameSide      func(childComplexity int, id string) int
@@ -192,6 +209,8 @@ type ComplexityRoot struct {
 		Inspection         func(childComplexity int, inspectionID string) int
 		Inspections        func(childComplexity int, hiveID string, limit *int) int
 		RandomHiveName     func(childComplexity int, language *string) int
+		WarehouseModules   func(childComplexity int) int
+		WarehouseSettings  func(childComplexity int) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]any) int
 	}
@@ -203,6 +222,15 @@ type ComplexityRoot struct {
 		HiveId   func(childComplexity int) int
 		ID       func(childComplexity int) int
 		Type     func(childComplexity int) int
+	}
+
+	WarehouseModule struct {
+		Count      func(childComplexity int) int
+		ModuleType func(childComplexity int) int
+	}
+
+	WarehouseSettings struct {
+		AutoUpdateFromHives func(childComplexity int) int
 	}
 
 	_Service struct {
@@ -274,6 +302,11 @@ type MutationResolver interface {
 	AddApiaryObstacle(ctx context.Context, apiaryID string, obstacle model.ApiaryObstacleInput) (*model.ApiaryObstacle, error)
 	UpdateApiaryObstacle(ctx context.Context, id string, obstacle model.ApiaryObstacleInput) (*model.ApiaryObstacle, error)
 	DeleteApiaryObstacle(ctx context.Context, id string) (*bool, error)
+	AddDevice(ctx context.Context, device model.DeviceInput) (*model.Device, error)
+	UpdateDevice(ctx context.Context, id string, device model.DeviceUpdateInput) (*model.Device, error)
+	DeactivateDevice(ctx context.Context, id string) (*bool, error)
+	SetWarehouseModuleCount(ctx context.Context, moduleType model.WarehouseModuleType, count int) (*model.WarehouseModule, error)
+	SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -286,6 +319,9 @@ type QueryResolver interface {
 	Inspections(ctx context.Context, hiveID string, limit *int) ([]*model.Inspection, error)
 	HivePlacements(ctx context.Context, apiaryID string) ([]*model.HivePlacement, error)
 	ApiaryObstacles(ctx context.Context, apiaryID string) ([]*model.ApiaryObstacle, error)
+	Devices(ctx context.Context) ([]*model.Device, error)
+	WarehouseModules(ctx context.Context) ([]*model.WarehouseModule, error)
+	WarehouseSettings(ctx context.Context) (*model.WarehouseSettings, error)
 }
 
 type executableSchema struct {
@@ -440,6 +476,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Box.Type(childComplexity), true
+
+	case "Device.apiToken":
+		if e.complexity.Device.APIToken == nil {
+			break
+		}
+
+		return e.complexity.Device.APIToken(childComplexity), true
+	case "Device.boxId":
+		if e.complexity.Device.BoxID == nil {
+			break
+		}
+
+		return e.complexity.Device.BoxID(childComplexity), true
+	case "Device.createdAt":
+		if e.complexity.Device.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Device.CreatedAt(childComplexity), true
+	case "Device.hiveId":
+		if e.complexity.Device.HiveID == nil {
+			break
+		}
+
+		return e.complexity.Device.HiveID(childComplexity), true
+	case "Device.id":
+		if e.complexity.Device.ID == nil {
+			break
+		}
+
+		return e.complexity.Device.ID(childComplexity), true
+	case "Device.name":
+		if e.complexity.Device.Name == nil {
+			break
+		}
+
+		return e.complexity.Device.Name(childComplexity), true
+	case "Device.type":
+		if e.complexity.Device.Type == nil {
+			break
+		}
+
+		return e.complexity.Device.Type(childComplexity), true
+	case "Device.updatedAt":
+		if e.complexity.Device.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Device.UpdatedAt(childComplexity), true
 
 	case "Entity.findFrameSideByID":
 		if e.complexity.Entity.FindFrameSideByID == nil {
@@ -779,6 +864,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddBox(childComplexity, args["hiveId"].(string), args["position"].(int), args["color"].(*string), args["type"].(model.BoxType)), true
+	case "Mutation.addDevice":
+		if e.complexity.Mutation.AddDevice == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addDevice_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddDevice(childComplexity, args["device"].(model.DeviceInput)), true
 	case "Mutation.addFrame":
 		if e.complexity.Mutation.AddFrame == nil {
 			break
@@ -845,6 +941,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeactivateBox(childComplexity, args["id"].(string)), true
+	case "Mutation.deactivateDevice":
+		if e.complexity.Mutation.DeactivateDevice == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deactivateDevice_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeactivateDevice(childComplexity, args["id"].(string)), true
 	case "Mutation.deactivateFrame":
 		if e.complexity.Mutation.DeactivateFrame == nil {
 			break
@@ -911,6 +1018,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RemoveQueenFromHive(childComplexity, args["hiveId"].(string), args["familyId"].(string)), true
+	case "Mutation.setWarehouseAutoUpdateFromHives":
+		if e.complexity.Mutation.SetWarehouseAutoUpdateFromHives == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setWarehouseAutoUpdateFromHives_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetWarehouseAutoUpdateFromHives(childComplexity, args["enabled"].(bool)), true
+	case "Mutation.setWarehouseModuleCount":
+		if e.complexity.Mutation.SetWarehouseModuleCount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setWarehouseModuleCount_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetWarehouseModuleCount(childComplexity, args["moduleType"].(model.WarehouseModuleType), args["count"].(int)), true
 	case "Mutation.splitHive":
 		if e.complexity.Mutation.SplitHive == nil {
 			break
@@ -988,6 +1117,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateBoxColor(childComplexity, args["id"].(string), args["color"].(*string)), true
+	case "Mutation.updateDevice":
+		if e.complexity.Mutation.UpdateDevice == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateDevice_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateDevice(childComplexity, args["id"].(string), args["device"].(model.DeviceUpdateInput)), true
 	case "Mutation.updateFrames":
 		if e.complexity.Mutation.UpdateFrames == nil {
 			break
@@ -1050,6 +1190,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.ApiaryObstacles(childComplexity, args["apiaryId"].(string)), true
+	case "Query.devices":
+		if e.complexity.Query.Devices == nil {
+			break
+		}
+
+		return e.complexity.Query.Devices(childComplexity), true
 	case "Query.hive":
 		if e.complexity.Query.Hive == nil {
 			break
@@ -1127,6 +1273,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.RandomHiveName(childComplexity, args["language"].(*string)), true
+	case "Query.warehouseModules":
+		if e.complexity.Query.WarehouseModules == nil {
+			break
+		}
+
+		return e.complexity.Query.WarehouseModules(childComplexity), true
+	case "Query.warehouseSettings":
+		if e.complexity.Query.WarehouseSettings == nil {
+			break
+		}
+
+		return e.complexity.Query.WarehouseSettings(childComplexity), true
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
 			break
@@ -1182,6 +1340,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Treatment.Type(childComplexity), true
 
+	case "WarehouseModule.count":
+		if e.complexity.WarehouseModule.Count == nil {
+			break
+		}
+
+		return e.complexity.WarehouseModule.Count(childComplexity), true
+	case "WarehouseModule.moduleType":
+		if e.complexity.WarehouseModule.ModuleType == nil {
+			break
+		}
+
+		return e.complexity.WarehouseModule.ModuleType(childComplexity), true
+
+	case "WarehouseSettings.autoUpdateFromHives":
+		if e.complexity.WarehouseSettings.AutoUpdateFromHives == nil {
+			break
+		}
+
+		return e.complexity.WarehouseSettings.AutoUpdateFromHives(childComplexity), true
+
 	case "_Service.sdl":
 		if e.complexity._Service.SDL == nil {
 			break
@@ -1200,6 +1378,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApiaryInput,
 		ec.unmarshalInputApiaryObstacleInput,
 		ec.unmarshalInputBoxInput,
+		ec.unmarshalInputDeviceInput,
+		ec.unmarshalInputDeviceUpdateInput,
 		ec.unmarshalInputFamilyInput,
 		ec.unmarshalInputFrameInput,
 		ec.unmarshalInputHiveInput,
@@ -1344,6 +1524,15 @@ type Query {
 
   "Get obstacles (trees, buildings) within an apiary for spatial planning"
   apiaryObstacles(apiaryId: ID!): [ApiaryObstacle]
+
+  "List all active devices for the authenticated user"
+  devices: [Device]
+
+  "List warehouse module counts for the authenticated user"
+  warehouseModules: [WarehouseModule!]!
+
+  "Warehouse behavior settings for the authenticated user"
+  warehouseSettings: WarehouseSettings!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -1440,6 +1629,85 @@ type Mutation {
 
   "Remove an obstacle from apiary"
   deleteApiaryObstacle(id: ID!): Boolean
+
+  "Create a new device for telemetry/video integrations"
+  addDevice(device: DeviceInput!): Device
+
+  "Update existing device metadata and token binding"
+  updateDevice(id: ID!, device: DeviceUpdateInput!): Device
+
+  "Soft-delete a device"
+  deactivateDevice(id: ID!): Boolean
+
+  "Set warehouse module count for the authenticated user"
+  setWarehouseModuleCount(moduleType: WarehouseModuleType!, count: Int!): WarehouseModule!
+
+  "Set automatic warehouse count updates from hive structure changes"
+  setWarehouseAutoUpdateFromHives(enabled: Boolean!): WarehouseSettings!
+}
+
+enum WarehouseModuleType {
+  DEEP
+  SUPER
+  ROOF
+  HORIZONTAL_FEEDER
+  QUEEN_EXCLUDER
+  BOTTOM
+  FRAME_FOUNDATION
+  FRAME_EMPTY_COMB
+  FRAME_PARTITION
+  FRAME_FEEDER
+}
+
+type WarehouseModule {
+  moduleType: WarehouseModuleType!
+  count: Int!
+}
+
+type WarehouseSettings {
+  autoUpdateFromHives: Boolean!
+}
+
+enum DeviceType {
+  IOT_SENSOR
+  VIDEO_CAMERA
+}
+
+input DeviceInput {
+  "Display name of the device"
+  name: String!
+  "Device type for downstream integrations"
+  type: DeviceType!
+  "API token bound to this device (must be unique when set)"
+  apiToken: String
+  "Optional hive linked to this device"
+  hiveId: ID
+  "Optional specific hive section (box) linked to this device"
+  boxId: ID
+}
+
+input DeviceUpdateInput {
+  "Display name of the device"
+  name: String
+  "Device type for downstream integrations"
+  type: DeviceType
+  "API token bound to this device (must be unique when set)"
+  apiToken: String
+  "Optional hive linked to this device"
+  hiveId: ID
+  "Optional specific hive section (box) linked to this device"
+  boxId: ID
+}
+
+type Device {
+  id: ID!
+  name: String!
+  type: DeviceType!
+  apiToken: String
+  hiveId: ID
+  boxId: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 "Input for treating a specific box with anti-varroa medication"
@@ -1928,6 +2196,17 @@ func (ec *executionContext) field_Mutation_addBox_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_addDevice_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "device", ec.unmarshalNDeviceInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceInput)
+	if err != nil {
+		return nil, err
+	}
+	args["device"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addFrame_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1999,6 +2278,17 @@ func (ec *executionContext) field_Mutation_deactivateApiary_args(ctx context.Con
 }
 
 func (ec *executionContext) field_Mutation_deactivateBox_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deactivateDevice_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -2097,6 +2387,33 @@ func (ec *executionContext) field_Mutation_removeQueenFromHive_args(ctx context.
 		return nil, err
 	}
 	args["familyId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setWarehouseAutoUpdateFromHives_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "enabled", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["enabled"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setWarehouseModuleCount_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "moduleType", ec.unmarshalNWarehouseModuleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleType)
+	if err != nil {
+		return nil, err
+	}
+	args["moduleType"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "count", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["count"] = arg1
 	return args, nil
 }
 
@@ -2209,6 +2526,22 @@ func (ec *executionContext) field_Mutation_updateBoxColor_args(ctx context.Conte
 		return nil, err
 	}
 	args["color"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateDevice_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "device", ec.unmarshalNDeviceUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceUpdateInput)
+	if err != nil {
+		return nil, err
+	}
+	args["device"] = arg1
 	return args, nil
 }
 
@@ -3115,6 +3448,238 @@ func (ec *executionContext) fieldContext_Box_frames(_ context.Context, field gra
 				return ec.fieldContext_Frame_rightSide(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Frame", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_id(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_name(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_type(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNDeviceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeviceType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_apiToken(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_apiToken,
+		func(ctx context.Context) (any, error) {
+			return obj.APIToken, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_apiToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_hiveId(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_hiveId,
+		func(ctx context.Context) (any, error) {
+			return obj.HiveID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_hiveId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_boxId(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_boxId,
+		func(ctx context.Context) (any, error) {
+			return obj.BoxID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_boxId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Device_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.Device) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Device_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Device_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Device",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6231,6 +6796,257 @@ func (ec *executionContext) fieldContext_Mutation_deleteApiaryObstacle(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_addDevice(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_addDevice,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AddDevice(ctx, fc.Args["device"].(model.DeviceInput))
+		},
+		nil,
+		ec.marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addDevice(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Device_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Device_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Device_type(ctx, field)
+			case "apiToken":
+				return ec.fieldContext_Device_apiToken(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Device_hiveId(ctx, field)
+			case "boxId":
+				return ec.fieldContext_Device_boxId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Device_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Device_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Device", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addDevice_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateDevice(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateDevice,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateDevice(ctx, fc.Args["id"].(string), fc.Args["device"].(model.DeviceUpdateInput))
+		},
+		nil,
+		ec.marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateDevice(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Device_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Device_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Device_type(ctx, field)
+			case "apiToken":
+				return ec.fieldContext_Device_apiToken(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Device_hiveId(ctx, field)
+			case "boxId":
+				return ec.fieldContext_Device_boxId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Device_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Device_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Device", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateDevice_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deactivateDevice(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deactivateDevice,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DeactivateDevice(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deactivateDevice(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deactivateDevice_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setWarehouseModuleCount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_setWarehouseModuleCount,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SetWarehouseModuleCount(ctx, fc.Args["moduleType"].(model.WarehouseModuleType), fc.Args["count"].(int))
+		},
+		nil,
+		ec.marshalNWarehouseModule2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModule,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setWarehouseModuleCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "moduleType":
+				return ec.fieldContext_WarehouseModule_moduleType(ctx, field)
+			case "count":
+				return ec.fieldContext_WarehouseModule_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WarehouseModule", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setWarehouseModuleCount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setWarehouseAutoUpdateFromHives(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_setWarehouseAutoUpdateFromHives,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SetWarehouseAutoUpdateFromHives(ctx, fc.Args["enabled"].(bool))
+		},
+		nil,
+		ec.marshalNWarehouseSettings2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseSettings,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setWarehouseAutoUpdateFromHives(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "autoUpdateFromHives":
+				return ec.fieldContext_WarehouseSettings_autoUpdateFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WarehouseSettings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setWarehouseAutoUpdateFromHives_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6775,6 +7591,121 @@ func (ec *executionContext) fieldContext_Query_apiaryObstacles(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_devices(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_devices,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().Devices(ctx)
+		},
+		nil,
+		ec.marshalODevice2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_devices(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Device_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Device_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Device_type(ctx, field)
+			case "apiToken":
+				return ec.fieldContext_Device_apiToken(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Device_hiveId(ctx, field)
+			case "boxId":
+				return ec.fieldContext_Device_boxId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Device_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Device_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Device", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_warehouseModules(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_warehouseModules,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().WarehouseModules(ctx)
+		},
+		nil,
+		ec.marshalNWarehouseModule2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_warehouseModules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "moduleType":
+				return ec.fieldContext_WarehouseModule_moduleType(ctx, field)
+			case "count":
+				return ec.fieldContext_WarehouseModule_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WarehouseModule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_warehouseSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_warehouseSettings,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().WarehouseSettings(ctx)
+		},
+		nil,
+		ec.marshalNWarehouseSettings2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseSettings,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_warehouseSettings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "autoUpdateFromHives":
+				return ec.fieldContext_WarehouseSettings_autoUpdateFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WarehouseSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query__entities(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7126,6 +8057,93 @@ func (ec *executionContext) fieldContext_Treatment_familyId(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModule_moduleType(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModule) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModule_moduleType,
+		func(ctx context.Context) (any, error) {
+			return obj.ModuleType, nil
+		},
+		nil,
+		ec.marshalNWarehouseModuleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModule_moduleType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type WarehouseModuleType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModule_count(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModule) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModule_count,
+		func(ctx context.Context) (any, error) {
+			return obj.Count, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModule_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseSettings_autoUpdateFromHives(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseSettings_autoUpdateFromHives,
+		func(ctx context.Context) (any, error) {
+			return obj.AutoUpdateFromHives, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseSettings_autoUpdateFromHives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8785,6 +9803,116 @@ func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj any)
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeviceInput(ctx context.Context, obj any) (model.DeviceInput, error) {
+	var it model.DeviceInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "type", "apiToken", "hiveId", "boxId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNDeviceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "apiToken":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiToken"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIToken = data
+		case "hiveId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HiveID = data
+		case "boxId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boxId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BoxID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeviceUpdateInput(ctx context.Context, obj any) (model.DeviceUpdateInput, error) {
+	var it model.DeviceUpdateInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "type", "apiToken", "hiveId", "boxId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalODeviceType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "apiToken":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiToken"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIToken = data
+		case "hiveId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HiveID = data
+		case "boxId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boxId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BoxID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputFamilyInput(ctx context.Context, obj any) (model.FamilyInput, error) {
 	var it model.FamilyInput
 	asMap := map[string]any{}
@@ -9401,6 +10529,71 @@ func (ec *executionContext) _Box(ctx context.Context, sel ast.SelectionSet, obj 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deviceImplementors = []string{"Device"}
+
+func (ec *executionContext) _Device(ctx context.Context, sel ast.SelectionSet, obj *model.Device) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deviceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Device")
+		case "id":
+			out.Values[i] = ec._Device_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Device_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._Device_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "apiToken":
+			out.Values[i] = ec._Device_apiToken(ctx, field, obj)
+		case "hiveId":
+			out.Values[i] = ec._Device_hiveId(ctx, field, obj)
+		case "boxId":
+			out.Values[i] = ec._Device_boxId(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._Device_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Device_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10453,6 +11646,32 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteApiaryObstacle(ctx, field)
 			})
+		case "addDevice":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addDevice(ctx, field)
+			})
+		case "updateDevice":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateDevice(ctx, field)
+			})
+		case "deactivateDevice":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deactivateDevice(ctx, field)
+			})
+		case "setWarehouseModuleCount":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setWarehouseModuleCount(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setWarehouseAutoUpdateFromHives":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setWarehouseAutoUpdateFromHives(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10685,6 +11904,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "devices":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_devices(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "warehouseModules":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_warehouseModules(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "warehouseSettings":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_warehouseSettings(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "_entities":
 			field := field
 
@@ -10798,6 +12080,89 @@ func (ec *executionContext) _Treatment(ctx context.Context, sel ast.SelectionSet
 			}
 		case "familyId":
 			out.Values[i] = ec._Treatment_familyId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var warehouseModuleImplementors = []string{"WarehouseModule"}
+
+func (ec *executionContext) _WarehouseModule(ctx context.Context, sel ast.SelectionSet, obj *model.WarehouseModule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, warehouseModuleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WarehouseModule")
+		case "moduleType":
+			out.Values[i] = ec._WarehouseModule_moduleType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "count":
+			out.Values[i] = ec._WarehouseModule_count(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var warehouseSettingsImplementors = []string{"WarehouseSettings"}
+
+func (ec *executionContext) _WarehouseSettings(ctx context.Context, sel ast.SelectionSet, obj *model.WarehouseSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, warehouseSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WarehouseSettings")
+		case "autoUpdateFromHives":
+			out.Values[i] = ec._WarehouseSettings_autoUpdateFromHives(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -11283,6 +12648,26 @@ func (ec *executionContext) marshalNDateTime2ᚖstring(ctx context.Context, sel 
 	return res
 }
 
+func (ec *executionContext) unmarshalNDeviceInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceInput(ctx context.Context, v any) (model.DeviceInput, error) {
+	res, err := ec.unmarshalInputDeviceInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNDeviceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceType(ctx context.Context, v any) (model.DeviceType, error) {
+	var res model.DeviceType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeviceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceType(ctx context.Context, sel ast.SelectionSet, v model.DeviceType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNDeviceUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceUpdateInput(ctx context.Context, v any) (model.DeviceUpdateInput, error) {
+	res, err := ec.unmarshalInputDeviceUpdateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFamilyInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx context.Context, v any) (model.FamilyInput, error) {
 	res, err := ec.unmarshalInputFamilyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -11536,6 +12921,88 @@ func (ec *executionContext) unmarshalNTreatmentOfBoxInput2githubᚗcomᚋGratheo
 func (ec *executionContext) unmarshalNTreatmentOfHiveInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatmentOfHiveInput(ctx context.Context, v any) (model.TreatmentOfHiveInput, error) {
 	res, err := ec.unmarshalInputTreatmentOfHiveInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNWarehouseModule2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModule(ctx context.Context, sel ast.SelectionSet, v model.WarehouseModule) graphql.Marshaler {
+	return ec._WarehouseModule(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWarehouseModule2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.WarehouseModule) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNWarehouseModule2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModule(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNWarehouseModule2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModule(ctx context.Context, sel ast.SelectionSet, v *model.WarehouseModule) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._WarehouseModule(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNWarehouseModuleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleType(ctx context.Context, v any) (model.WarehouseModuleType, error) {
+	var res model.WarehouseModuleType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNWarehouseModuleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleType(ctx context.Context, sel ast.SelectionSet, v model.WarehouseModuleType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNWarehouseSettings2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseSettings(ctx context.Context, sel ast.SelectionSet, v model.WarehouseSettings) graphql.Marshaler {
+	return ec._WarehouseSettings(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWarehouseSettings2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseSettings(ctx context.Context, sel ast.SelectionSet, v *model.WarehouseSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._WarehouseSettings(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalN_Any2map(ctx context.Context, v any) (map[string]any, error) {
@@ -12091,6 +13558,70 @@ func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel 
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalODevice2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice(ctx context.Context, sel ast.SelectionSet, v []*model.Device) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice(ctx context.Context, sel ast.SelectionSet, v *model.Device) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Device(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalODeviceType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceType(ctx context.Context, v any) (*model.DeviceType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.DeviceType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalODeviceType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceType(ctx context.Context, sel ast.SelectionSet, v *model.DeviceType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOFamily2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx context.Context, sel ast.SelectionSet, v []*model.Family) graphql.Marshaler {
