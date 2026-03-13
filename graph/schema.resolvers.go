@@ -98,6 +98,27 @@ func (r *familyResolver) Treatments(ctx context.Context, obj *model.Family) ([]*
 	return treatmentModel.ListFamilyTreatments(obj.ID)
 }
 
+// LastHive is the resolver for the lastHive field.
+func (r *familyResolver) LastHive(ctx context.Context, obj *model.Family) (*model.Hive, error) {
+	uid := ctx.Value("userID").(string)
+
+	lastHiveID, err := (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).LastHiveID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	if lastHiveID == nil {
+		return nil, nil
+	}
+
+	return (&model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Get(strconv.Itoa(*lastHiveID))
+}
+
 // LeftSide is the resolver for the leftSide field.
 func (r *frameResolver) LeftSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error) {
 	uid := ctx.Value("userID").(string)
@@ -618,20 +639,14 @@ func (r *mutationResolver) AddQueenToHive(ctx context.Context, hiveID string, qu
 // RemoveQueenFromHive is the resolver for the removeQueenFromHive field.
 func (r *mutationResolver) RemoveQueenFromHive(ctx context.Context, hiveID string, familyID string) (*bool, error) {
 	uid := ctx.Value("userID").(string)
-
-	result, err := r.Resolver.Db.Exec(
-		"DELETE FROM families WHERE id=? AND hive_id=? AND user_id=?",
-		familyID, hiveID, uid,
-	)
-
+	success, err := (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).DeleteFromHive(hiveID, familyID)
 	if err != nil {
 		logger.ErrorWithContext(ctx, err.Error())
-		success := false
-		return &success, err
+		return nil, err
 	}
-
-	rowsAffected, _ := result.RowsAffected()
-	success := rowsAffected > 0
 	return &success, nil
 }
 
@@ -802,18 +817,9 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 		oldQueen := families[0]
 		logger.Info("Moving queen " + oldQueen.ID + " from hive " + sourceHiveID + " to hive " + newHive.ID)
 
-		newHiveIDInt, err := strconv.Atoi(newHive.ID)
+		err = familyModel.MoveBetweenHives(oldQueen.ID, sourceHiveID, newHive.ID)
 		if err != nil {
-			logger.ErrorWithContext(ctx, "Error converting new hive ID: "+err.Error())
-			return nil, err
-		}
-
-		_, err = r.Resolver.Db.Exec(
-			"UPDATE families SET hive_id=? WHERE id=? AND user_id=?",
-			newHiveIDInt, oldQueen.ID, uid,
-		)
-		if err != nil {
-			logger.ErrorWithContext(ctx, "Error updating queen hive_id: "+err.Error())
+			logger.ErrorWithContext(ctx, "Error moving queen to split hive: "+err.Error())
 			return nil, err
 		}
 	}
@@ -1090,6 +1096,21 @@ func (r *mutationResolver) SetWarehouseAutoUpdateFromHives(ctx context.Context, 
 	return updated, nil
 }
 
+// MoveQueenToWarehouse is the resolver for the moveQueenToWarehouse field.
+func (r *mutationResolver) MoveQueenToWarehouse(ctx context.Context, hiveID string, familyID string) (*model.Family, error) {
+	uid := ctx.Value("userID").(string)
+	moved, err := (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).MoveToWarehouse(hiveID, familyID)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return moved, nil
+}
+
 // Hive is the resolver for the hive field.
 func (r *queryResolver) Hive(ctx context.Context, id string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
@@ -1243,6 +1264,15 @@ func (r *queryResolver) WarehouseModuleStats(ctx context.Context, moduleType mod
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).UsageStats(moduleType)
+}
+
+// WarehouseQueens is the resolver for the warehouseQueens field.
+func (r *queryResolver) WarehouseQueens(ctx context.Context) ([]*model.Family, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListUnassigned()
 }
 
 // Apiary returns generated.ApiaryResolver implementation.

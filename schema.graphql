@@ -50,6 +50,9 @@ type Query {
 
   "Detailed warehouse module usage based on active hive structure"
   warehouseModuleStats(moduleType: WarehouseModuleType!): WarehouseModuleStats!
+
+  "Queens stored in warehouse (family records not assigned to any hive)"
+  warehouseQueens: [Family!]!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -161,6 +164,9 @@ type Mutation {
 
   "Set automatic warehouse count updates from hive structure changes"
   setWarehouseAutoUpdateFromHives(enabled: Boolean!): WarehouseSettings!
+
+  "Move a queen from hive into warehouse storage (keeps family record, unassigns hive)"
+  moveQueenToWarehouse(hiveId: ID!, familyId: ID!): Family
 }
 
 enum WarehouseModuleType {
@@ -444,6 +450,9 @@ type Family{
 
   "Anti-varroa medical treatments of a hive or a box are linked to a family to track history even if family is moved to another hive or ownership is changed"
   treatments: [Treatment]
+
+  "Most recent hive related to this queen (for warehouse queens, this is the last hive before storage)"
+  lastHive: Hive
 }
 
 "Inspection record with flexible JSON data structure"

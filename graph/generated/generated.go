@@ -94,6 +94,7 @@ type ComplexityRoot struct {
 		Age           func(childComplexity int) int
 		Color         func(childComplexity int) int
 		ID            func(childComplexity int) int
+		LastHive      func(childComplexity int) int
 		LastTreatment func(childComplexity int) int
 		Name          func(childComplexity int) int
 		Race          func(childComplexity int) int
@@ -170,6 +171,7 @@ type ComplexityRoot struct {
 		DeleteApiaryObstacle            func(childComplexity int, id string) int
 		JoinHives                       func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
 		MarkHiveAsCollapsed             func(childComplexity int, id string, collapseDate string, collapseCause string) int
+		MoveQueenToWarehouse            func(childComplexity int, hiveID string, familyID string) int
 		RemoveQueenFromHive             func(childComplexity int, hiveID string, familyID string) int
 		SetWarehouseAutoUpdateFromHives func(childComplexity int, enabled bool) int
 		SetWarehouseModuleCount         func(childComplexity int, moduleType model.WarehouseModuleType, count int) int
@@ -200,6 +202,7 @@ type ComplexityRoot struct {
 		RandomHiveName       func(childComplexity int, language *string) int
 		WarehouseModuleStats func(childComplexity int, moduleType model.WarehouseModuleType) int
 		WarehouseModules     func(childComplexity int) int
+		WarehouseQueens      func(childComplexity int) int
 		WarehouseSettings    func(childComplexity int) int
 		__resolve__service   func(childComplexity int) int
 		__resolve_entities   func(childComplexity int, representations []map[string]any) int
@@ -260,6 +263,7 @@ type EntityResolver interface {
 type FamilyResolver interface {
 	LastTreatment(ctx context.Context, obj *model.Family) (*string, error)
 	Treatments(ctx context.Context, obj *model.Family) ([]*model.Treatment, error)
+	LastHive(ctx context.Context, obj *model.Family) (*model.Hive, error)
 }
 type FrameResolver interface {
 	LeftSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
@@ -313,6 +317,7 @@ type MutationResolver interface {
 	DeactivateDevice(ctx context.Context, id string) (*bool, error)
 	SetWarehouseModuleCount(ctx context.Context, moduleType model.WarehouseModuleType, count int) (*model.WarehouseModule, error)
 	SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error)
+	MoveQueenToWarehouse(ctx context.Context, hiveID string, familyID string) (*model.Family, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -329,6 +334,7 @@ type QueryResolver interface {
 	WarehouseModules(ctx context.Context) ([]*model.WarehouseModule, error)
 	WarehouseSettings(ctx context.Context) (*model.WarehouseSettings, error)
 	WarehouseModuleStats(ctx context.Context, moduleType model.WarehouseModuleType) (*model.WarehouseModuleStats, error)
+	WarehouseQueens(ctx context.Context) ([]*model.Family, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -575,6 +581,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Family.ID(childComplexity), true
+	case "Family.lastHive":
+		if e.ComplexityRoot.Family.LastHive == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Family.LastHive(childComplexity), true
 	case "Family.lastTreatment":
 		if e.ComplexityRoot.Family.LastTreatment == nil {
 			break
@@ -1009,6 +1021,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.MarkHiveAsCollapsed(childComplexity, args["id"].(string), args["collapseDate"].(string), args["collapseCause"].(string)), true
+	case "Mutation.moveQueenToWarehouse":
+		if e.ComplexityRoot.Mutation.MoveQueenToWarehouse == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_moveQueenToWarehouse_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.MoveQueenToWarehouse(childComplexity, args["hiveId"].(string), args["familyId"].(string)), true
 	case "Mutation.removeQueenFromHive":
 		if e.ComplexityRoot.Mutation.RemoveQueenFromHive == nil {
 			break
@@ -1293,6 +1316,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.WarehouseModules(childComplexity), true
+	case "Query.warehouseQueens":
+		if e.ComplexityRoot.Query.WarehouseQueens == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.WarehouseQueens(childComplexity), true
 	case "Query.warehouseSettings":
 		if e.ComplexityRoot.Query.WarehouseSettings == nil {
 			break
@@ -1590,6 +1619,9 @@ type Query {
 
   "Detailed warehouse module usage based on active hive structure"
   warehouseModuleStats(moduleType: WarehouseModuleType!): WarehouseModuleStats!
+
+  "Queens stored in warehouse (family records not assigned to any hive)"
+  warehouseQueens: [Family!]!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -1701,6 +1733,9 @@ type Mutation {
 
   "Set automatic warehouse count updates from hive structure changes"
   setWarehouseAutoUpdateFromHives(enabled: Boolean!): WarehouseSettings!
+
+  "Move a queen from hive into warehouse storage (keeps family record, unassigns hive)"
+  moveQueenToWarehouse(hiveId: ID!, familyId: ID!): Family
 }
 
 enum WarehouseModuleType {
@@ -1984,6 +2019,9 @@ type Family{
 
   "Anti-varroa medical treatments of a hive or a box are linked to a family to track history even if family is moved to another hive or ownership is changed"
   treatments: [Treatment]
+
+  "Most recent hive related to this queen (for warehouse queens, this is the last hive before storage)"
+  lastHive: Hive
 }
 
 "Inspection record with flexible JSON data structure"
@@ -2451,6 +2489,22 @@ func (ec *executionContext) field_Mutation_markHiveAsCollapsed_args(ctx context.
 		return nil, err
 	}
 	args["collapseCause"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_moveQueenToWarehouse_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "hiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["hiveId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "familyId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["familyId"] = arg1
 	return args, nil
 }
 
@@ -4154,6 +4208,79 @@ func (ec *executionContext) fieldContext_Family_treatments(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Family_lastHive(ctx context.Context, field graphql.CollectedField, obj *model.Family) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Family_lastHive,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Family().LastHive(ctx, obj)
+		},
+		nil,
+		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Family_lastHive(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Family",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveNumber":
+				return ec.fieldContext_Hive_hiveNumber(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "families":
+				return ec.fieldContext_Hive_families(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Frame_id(ctx context.Context, field graphql.CollectedField, obj *model.Frame) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4537,6 +4664,8 @@ func (ec *executionContext) fieldContext_Hive_family(_ context.Context, field gr
 				return ec.fieldContext_Family_lastTreatment(ctx, field)
 			case "treatments":
 				return ec.fieldContext_Family_treatments(ctx, field)
+			case "lastHive":
+				return ec.fieldContext_Family_lastHive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
 		},
@@ -4584,6 +4713,8 @@ func (ec *executionContext) fieldContext_Hive_families(_ context.Context, field 
 				return ec.fieldContext_Family_lastTreatment(ctx, field)
 			case "treatments":
 				return ec.fieldContext_Family_treatments(ctx, field)
+			case "lastHive":
+				return ec.fieldContext_Family_lastHive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
 		},
@@ -6269,6 +6400,8 @@ func (ec *executionContext) fieldContext_Mutation_addQueenToHive(ctx context.Con
 				return ec.fieldContext_Family_lastTreatment(ctx, field)
 			case "treatments":
 				return ec.fieldContext_Family_treatments(ctx, field)
+			case "lastHive":
+				return ec.fieldContext_Family_lastHive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
 		},
@@ -7138,6 +7271,67 @@ func (ec *executionContext) fieldContext_Mutation_setWarehouseAutoUpdateFromHive
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_moveQueenToWarehouse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_moveQueenToWarehouse,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().MoveQueenToWarehouse(ctx, fc.Args["hiveId"].(string), fc.Args["familyId"].(string))
+		},
+		nil,
+		ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_moveQueenToWarehouse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Family_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Family_name(ctx, field)
+			case "race":
+				return ec.fieldContext_Family_race(ctx, field)
+			case "added":
+				return ec.fieldContext_Family_added(ctx, field)
+			case "color":
+				return ec.fieldContext_Family_color(ctx, field)
+			case "age":
+				return ec.fieldContext_Family_age(ctx, field)
+			case "lastTreatment":
+				return ec.fieldContext_Family_lastTreatment(ctx, field)
+			case "treatments":
+				return ec.fieldContext_Family_treatments(ctx, field)
+			case "lastHive":
+				return ec.fieldContext_Family_lastHive(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_moveQueenToWarehouse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7846,6 +8040,55 @@ func (ec *executionContext) fieldContext_Query_warehouseModuleStats(ctx context.
 	if fc.Args, err = ec.field_Query_warehouseModuleStats_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_warehouseQueens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_warehouseQueens,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().WarehouseQueens(ctx)
+		},
+		nil,
+		ec.marshalNFamily2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_warehouseQueens(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Family_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Family_name(ctx, field)
+			case "race":
+				return ec.fieldContext_Family_race(ctx, field)
+			case "added":
+				return ec.fieldContext_Family_added(ctx, field)
+			case "color":
+				return ec.fieldContext_Family_color(ctx, field)
+			case "age":
+				return ec.fieldContext_Family_age(ctx, field)
+			case "lastTreatment":
+				return ec.fieldContext_Family_lastTreatment(ctx, field)
+			case "treatments":
+				return ec.fieldContext_Family_treatments(ctx, field)
+			case "lastHive":
+				return ec.fieldContext_Family_lastHive(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -11284,6 +11527,39 @@ func (ec *executionContext) _Family(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "lastHive":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Family_lastHive(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12161,6 +12437,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "moveQueenToWarehouse":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_moveQueenToWarehouse(ctx, field)
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12466,6 +12746,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_warehouseModuleStats(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "warehouseQueens":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_warehouseQueens(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -13286,6 +13588,32 @@ func (ec *executionContext) marshalNDeviceType2githubᚗcomᚋGratheonᚋswarm�
 func (ec *executionContext) unmarshalNDeviceUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDeviceUpdateInput(ctx context.Context, v any) (model.DeviceUpdateInput, error) {
 	res, err := ec.unmarshalInputDeviceUpdateInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFamily2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Family) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx context.Context, sel ast.SelectionSet, v *model.Family) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Family(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFamilyInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput(ctx context.Context, v any) (model.FamilyInput, error) {
