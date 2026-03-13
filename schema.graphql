@@ -102,6 +102,9 @@ type Mutation {
   "Add a new queen (family) to a hive, allows multiple queens per hive"
   addQueenToHive(hiveId: ID!, queen: FamilyInput!): Family
 
+  "Create a new queen directly in warehouse storage (unassigned family)"
+  addWarehouseQueen(queen: FamilyInput!): Family
+
   "Remove a queen family from a hive"
   removeQueenFromHive(hiveId: ID!, familyId: ID!): Boolean
 

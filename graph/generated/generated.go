@@ -163,6 +163,7 @@ type ComplexityRoot struct {
 		AddHive                         func(childComplexity int, hive model.HiveInput) int
 		AddInspection                   func(childComplexity int, inspection model.InspectionInput) int
 		AddQueenToHive                  func(childComplexity int, hiveID string, queen model.FamilyInput) int
+		AddWarehouseQueen               func(childComplexity int, queen model.FamilyInput) int
 		AssignQueenFromWarehouse        func(childComplexity int, hiveID string, familyID string) int
 		DeactivateApiary                func(childComplexity int, id string) int
 		DeactivateBox                   func(childComplexity int, id string) int
@@ -304,6 +305,7 @@ type MutationResolver interface {
 	DeactivateFrame(ctx context.Context, id string) (*bool, error)
 	AddInspection(ctx context.Context, inspection model.InspectionInput) (*model.Inspection, error)
 	AddQueenToHive(ctx context.Context, hiveID string, queen model.FamilyInput) (*model.Family, error)
+	AddWarehouseQueen(ctx context.Context, queen model.FamilyInput) (*model.Family, error)
 	RemoveQueenFromHive(ctx context.Context, hiveID string, familyID string) (*bool, error)
 	TreatHive(ctx context.Context, treatment model.TreatmentOfHiveInput) (*bool, error)
 	TreatBox(ctx context.Context, treatment model.TreatmentOfBoxInput) (*bool, error)
@@ -937,6 +939,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddQueenToHive(childComplexity, args["hiveId"].(string), args["queen"].(model.FamilyInput)), true
+	case "Mutation.addWarehouseQueen":
+		if e.ComplexityRoot.Mutation.AddWarehouseQueen == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addWarehouseQueen_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.AddWarehouseQueen(childComplexity, args["queen"].(model.FamilyInput)), true
 	case "Mutation.assignQueenFromWarehouse":
 		if e.ComplexityRoot.Mutation.AssignQueenFromWarehouse == nil {
 			break
@@ -1697,6 +1710,9 @@ type Mutation {
   "Add a new queen (family) to a hive, allows multiple queens per hive"
   addQueenToHive(hiveId: ID!, queen: FamilyInput!): Family
 
+  "Create a new queen directly in warehouse storage (unassigned family)"
+  addWarehouseQueen(queen: FamilyInput!): Family
+
   "Remove a queen family from a hive"
   removeQueenFromHive(hiveId: ID!, familyId: ID!): Boolean
 
@@ -2413,6 +2429,17 @@ func (ec *executionContext) field_Mutation_addQueenToHive_args(ctx context.Conte
 		return nil, err
 	}
 	args["queen"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addWarehouseQueen_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "queen", ec.unmarshalNFamilyInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamilyInput)
+	if err != nil {
+		return nil, err
+	}
+	args["queen"] = arg0
 	return args, nil
 }
 
@@ -6473,6 +6500,67 @@ func (ec *executionContext) fieldContext_Mutation_addQueenToHive(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_addQueenToHive_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_addWarehouseQueen(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_addWarehouseQueen,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().AddWarehouseQueen(ctx, fc.Args["queen"].(model.FamilyInput))
+		},
+		nil,
+		ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addWarehouseQueen(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Family_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Family_name(ctx, field)
+			case "race":
+				return ec.fieldContext_Family_race(ctx, field)
+			case "added":
+				return ec.fieldContext_Family_added(ctx, field)
+			case "color":
+				return ec.fieldContext_Family_color(ctx, field)
+			case "age":
+				return ec.fieldContext_Family_age(ctx, field)
+			case "lastTreatment":
+				return ec.fieldContext_Family_lastTreatment(ctx, field)
+			case "treatments":
+				return ec.fieldContext_Family_treatments(ctx, field)
+			case "lastHive":
+				return ec.fieldContext_Family_lastHive(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addWarehouseQueen_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -12531,6 +12619,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "addQueenToHive":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_addQueenToHive(ctx, field)
+			})
+		case "addWarehouseQueen":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addWarehouseQueen(ctx, field)
 			})
 		case "removeQueenFromHive":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {

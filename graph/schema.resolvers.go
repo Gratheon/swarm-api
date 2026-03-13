@@ -636,6 +636,23 @@ func (r *mutationResolver) AddQueenToHive(ctx context.Context, hiveID string, qu
 	return familyModel.GetById(familyID)
 }
 
+// AddWarehouseQueen is the resolver for the addWarehouseQueen field.
+func (r *mutationResolver) AddWarehouseQueen(ctx context.Context, queen model.FamilyInput) (*model.Family, error) {
+	uid := ctx.Value("userID").(string)
+	familyModel := &model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	familyID, err := familyModel.Create(queen.Name, queen.Race, queen.Added, queen.Color)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return familyModel.GetById(familyID)
+}
+
 // RemoveQueenFromHive is the resolver for the removeQueenFromHive field.
 func (r *mutationResolver) RemoveQueenFromHive(ctx context.Context, hiveID string, familyID string) (*bool, error) {
 	uid := ctx.Value("userID").(string)
