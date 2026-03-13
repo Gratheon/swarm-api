@@ -1111,6 +1111,21 @@ func (r *mutationResolver) MoveQueenToWarehouse(ctx context.Context, hiveID stri
 	return moved, nil
 }
 
+// AssignQueenFromWarehouse is the resolver for the assignQueenFromWarehouse field.
+func (r *mutationResolver) AssignQueenFromWarehouse(ctx context.Context, hiveID string, familyID string) (*model.Family, error) {
+	uid := ctx.Value("userID").(string)
+	assigned, err := (&model.Family{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).AssignFromWarehouse(hiveID, familyID)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+
+	return assigned, nil
+}
+
 // Hive is the resolver for the hive field.
 func (r *queryResolver) Hive(ctx context.Context, id string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)

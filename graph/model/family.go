@@ -299,6 +299,51 @@ func (r *Family) MoveBetweenHives(familyID string, fromHiveID string, toHiveID s
 	return tx.Commit()
 }
 
+func (r *Family) AssignFromWarehouse(hiveID string, familyID string) (*Family, error) {
+	hiveIDInt, err := strconv.Atoi(hiveID)
+	if err != nil {
+		return nil, err
+	}
+	familyIDInt, err := strconv.Atoi(familyID)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := r.Db.MustBegin()
+
+	result, err := tx.Exec(
+		`UPDATE families
+		SET hive_id=?
+		WHERE id=? AND hive_id IS NULL AND user_id=?`,
+		hiveIDInt, familyIDInt, r.UserID,
+	)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	if rowsAffected == 0 {
+		tx.Rollback()
+		return nil, sql.ErrNoRows
+	}
+
+	if err = r.createMoveTx(tx, familyIDInt, nil, &hiveIDInt, familyMoveTypeAssigned); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return r.GetById(&familyIDInt)
+}
+
 func (r *Family) DeleteFromHive(hiveID string, familyID string) (bool, error) {
 	hiveIDInt, err := strconv.Atoi(hiveID)
 	if err != nil {

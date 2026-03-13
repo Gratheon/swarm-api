@@ -163,6 +163,7 @@ type ComplexityRoot struct {
 		AddHive                         func(childComplexity int, hive model.HiveInput) int
 		AddInspection                   func(childComplexity int, inspection model.InspectionInput) int
 		AddQueenToHive                  func(childComplexity int, hiveID string, queen model.FamilyInput) int
+		AssignQueenFromWarehouse        func(childComplexity int, hiveID string, familyID string) int
 		DeactivateApiary                func(childComplexity int, id string) int
 		DeactivateBox                   func(childComplexity int, id string) int
 		DeactivateDevice                func(childComplexity int, id string) int
@@ -318,6 +319,7 @@ type MutationResolver interface {
 	SetWarehouseModuleCount(ctx context.Context, moduleType model.WarehouseModuleType, count int) (*model.WarehouseModule, error)
 	SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error)
 	MoveQueenToWarehouse(ctx context.Context, hiveID string, familyID string) (*model.Family, error)
+	AssignQueenFromWarehouse(ctx context.Context, hiveID string, familyID string) (*model.Family, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -933,6 +935,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddQueenToHive(childComplexity, args["hiveId"].(string), args["queen"].(model.FamilyInput)), true
+	case "Mutation.assignQueenFromWarehouse":
+		if e.ComplexityRoot.Mutation.AssignQueenFromWarehouse == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_assignQueenFromWarehouse_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.AssignQueenFromWarehouse(childComplexity, args["hiveId"].(string), args["familyId"].(string)), true
 	case "Mutation.deactivateApiary":
 		if e.ComplexityRoot.Mutation.DeactivateApiary == nil {
 			break
@@ -1736,6 +1749,9 @@ type Mutation {
 
   "Move a queen from hive into warehouse storage (keeps family record, unassigns hive)"
   moveQueenToWarehouse(hiveId: ID!, familyId: ID!): Family
+
+  "Assign an existing warehouse queen to a hive without creating a new family"
+  assignQueenFromWarehouse(hiveId: ID!, familyId: ID!): Family
 }
 
 enum WarehouseModuleType {
@@ -2381,6 +2397,22 @@ func (ec *executionContext) field_Mutation_addQueenToHive_args(ctx context.Conte
 		return nil, err
 	}
 	args["queen"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_assignQueenFromWarehouse_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "hiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["hiveId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "familyId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["familyId"] = arg1
 	return args, nil
 }
 
@@ -7326,6 +7358,67 @@ func (ec *executionContext) fieldContext_Mutation_moveQueenToWarehouse(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_moveQueenToWarehouse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_assignQueenFromWarehouse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_assignQueenFromWarehouse,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().AssignQueenFromWarehouse(ctx, fc.Args["hiveId"].(string), fc.Args["familyId"].(string))
+		},
+		nil,
+		ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_assignQueenFromWarehouse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Family_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Family_name(ctx, field)
+			case "race":
+				return ec.fieldContext_Family_race(ctx, field)
+			case "added":
+				return ec.fieldContext_Family_added(ctx, field)
+			case "color":
+				return ec.fieldContext_Family_color(ctx, field)
+			case "age":
+				return ec.fieldContext_Family_age(ctx, field)
+			case "lastTreatment":
+				return ec.fieldContext_Family_lastTreatment(ctx, field)
+			case "treatments":
+				return ec.fieldContext_Family_treatments(ctx, field)
+			case "lastHive":
+				return ec.fieldContext_Family_lastHive(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_assignQueenFromWarehouse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -12440,6 +12533,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "moveQueenToWarehouse":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_moveQueenToWarehouse(ctx, field)
+			})
+		case "assignQueenFromWarehouse":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_assignQueenFromWarehouse(ctx, field)
 			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

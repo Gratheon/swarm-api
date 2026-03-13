@@ -167,6 +167,9 @@ type Mutation {
 
   "Move a queen from hive into warehouse storage (keeps family record, unassigns hive)"
   moveQueenToWarehouse(hiveId: ID!, familyId: ID!): Family
+
+  "Assign an existing warehouse queen to a hive without creating a new family"
+  assignQueenFromWarehouse(hiveId: ID!, familyId: ID!): Family
 }
 
 enum WarehouseModuleType {
