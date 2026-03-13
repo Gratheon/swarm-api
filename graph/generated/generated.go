@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"sync"
 	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -23,20 +22,10 @@ import (
 
 // NewExecutableSchema creates an ExecutableSchema from the ResolverRoot interface.
 func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
-	return &executableSchema{
-		schema:     cfg.Schema,
-		resolvers:  cfg.Resolvers,
-		directives: cfg.Directives,
-		complexity: cfg.Complexity,
-	}
+	return &executableSchema{SchemaData: cfg.Schema, Resolvers: cfg.Resolvers, Directives: cfg.Directives, ComplexityRoot: cfg.Complexity}
 }
 
-type Config struct {
-	Schema     *ast.Schema
-	Resolvers  ResolverRoot
-	Directives DirectiveRoot
-	Complexity ComplexityRoot
-}
+type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
 	Apiary() ApiaryResolver
@@ -198,21 +187,22 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Apiaries           func(childComplexity int) int
-		Apiary             func(childComplexity int, id string) int
-		ApiaryObstacles    func(childComplexity int, apiaryID string) int
-		Devices            func(childComplexity int) int
-		Hive               func(childComplexity int, id string) int
-		HiveFrame          func(childComplexity int, id string) int
-		HiveFrameSide      func(childComplexity int, id string) int
-		HivePlacements     func(childComplexity int, apiaryID string) int
-		Inspection         func(childComplexity int, inspectionID string) int
-		Inspections        func(childComplexity int, hiveID string, limit *int) int
-		RandomHiveName     func(childComplexity int, language *string) int
-		WarehouseModules   func(childComplexity int) int
-		WarehouseSettings  func(childComplexity int) int
-		__resolve__service func(childComplexity int) int
-		__resolve_entities func(childComplexity int, representations []map[string]any) int
+		Apiaries             func(childComplexity int) int
+		Apiary               func(childComplexity int, id string) int
+		ApiaryObstacles      func(childComplexity int, apiaryID string) int
+		Devices              func(childComplexity int) int
+		Hive                 func(childComplexity int, id string) int
+		HiveFrame            func(childComplexity int, id string) int
+		HiveFrameSide        func(childComplexity int, id string) int
+		HivePlacements       func(childComplexity int, apiaryID string) int
+		Inspection           func(childComplexity int, inspectionID string) int
+		Inspections          func(childComplexity int, hiveID string, limit *int) int
+		RandomHiveName       func(childComplexity int, language *string) int
+		WarehouseModuleStats func(childComplexity int, moduleType model.WarehouseModuleType) int
+		WarehouseModules     func(childComplexity int) int
+		WarehouseSettings    func(childComplexity int) int
+		__resolve__service   func(childComplexity int) int
+		__resolve_entities   func(childComplexity int, representations []map[string]any) int
 	}
 
 	Treatment struct {
@@ -227,6 +217,22 @@ type ComplexityRoot struct {
 	WarehouseModule struct {
 		Count      func(childComplexity int) int
 		ModuleType func(childComplexity int) int
+	}
+
+	WarehouseModuleHiveUsage struct {
+		ApiaryID   func(childComplexity int) int
+		ApiaryName func(childComplexity int) int
+		Count      func(childComplexity int) int
+		HiveID     func(childComplexity int) int
+		HiveNumber func(childComplexity int) int
+	}
+
+	WarehouseModuleStats struct {
+		AvailableCount func(childComplexity int) int
+		InUseCount     func(childComplexity int) int
+		ModuleType     func(childComplexity int) int
+		TopHives       func(childComplexity int) int
+		TotalCount     func(childComplexity int) int
 	}
 
 	WarehouseSettings struct {
@@ -322,29 +328,25 @@ type QueryResolver interface {
 	Devices(ctx context.Context) ([]*model.Device, error)
 	WarehouseModules(ctx context.Context) ([]*model.WarehouseModule, error)
 	WarehouseSettings(ctx context.Context) (*model.WarehouseSettings, error)
+	WarehouseModuleStats(ctx context.Context, moduleType model.WarehouseModuleType) (*model.WarehouseModuleStats, error)
 }
 
-type executableSchema struct {
-	schema     *ast.Schema
-	resolvers  ResolverRoot
-	directives DirectiveRoot
-	complexity ComplexityRoot
-}
+type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 func (e *executableSchema) Schema() *ast.Schema {
-	if e.schema != nil {
-		return e.schema
+	if e.SchemaData != nil {
+		return e.SchemaData
 	}
 	return parsedSchema
 }
 
 func (e *executableSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
-	ec := executionContext{nil, e, 0, 0, nil}
+	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
 
 	case "Apiary.hives":
-		if e.complexity.Apiary.Hives == nil {
+		if e.ComplexityRoot.Apiary.Hives == nil {
 			break
 		}
 
@@ -353,181 +355,181 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Apiary.Hives(childComplexity, args["sortBy"].(*model.HiveSortBy), args["sortOrder"].(*model.SortOrder)), true
+		return e.ComplexityRoot.Apiary.Hives(childComplexity, args["sortBy"].(*model.HiveSortBy), args["sortOrder"].(*model.SortOrder)), true
 	case "Apiary.id":
-		if e.complexity.Apiary.ID == nil {
+		if e.ComplexityRoot.Apiary.ID == nil {
 			break
 		}
 
-		return e.complexity.Apiary.ID(childComplexity), true
+		return e.ComplexityRoot.Apiary.ID(childComplexity), true
 	case "Apiary.lat":
-		if e.complexity.Apiary.Lat == nil {
+		if e.ComplexityRoot.Apiary.Lat == nil {
 			break
 		}
 
-		return e.complexity.Apiary.Lat(childComplexity), true
+		return e.ComplexityRoot.Apiary.Lat(childComplexity), true
 	case "Apiary.lng":
-		if e.complexity.Apiary.Lng == nil {
+		if e.ComplexityRoot.Apiary.Lng == nil {
 			break
 		}
 
-		return e.complexity.Apiary.Lng(childComplexity), true
+		return e.ComplexityRoot.Apiary.Lng(childComplexity), true
 	case "Apiary.location":
-		if e.complexity.Apiary.Location == nil {
+		if e.ComplexityRoot.Apiary.Location == nil {
 			break
 		}
 
-		return e.complexity.Apiary.Location(childComplexity), true
+		return e.ComplexityRoot.Apiary.Location(childComplexity), true
 	case "Apiary.name":
-		if e.complexity.Apiary.Name == nil {
+		if e.ComplexityRoot.Apiary.Name == nil {
 			break
 		}
 
-		return e.complexity.Apiary.Name(childComplexity), true
+		return e.ComplexityRoot.Apiary.Name(childComplexity), true
 
 	case "ApiaryObstacle.apiaryId":
-		if e.complexity.ApiaryObstacle.ApiaryID == nil {
+		if e.ComplexityRoot.ApiaryObstacle.ApiaryID == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.ApiaryID(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.ApiaryID(childComplexity), true
 	case "ApiaryObstacle.height":
-		if e.complexity.ApiaryObstacle.Height == nil {
+		if e.ComplexityRoot.ApiaryObstacle.Height == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.Height(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.Height(childComplexity), true
 	case "ApiaryObstacle.id":
-		if e.complexity.ApiaryObstacle.ID == nil {
+		if e.ComplexityRoot.ApiaryObstacle.ID == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.ID(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.ID(childComplexity), true
 	case "ApiaryObstacle.label":
-		if e.complexity.ApiaryObstacle.Label == nil {
+		if e.ComplexityRoot.ApiaryObstacle.Label == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.Label(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.Label(childComplexity), true
 	case "ApiaryObstacle.radius":
-		if e.complexity.ApiaryObstacle.Radius == nil {
+		if e.ComplexityRoot.ApiaryObstacle.Radius == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.Radius(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.Radius(childComplexity), true
 	case "ApiaryObstacle.rotation":
-		if e.complexity.ApiaryObstacle.Rotation == nil {
+		if e.ComplexityRoot.ApiaryObstacle.Rotation == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.Rotation(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.Rotation(childComplexity), true
 	case "ApiaryObstacle.type":
-		if e.complexity.ApiaryObstacle.Type == nil {
+		if e.ComplexityRoot.ApiaryObstacle.Type == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.Type(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.Type(childComplexity), true
 	case "ApiaryObstacle.width":
-		if e.complexity.ApiaryObstacle.Width == nil {
+		if e.ComplexityRoot.ApiaryObstacle.Width == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.Width(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.Width(childComplexity), true
 	case "ApiaryObstacle.x":
-		if e.complexity.ApiaryObstacle.X == nil {
+		if e.ComplexityRoot.ApiaryObstacle.X == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.X(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.X(childComplexity), true
 	case "ApiaryObstacle.y":
-		if e.complexity.ApiaryObstacle.Y == nil {
+		if e.ComplexityRoot.ApiaryObstacle.Y == nil {
 			break
 		}
 
-		return e.complexity.ApiaryObstacle.Y(childComplexity), true
+		return e.ComplexityRoot.ApiaryObstacle.Y(childComplexity), true
 
 	case "Box.color":
-		if e.complexity.Box.Color == nil {
+		if e.ComplexityRoot.Box.Color == nil {
 			break
 		}
 
-		return e.complexity.Box.Color(childComplexity), true
+		return e.ComplexityRoot.Box.Color(childComplexity), true
 	case "Box.frames":
-		if e.complexity.Box.Frames == nil {
+		if e.ComplexityRoot.Box.Frames == nil {
 			break
 		}
 
-		return e.complexity.Box.Frames(childComplexity), true
+		return e.ComplexityRoot.Box.Frames(childComplexity), true
 	case "Box.id":
-		if e.complexity.Box.ID == nil {
+		if e.ComplexityRoot.Box.ID == nil {
 			break
 		}
 
-		return e.complexity.Box.ID(childComplexity), true
+		return e.ComplexityRoot.Box.ID(childComplexity), true
 	case "Box.position":
-		if e.complexity.Box.Position == nil {
+		if e.ComplexityRoot.Box.Position == nil {
 			break
 		}
 
-		return e.complexity.Box.Position(childComplexity), true
+		return e.ComplexityRoot.Box.Position(childComplexity), true
 	case "Box.type":
-		if e.complexity.Box.Type == nil {
+		if e.ComplexityRoot.Box.Type == nil {
 			break
 		}
 
-		return e.complexity.Box.Type(childComplexity), true
+		return e.ComplexityRoot.Box.Type(childComplexity), true
 
 	case "Device.apiToken":
-		if e.complexity.Device.APIToken == nil {
+		if e.ComplexityRoot.Device.APIToken == nil {
 			break
 		}
 
-		return e.complexity.Device.APIToken(childComplexity), true
+		return e.ComplexityRoot.Device.APIToken(childComplexity), true
 	case "Device.boxId":
-		if e.complexity.Device.BoxID == nil {
+		if e.ComplexityRoot.Device.BoxID == nil {
 			break
 		}
 
-		return e.complexity.Device.BoxID(childComplexity), true
+		return e.ComplexityRoot.Device.BoxID(childComplexity), true
 	case "Device.createdAt":
-		if e.complexity.Device.CreatedAt == nil {
+		if e.ComplexityRoot.Device.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.Device.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.Device.CreatedAt(childComplexity), true
 	case "Device.hiveId":
-		if e.complexity.Device.HiveID == nil {
+		if e.ComplexityRoot.Device.HiveID == nil {
 			break
 		}
 
-		return e.complexity.Device.HiveID(childComplexity), true
+		return e.ComplexityRoot.Device.HiveID(childComplexity), true
 	case "Device.id":
-		if e.complexity.Device.ID == nil {
+		if e.ComplexityRoot.Device.ID == nil {
 			break
 		}
 
-		return e.complexity.Device.ID(childComplexity), true
+		return e.ComplexityRoot.Device.ID(childComplexity), true
 	case "Device.name":
-		if e.complexity.Device.Name == nil {
+		if e.ComplexityRoot.Device.Name == nil {
 			break
 		}
 
-		return e.complexity.Device.Name(childComplexity), true
+		return e.ComplexityRoot.Device.Name(childComplexity), true
 	case "Device.type":
-		if e.complexity.Device.Type == nil {
+		if e.ComplexityRoot.Device.Type == nil {
 			break
 		}
 
-		return e.complexity.Device.Type(childComplexity), true
+		return e.ComplexityRoot.Device.Type(childComplexity), true
 	case "Device.updatedAt":
-		if e.complexity.Device.UpdatedAt == nil {
+		if e.ComplexityRoot.Device.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.Device.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.Device.UpdatedAt(childComplexity), true
 
 	case "Entity.findFrameSideByID":
-		if e.complexity.Entity.FindFrameSideByID == nil {
+		if e.ComplexityRoot.Entity.FindFrameSideByID == nil {
 			break
 		}
 
@@ -536,9 +538,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Entity.FindFrameSideByID(childComplexity, args["id"].(*string)), true
+		return e.ComplexityRoot.Entity.FindFrameSideByID(childComplexity, args["id"].(*string)), true
 	case "Entity.findHiveByID":
-		if e.complexity.Entity.FindHiveByID == nil {
+		if e.ComplexityRoot.Entity.FindHiveByID == nil {
 			break
 		}
 
@@ -547,292 +549,292 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Entity.FindHiveByID(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Entity.FindHiveByID(childComplexity, args["id"].(string)), true
 
 	case "Family.added":
-		if e.complexity.Family.Added == nil {
+		if e.ComplexityRoot.Family.Added == nil {
 			break
 		}
 
-		return e.complexity.Family.Added(childComplexity), true
+		return e.ComplexityRoot.Family.Added(childComplexity), true
 	case "Family.age":
-		if e.complexity.Family.Age == nil {
+		if e.ComplexityRoot.Family.Age == nil {
 			break
 		}
 
-		return e.complexity.Family.Age(childComplexity), true
+		return e.ComplexityRoot.Family.Age(childComplexity), true
 	case "Family.color":
-		if e.complexity.Family.Color == nil {
+		if e.ComplexityRoot.Family.Color == nil {
 			break
 		}
 
-		return e.complexity.Family.Color(childComplexity), true
+		return e.ComplexityRoot.Family.Color(childComplexity), true
 	case "Family.id":
-		if e.complexity.Family.ID == nil {
+		if e.ComplexityRoot.Family.ID == nil {
 			break
 		}
 
-		return e.complexity.Family.ID(childComplexity), true
+		return e.ComplexityRoot.Family.ID(childComplexity), true
 	case "Family.lastTreatment":
-		if e.complexity.Family.LastTreatment == nil {
+		if e.ComplexityRoot.Family.LastTreatment == nil {
 			break
 		}
 
-		return e.complexity.Family.LastTreatment(childComplexity), true
+		return e.ComplexityRoot.Family.LastTreatment(childComplexity), true
 	case "Family.name":
-		if e.complexity.Family.Name == nil {
+		if e.ComplexityRoot.Family.Name == nil {
 			break
 		}
 
-		return e.complexity.Family.Name(childComplexity), true
+		return e.ComplexityRoot.Family.Name(childComplexity), true
 	case "Family.race":
-		if e.complexity.Family.Race == nil {
+		if e.ComplexityRoot.Family.Race == nil {
 			break
 		}
 
-		return e.complexity.Family.Race(childComplexity), true
+		return e.ComplexityRoot.Family.Race(childComplexity), true
 	case "Family.treatments":
-		if e.complexity.Family.Treatments == nil {
+		if e.ComplexityRoot.Family.Treatments == nil {
 			break
 		}
 
-		return e.complexity.Family.Treatments(childComplexity), true
+		return e.ComplexityRoot.Family.Treatments(childComplexity), true
 
 	case "Frame.id":
-		if e.complexity.Frame.ID == nil {
+		if e.ComplexityRoot.Frame.ID == nil {
 			break
 		}
 
-		return e.complexity.Frame.ID(childComplexity), true
+		return e.ComplexityRoot.Frame.ID(childComplexity), true
 	case "Frame.leftSide":
-		if e.complexity.Frame.LeftSide == nil {
+		if e.ComplexityRoot.Frame.LeftSide == nil {
 			break
 		}
 
-		return e.complexity.Frame.LeftSide(childComplexity), true
+		return e.ComplexityRoot.Frame.LeftSide(childComplexity), true
 	case "Frame.position":
-		if e.complexity.Frame.Position == nil {
+		if e.ComplexityRoot.Frame.Position == nil {
 			break
 		}
 
-		return e.complexity.Frame.Position(childComplexity), true
+		return e.ComplexityRoot.Frame.Position(childComplexity), true
 	case "Frame.rightSide":
-		if e.complexity.Frame.RightSide == nil {
+		if e.ComplexityRoot.Frame.RightSide == nil {
 			break
 		}
 
-		return e.complexity.Frame.RightSide(childComplexity), true
+		return e.ComplexityRoot.Frame.RightSide(childComplexity), true
 	case "Frame.type":
-		if e.complexity.Frame.Type == nil {
+		if e.ComplexityRoot.Frame.Type == nil {
 			break
 		}
 
-		return e.complexity.Frame.Type(childComplexity), true
+		return e.ComplexityRoot.Frame.Type(childComplexity), true
 
 	case "FrameSide.frameId":
-		if e.complexity.FrameSide.FrameID == nil {
+		if e.ComplexityRoot.FrameSide.FrameID == nil {
 			break
 		}
 
-		return e.complexity.FrameSide.FrameID(childComplexity), true
+		return e.ComplexityRoot.FrameSide.FrameID(childComplexity), true
 	case "FrameSide.id":
-		if e.complexity.FrameSide.ID == nil {
+		if e.ComplexityRoot.FrameSide.ID == nil {
 			break
 		}
 
-		return e.complexity.FrameSide.ID(childComplexity), true
+		return e.ComplexityRoot.FrameSide.ID(childComplexity), true
 
 	case "Hive.added":
-		if e.complexity.Hive.Added == nil {
+		if e.ComplexityRoot.Hive.Added == nil {
 			break
 		}
 
-		return e.complexity.Hive.Added(childComplexity), true
+		return e.ComplexityRoot.Hive.Added(childComplexity), true
 	case "Hive.boxCount":
-		if e.complexity.Hive.BoxCount == nil {
+		if e.ComplexityRoot.Hive.BoxCount == nil {
 			break
 		}
 
-		return e.complexity.Hive.BoxCount(childComplexity), true
+		return e.ComplexityRoot.Hive.BoxCount(childComplexity), true
 	case "Hive.boxes":
-		if e.complexity.Hive.Boxes == nil {
+		if e.ComplexityRoot.Hive.Boxes == nil {
 			break
 		}
 
-		return e.complexity.Hive.Boxes(childComplexity), true
+		return e.ComplexityRoot.Hive.Boxes(childComplexity), true
 	case "Hive.childHives":
-		if e.complexity.Hive.ChildHives == nil {
+		if e.ComplexityRoot.Hive.ChildHives == nil {
 			break
 		}
 
-		return e.complexity.Hive.ChildHives(childComplexity), true
+		return e.ComplexityRoot.Hive.ChildHives(childComplexity), true
 	case "Hive.collapse_cause":
-		if e.complexity.Hive.CollapseCause == nil {
+		if e.ComplexityRoot.Hive.CollapseCause == nil {
 			break
 		}
 
-		return e.complexity.Hive.CollapseCause(childComplexity), true
+		return e.ComplexityRoot.Hive.CollapseCause(childComplexity), true
 	case "Hive.collapse_date":
-		if e.complexity.Hive.CollapseDate == nil {
+		if e.ComplexityRoot.Hive.CollapseDate == nil {
 			break
 		}
 
-		return e.complexity.Hive.CollapseDate(childComplexity), true
+		return e.ComplexityRoot.Hive.CollapseDate(childComplexity), true
 	case "Hive.families":
-		if e.complexity.Hive.Families == nil {
+		if e.ComplexityRoot.Hive.Families == nil {
 			break
 		}
 
-		return e.complexity.Hive.Families(childComplexity), true
+		return e.ComplexityRoot.Hive.Families(childComplexity), true
 	case "Hive.family":
-		if e.complexity.Hive.Family == nil {
+		if e.ComplexityRoot.Hive.Family == nil {
 			break
 		}
 
-		return e.complexity.Hive.Family(childComplexity), true
+		return e.ComplexityRoot.Hive.Family(childComplexity), true
 	case "Hive.hiveNumber":
-		if e.complexity.Hive.HiveNumber == nil {
+		if e.ComplexityRoot.Hive.HiveNumber == nil {
 			break
 		}
 
-		return e.complexity.Hive.HiveNumber(childComplexity), true
+		return e.ComplexityRoot.Hive.HiveNumber(childComplexity), true
 	case "Hive.id":
-		if e.complexity.Hive.ID == nil {
+		if e.ComplexityRoot.Hive.ID == nil {
 			break
 		}
 
-		return e.complexity.Hive.ID(childComplexity), true
+		return e.ComplexityRoot.Hive.ID(childComplexity), true
 	case "Hive.inspectionCount":
-		if e.complexity.Hive.InspectionCount == nil {
+		if e.ComplexityRoot.Hive.InspectionCount == nil {
 			break
 		}
 
-		return e.complexity.Hive.InspectionCount(childComplexity), true
+		return e.ComplexityRoot.Hive.InspectionCount(childComplexity), true
 	case "Hive.isNew":
-		if e.complexity.Hive.IsNew == nil {
+		if e.ComplexityRoot.Hive.IsNew == nil {
 			break
 		}
 
-		return e.complexity.Hive.IsNew(childComplexity), true
+		return e.ComplexityRoot.Hive.IsNew(childComplexity), true
 	case "Hive.lastInspection":
-		if e.complexity.Hive.LastInspection == nil {
+		if e.ComplexityRoot.Hive.LastInspection == nil {
 			break
 		}
 
-		return e.complexity.Hive.LastInspection(childComplexity), true
+		return e.ComplexityRoot.Hive.LastInspection(childComplexity), true
 	case "Hive.mergeDate":
-		if e.complexity.Hive.MergeDate == nil {
+		if e.ComplexityRoot.Hive.MergeDate == nil {
 			break
 		}
 
-		return e.complexity.Hive.MergeDate(childComplexity), true
+		return e.ComplexityRoot.Hive.MergeDate(childComplexity), true
 	case "Hive.mergeType":
-		if e.complexity.Hive.MergeType == nil {
+		if e.ComplexityRoot.Hive.MergeType == nil {
 			break
 		}
 
-		return e.complexity.Hive.MergeType(childComplexity), true
+		return e.ComplexityRoot.Hive.MergeType(childComplexity), true
 	case "Hive.mergedFromHives":
-		if e.complexity.Hive.MergedFromHives == nil {
+		if e.ComplexityRoot.Hive.MergedFromHives == nil {
 			break
 		}
 
-		return e.complexity.Hive.MergedFromHives(childComplexity), true
+		return e.ComplexityRoot.Hive.MergedFromHives(childComplexity), true
 	case "Hive.mergedIntoHive":
-		if e.complexity.Hive.MergedIntoHive == nil {
+		if e.ComplexityRoot.Hive.MergedIntoHive == nil {
 			break
 		}
 
-		return e.complexity.Hive.MergedIntoHive(childComplexity), true
+		return e.ComplexityRoot.Hive.MergedIntoHive(childComplexity), true
 	case "Hive.notes":
-		if e.complexity.Hive.Notes == nil {
+		if e.ComplexityRoot.Hive.Notes == nil {
 			break
 		}
 
-		return e.complexity.Hive.Notes(childComplexity), true
+		return e.ComplexityRoot.Hive.Notes(childComplexity), true
 	case "Hive.parentHive":
-		if e.complexity.Hive.ParentHive == nil {
+		if e.ComplexityRoot.Hive.ParentHive == nil {
 			break
 		}
 
-		return e.complexity.Hive.ParentHive(childComplexity), true
+		return e.ComplexityRoot.Hive.ParentHive(childComplexity), true
 	case "Hive.splitDate":
-		if e.complexity.Hive.SplitDate == nil {
+		if e.ComplexityRoot.Hive.SplitDate == nil {
 			break
 		}
 
-		return e.complexity.Hive.SplitDate(childComplexity), true
+		return e.ComplexityRoot.Hive.SplitDate(childComplexity), true
 	case "Hive.status":
-		if e.complexity.Hive.Status == nil {
+		if e.ComplexityRoot.Hive.Status == nil {
 			break
 		}
 
-		return e.complexity.Hive.Status(childComplexity), true
+		return e.ComplexityRoot.Hive.Status(childComplexity), true
 
 	case "HivePlacement.apiaryId":
-		if e.complexity.HivePlacement.ApiaryID == nil {
+		if e.ComplexityRoot.HivePlacement.ApiaryID == nil {
 			break
 		}
 
-		return e.complexity.HivePlacement.ApiaryID(childComplexity), true
+		return e.ComplexityRoot.HivePlacement.ApiaryID(childComplexity), true
 	case "HivePlacement.hiveId":
-		if e.complexity.HivePlacement.HiveID == nil {
+		if e.ComplexityRoot.HivePlacement.HiveID == nil {
 			break
 		}
 
-		return e.complexity.HivePlacement.HiveID(childComplexity), true
+		return e.ComplexityRoot.HivePlacement.HiveID(childComplexity), true
 	case "HivePlacement.id":
-		if e.complexity.HivePlacement.ID == nil {
+		if e.ComplexityRoot.HivePlacement.ID == nil {
 			break
 		}
 
-		return e.complexity.HivePlacement.ID(childComplexity), true
+		return e.ComplexityRoot.HivePlacement.ID(childComplexity), true
 	case "HivePlacement.rotation":
-		if e.complexity.HivePlacement.Rotation == nil {
+		if e.ComplexityRoot.HivePlacement.Rotation == nil {
 			break
 		}
 
-		return e.complexity.HivePlacement.Rotation(childComplexity), true
+		return e.ComplexityRoot.HivePlacement.Rotation(childComplexity), true
 	case "HivePlacement.x":
-		if e.complexity.HivePlacement.X == nil {
+		if e.ComplexityRoot.HivePlacement.X == nil {
 			break
 		}
 
-		return e.complexity.HivePlacement.X(childComplexity), true
+		return e.ComplexityRoot.HivePlacement.X(childComplexity), true
 	case "HivePlacement.y":
-		if e.complexity.HivePlacement.Y == nil {
+		if e.ComplexityRoot.HivePlacement.Y == nil {
 			break
 		}
 
-		return e.complexity.HivePlacement.Y(childComplexity), true
+		return e.ComplexityRoot.HivePlacement.Y(childComplexity), true
 
 	case "Inspection.added":
-		if e.complexity.Inspection.Added == nil {
+		if e.ComplexityRoot.Inspection.Added == nil {
 			break
 		}
 
-		return e.complexity.Inspection.Added(childComplexity), true
+		return e.ComplexityRoot.Inspection.Added(childComplexity), true
 	case "Inspection.data":
-		if e.complexity.Inspection.Data == nil {
+		if e.ComplexityRoot.Inspection.Data == nil {
 			break
 		}
 
-		return e.complexity.Inspection.Data(childComplexity), true
+		return e.ComplexityRoot.Inspection.Data(childComplexity), true
 	case "Inspection.hiveId":
-		if e.complexity.Inspection.HiveID == nil {
+		if e.ComplexityRoot.Inspection.HiveID == nil {
 			break
 		}
 
-		return e.complexity.Inspection.HiveID(childComplexity), true
+		return e.ComplexityRoot.Inspection.HiveID(childComplexity), true
 	case "Inspection.id":
-		if e.complexity.Inspection.ID == nil {
+		if e.ComplexityRoot.Inspection.ID == nil {
 			break
 		}
 
-		return e.complexity.Inspection.ID(childComplexity), true
+		return e.ComplexityRoot.Inspection.ID(childComplexity), true
 
 	case "Mutation.addApiary":
-		if e.complexity.Mutation.AddApiary == nil {
+		if e.ComplexityRoot.Mutation.AddApiary == nil {
 			break
 		}
 
@@ -841,9 +843,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddApiary(childComplexity, args["apiary"].(model.ApiaryInput)), true
+		return e.ComplexityRoot.Mutation.AddApiary(childComplexity, args["apiary"].(model.ApiaryInput)), true
 	case "Mutation.addApiaryObstacle":
-		if e.complexity.Mutation.AddApiaryObstacle == nil {
+		if e.ComplexityRoot.Mutation.AddApiaryObstacle == nil {
 			break
 		}
 
@@ -852,9 +854,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddApiaryObstacle(childComplexity, args["apiaryId"].(string), args["obstacle"].(model.ApiaryObstacleInput)), true
+		return e.ComplexityRoot.Mutation.AddApiaryObstacle(childComplexity, args["apiaryId"].(string), args["obstacle"].(model.ApiaryObstacleInput)), true
 	case "Mutation.addBox":
-		if e.complexity.Mutation.AddBox == nil {
+		if e.ComplexityRoot.Mutation.AddBox == nil {
 			break
 		}
 
@@ -863,9 +865,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddBox(childComplexity, args["hiveId"].(string), args["position"].(int), args["color"].(*string), args["type"].(model.BoxType)), true
+		return e.ComplexityRoot.Mutation.AddBox(childComplexity, args["hiveId"].(string), args["position"].(int), args["color"].(*string), args["type"].(model.BoxType)), true
 	case "Mutation.addDevice":
-		if e.complexity.Mutation.AddDevice == nil {
+		if e.ComplexityRoot.Mutation.AddDevice == nil {
 			break
 		}
 
@@ -874,9 +876,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddDevice(childComplexity, args["device"].(model.DeviceInput)), true
+		return e.ComplexityRoot.Mutation.AddDevice(childComplexity, args["device"].(model.DeviceInput)), true
 	case "Mutation.addFrame":
-		if e.complexity.Mutation.AddFrame == nil {
+		if e.ComplexityRoot.Mutation.AddFrame == nil {
 			break
 		}
 
@@ -885,9 +887,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddFrame(childComplexity, args["boxId"].(string), args["type"].(string), args["position"].(int)), true
+		return e.ComplexityRoot.Mutation.AddFrame(childComplexity, args["boxId"].(string), args["type"].(string), args["position"].(int)), true
 	case "Mutation.addHive":
-		if e.complexity.Mutation.AddHive == nil {
+		if e.ComplexityRoot.Mutation.AddHive == nil {
 			break
 		}
 
@@ -896,9 +898,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddHive(childComplexity, args["hive"].(model.HiveInput)), true
+		return e.ComplexityRoot.Mutation.AddHive(childComplexity, args["hive"].(model.HiveInput)), true
 	case "Mutation.addInspection":
-		if e.complexity.Mutation.AddInspection == nil {
+		if e.ComplexityRoot.Mutation.AddInspection == nil {
 			break
 		}
 
@@ -907,9 +909,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddInspection(childComplexity, args["inspection"].(model.InspectionInput)), true
+		return e.ComplexityRoot.Mutation.AddInspection(childComplexity, args["inspection"].(model.InspectionInput)), true
 	case "Mutation.addQueenToHive":
-		if e.complexity.Mutation.AddQueenToHive == nil {
+		if e.ComplexityRoot.Mutation.AddQueenToHive == nil {
 			break
 		}
 
@@ -918,9 +920,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddQueenToHive(childComplexity, args["hiveId"].(string), args["queen"].(model.FamilyInput)), true
+		return e.ComplexityRoot.Mutation.AddQueenToHive(childComplexity, args["hiveId"].(string), args["queen"].(model.FamilyInput)), true
 	case "Mutation.deactivateApiary":
-		if e.complexity.Mutation.DeactivateApiary == nil {
+		if e.ComplexityRoot.Mutation.DeactivateApiary == nil {
 			break
 		}
 
@@ -929,9 +931,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeactivateApiary(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeactivateApiary(childComplexity, args["id"].(string)), true
 	case "Mutation.deactivateBox":
-		if e.complexity.Mutation.DeactivateBox == nil {
+		if e.ComplexityRoot.Mutation.DeactivateBox == nil {
 			break
 		}
 
@@ -940,9 +942,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeactivateBox(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeactivateBox(childComplexity, args["id"].(string)), true
 	case "Mutation.deactivateDevice":
-		if e.complexity.Mutation.DeactivateDevice == nil {
+		if e.ComplexityRoot.Mutation.DeactivateDevice == nil {
 			break
 		}
 
@@ -951,9 +953,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeactivateDevice(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeactivateDevice(childComplexity, args["id"].(string)), true
 	case "Mutation.deactivateFrame":
-		if e.complexity.Mutation.DeactivateFrame == nil {
+		if e.ComplexityRoot.Mutation.DeactivateFrame == nil {
 			break
 		}
 
@@ -962,9 +964,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeactivateFrame(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeactivateFrame(childComplexity, args["id"].(string)), true
 	case "Mutation.deactivateHive":
-		if e.complexity.Mutation.DeactivateHive == nil {
+		if e.ComplexityRoot.Mutation.DeactivateHive == nil {
 			break
 		}
 
@@ -973,9 +975,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeactivateHive(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeactivateHive(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteApiaryObstacle":
-		if e.complexity.Mutation.DeleteApiaryObstacle == nil {
+		if e.ComplexityRoot.Mutation.DeleteApiaryObstacle == nil {
 			break
 		}
 
@@ -984,9 +986,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteApiaryObstacle(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeleteApiaryObstacle(childComplexity, args["id"].(string)), true
 	case "Mutation.joinHives":
-		if e.complexity.Mutation.JoinHives == nil {
+		if e.ComplexityRoot.Mutation.JoinHives == nil {
 			break
 		}
 
@@ -995,9 +997,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.JoinHives(childComplexity, args["sourceHiveId"].(string), args["targetHiveId"].(string), args["mergeType"].(string)), true
+		return e.ComplexityRoot.Mutation.JoinHives(childComplexity, args["sourceHiveId"].(string), args["targetHiveId"].(string), args["mergeType"].(string)), true
 	case "Mutation.markHiveAsCollapsed":
-		if e.complexity.Mutation.MarkHiveAsCollapsed == nil {
+		if e.ComplexityRoot.Mutation.MarkHiveAsCollapsed == nil {
 			break
 		}
 
@@ -1006,9 +1008,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.MarkHiveAsCollapsed(childComplexity, args["id"].(string), args["collapseDate"].(string), args["collapseCause"].(string)), true
+		return e.ComplexityRoot.Mutation.MarkHiveAsCollapsed(childComplexity, args["id"].(string), args["collapseDate"].(string), args["collapseCause"].(string)), true
 	case "Mutation.removeQueenFromHive":
-		if e.complexity.Mutation.RemoveQueenFromHive == nil {
+		if e.ComplexityRoot.Mutation.RemoveQueenFromHive == nil {
 			break
 		}
 
@@ -1017,9 +1019,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RemoveQueenFromHive(childComplexity, args["hiveId"].(string), args["familyId"].(string)), true
+		return e.ComplexityRoot.Mutation.RemoveQueenFromHive(childComplexity, args["hiveId"].(string), args["familyId"].(string)), true
 	case "Mutation.setWarehouseAutoUpdateFromHives":
-		if e.complexity.Mutation.SetWarehouseAutoUpdateFromHives == nil {
+		if e.ComplexityRoot.Mutation.SetWarehouseAutoUpdateFromHives == nil {
 			break
 		}
 
@@ -1028,9 +1030,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SetWarehouseAutoUpdateFromHives(childComplexity, args["enabled"].(bool)), true
+		return e.ComplexityRoot.Mutation.SetWarehouseAutoUpdateFromHives(childComplexity, args["enabled"].(bool)), true
 	case "Mutation.setWarehouseModuleCount":
-		if e.complexity.Mutation.SetWarehouseModuleCount == nil {
+		if e.ComplexityRoot.Mutation.SetWarehouseModuleCount == nil {
 			break
 		}
 
@@ -1039,9 +1041,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SetWarehouseModuleCount(childComplexity, args["moduleType"].(model.WarehouseModuleType), args["count"].(int)), true
+		return e.ComplexityRoot.Mutation.SetWarehouseModuleCount(childComplexity, args["moduleType"].(model.WarehouseModuleType), args["count"].(int)), true
 	case "Mutation.splitHive":
-		if e.complexity.Mutation.SplitHive == nil {
+		if e.ComplexityRoot.Mutation.SplitHive == nil {
 			break
 		}
 
@@ -1050,9 +1052,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SplitHive(childComplexity, args["sourceHiveId"].(string), args["queenName"].(*string), args["queenAction"].(string), args["frameIds"].([]string)), true
+		return e.ComplexityRoot.Mutation.SplitHive(childComplexity, args["sourceHiveId"].(string), args["queenName"].(*string), args["queenAction"].(string), args["frameIds"].([]string)), true
 	case "Mutation.swapBoxPositions":
-		if e.complexity.Mutation.SwapBoxPositions == nil {
+		if e.ComplexityRoot.Mutation.SwapBoxPositions == nil {
 			break
 		}
 
@@ -1061,9 +1063,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SwapBoxPositions(childComplexity, args["id"].(string), args["id2"].(string)), true
+		return e.ComplexityRoot.Mutation.SwapBoxPositions(childComplexity, args["id"].(string), args["id2"].(string)), true
 	case "Mutation.treatBox":
-		if e.complexity.Mutation.TreatBox == nil {
+		if e.ComplexityRoot.Mutation.TreatBox == nil {
 			break
 		}
 
@@ -1072,9 +1074,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.TreatBox(childComplexity, args["treatment"].(model.TreatmentOfBoxInput)), true
+		return e.ComplexityRoot.Mutation.TreatBox(childComplexity, args["treatment"].(model.TreatmentOfBoxInput)), true
 	case "Mutation.treatHive":
-		if e.complexity.Mutation.TreatHive == nil {
+		if e.ComplexityRoot.Mutation.TreatHive == nil {
 			break
 		}
 
@@ -1083,9 +1085,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.TreatHive(childComplexity, args["treatment"].(model.TreatmentOfHiveInput)), true
+		return e.ComplexityRoot.Mutation.TreatHive(childComplexity, args["treatment"].(model.TreatmentOfHiveInput)), true
 	case "Mutation.updateApiary":
-		if e.complexity.Mutation.UpdateApiary == nil {
+		if e.ComplexityRoot.Mutation.UpdateApiary == nil {
 			break
 		}
 
@@ -1094,9 +1096,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateApiary(childComplexity, args["id"].(string), args["apiary"].(model.ApiaryInput)), true
+		return e.ComplexityRoot.Mutation.UpdateApiary(childComplexity, args["id"].(string), args["apiary"].(model.ApiaryInput)), true
 	case "Mutation.updateApiaryObstacle":
-		if e.complexity.Mutation.UpdateApiaryObstacle == nil {
+		if e.ComplexityRoot.Mutation.UpdateApiaryObstacle == nil {
 			break
 		}
 
@@ -1105,9 +1107,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateApiaryObstacle(childComplexity, args["id"].(string), args["obstacle"].(model.ApiaryObstacleInput)), true
+		return e.ComplexityRoot.Mutation.UpdateApiaryObstacle(childComplexity, args["id"].(string), args["obstacle"].(model.ApiaryObstacleInput)), true
 	case "Mutation.updateBoxColor":
-		if e.complexity.Mutation.UpdateBoxColor == nil {
+		if e.ComplexityRoot.Mutation.UpdateBoxColor == nil {
 			break
 		}
 
@@ -1116,9 +1118,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateBoxColor(childComplexity, args["id"].(string), args["color"].(*string)), true
+		return e.ComplexityRoot.Mutation.UpdateBoxColor(childComplexity, args["id"].(string), args["color"].(*string)), true
 	case "Mutation.updateDevice":
-		if e.complexity.Mutation.UpdateDevice == nil {
+		if e.ComplexityRoot.Mutation.UpdateDevice == nil {
 			break
 		}
 
@@ -1127,9 +1129,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateDevice(childComplexity, args["id"].(string), args["device"].(model.DeviceUpdateInput)), true
+		return e.ComplexityRoot.Mutation.UpdateDevice(childComplexity, args["id"].(string), args["device"].(model.DeviceUpdateInput)), true
 	case "Mutation.updateFrames":
-		if e.complexity.Mutation.UpdateFrames == nil {
+		if e.ComplexityRoot.Mutation.UpdateFrames == nil {
 			break
 		}
 
@@ -1138,9 +1140,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateFrames(childComplexity, args["frames"].([]*model.FrameInput)), true
+		return e.ComplexityRoot.Mutation.UpdateFrames(childComplexity, args["frames"].([]*model.FrameInput)), true
 	case "Mutation.updateHive":
-		if e.complexity.Mutation.UpdateHive == nil {
+		if e.ComplexityRoot.Mutation.UpdateHive == nil {
 			break
 		}
 
@@ -1149,9 +1151,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateHive(childComplexity, args["hive"].(model.HiveUpdateInput)), true
+		return e.ComplexityRoot.Mutation.UpdateHive(childComplexity, args["hive"].(model.HiveUpdateInput)), true
 	case "Mutation.updateHivePlacement":
-		if e.complexity.Mutation.UpdateHivePlacement == nil {
+		if e.ComplexityRoot.Mutation.UpdateHivePlacement == nil {
 			break
 		}
 
@@ -1160,16 +1162,16 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateHivePlacement(childComplexity, args["apiaryId"].(string), args["hiveId"].(string), args["x"].(float64), args["y"].(float64), args["rotation"].(float64)), true
+		return e.ComplexityRoot.Mutation.UpdateHivePlacement(childComplexity, args["apiaryId"].(string), args["hiveId"].(string), args["x"].(float64), args["y"].(float64), args["rotation"].(float64)), true
 
 	case "Query.apiaries":
-		if e.complexity.Query.Apiaries == nil {
+		if e.ComplexityRoot.Query.Apiaries == nil {
 			break
 		}
 
-		return e.complexity.Query.Apiaries(childComplexity), true
+		return e.ComplexityRoot.Query.Apiaries(childComplexity), true
 	case "Query.apiary":
-		if e.complexity.Query.Apiary == nil {
+		if e.ComplexityRoot.Query.Apiary == nil {
 			break
 		}
 
@@ -1178,9 +1180,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Apiary(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Query.Apiary(childComplexity, args["id"].(string)), true
 	case "Query.apiaryObstacles":
-		if e.complexity.Query.ApiaryObstacles == nil {
+		if e.ComplexityRoot.Query.ApiaryObstacles == nil {
 			break
 		}
 
@@ -1189,15 +1191,15 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ApiaryObstacles(childComplexity, args["apiaryId"].(string)), true
+		return e.ComplexityRoot.Query.ApiaryObstacles(childComplexity, args["apiaryId"].(string)), true
 	case "Query.devices":
-		if e.complexity.Query.Devices == nil {
+		if e.ComplexityRoot.Query.Devices == nil {
 			break
 		}
 
-		return e.complexity.Query.Devices(childComplexity), true
+		return e.ComplexityRoot.Query.Devices(childComplexity), true
 	case "Query.hive":
-		if e.complexity.Query.Hive == nil {
+		if e.ComplexityRoot.Query.Hive == nil {
 			break
 		}
 
@@ -1206,9 +1208,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Hive(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Query.Hive(childComplexity, args["id"].(string)), true
 	case "Query.hiveFrame":
-		if e.complexity.Query.HiveFrame == nil {
+		if e.ComplexityRoot.Query.HiveFrame == nil {
 			break
 		}
 
@@ -1217,9 +1219,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.HiveFrame(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Query.HiveFrame(childComplexity, args["id"].(string)), true
 	case "Query.hiveFrameSide":
-		if e.complexity.Query.HiveFrameSide == nil {
+		if e.ComplexityRoot.Query.HiveFrameSide == nil {
 			break
 		}
 
@@ -1228,9 +1230,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.HiveFrameSide(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Query.HiveFrameSide(childComplexity, args["id"].(string)), true
 	case "Query.hivePlacements":
-		if e.complexity.Query.HivePlacements == nil {
+		if e.ComplexityRoot.Query.HivePlacements == nil {
 			break
 		}
 
@@ -1239,9 +1241,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.HivePlacements(childComplexity, args["apiaryId"].(string)), true
+		return e.ComplexityRoot.Query.HivePlacements(childComplexity, args["apiaryId"].(string)), true
 	case "Query.inspection":
-		if e.complexity.Query.Inspection == nil {
+		if e.ComplexityRoot.Query.Inspection == nil {
 			break
 		}
 
@@ -1250,9 +1252,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Inspection(childComplexity, args["inspectionId"].(string)), true
+		return e.ComplexityRoot.Query.Inspection(childComplexity, args["inspectionId"].(string)), true
 	case "Query.inspections":
-		if e.complexity.Query.Inspections == nil {
+		if e.ComplexityRoot.Query.Inspections == nil {
 			break
 		}
 
@@ -1261,9 +1263,10 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Inspections(childComplexity, args["hiveId"].(string), args["limit"].(*int)), true
+		return e.ComplexityRoot.Query.Inspections(childComplexity, args["hiveId"].(string), args["limit"].(*int)), true
+
 	case "Query.randomHiveName":
-		if e.complexity.Query.RandomHiveName == nil {
+		if e.ComplexityRoot.Query.RandomHiveName == nil {
 			break
 		}
 
@@ -1272,27 +1275,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.RandomHiveName(childComplexity, args["language"].(*string)), true
+		return e.ComplexityRoot.Query.RandomHiveName(childComplexity, args["language"].(*string)), true
+	case "Query.warehouseModuleStats":
+		if e.ComplexityRoot.Query.WarehouseModuleStats == nil {
+			break
+		}
+
+		args, err := ec.field_Query_warehouseModuleStats_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.WarehouseModuleStats(childComplexity, args["moduleType"].(model.WarehouseModuleType)), true
 	case "Query.warehouseModules":
-		if e.complexity.Query.WarehouseModules == nil {
+		if e.ComplexityRoot.Query.WarehouseModules == nil {
 			break
 		}
 
-		return e.complexity.Query.WarehouseModules(childComplexity), true
+		return e.ComplexityRoot.Query.WarehouseModules(childComplexity), true
 	case "Query.warehouseSettings":
-		if e.complexity.Query.WarehouseSettings == nil {
+		if e.ComplexityRoot.Query.WarehouseSettings == nil {
 			break
 		}
 
-		return e.complexity.Query.WarehouseSettings(childComplexity), true
+		return e.ComplexityRoot.Query.WarehouseSettings(childComplexity), true
 	case "Query._service":
-		if e.complexity.Query.__resolve__service == nil {
+		if e.ComplexityRoot.Query.__resolve__service == nil {
 			break
 		}
 
-		return e.complexity.Query.__resolve__service(childComplexity), true
+		return e.ComplexityRoot.Query.__resolve__service(childComplexity), true
 	case "Query._entities":
-		if e.complexity.Query.__resolve_entities == nil {
+		if e.ComplexityRoot.Query.__resolve_entities == nil {
 			break
 		}
 
@@ -1301,71 +1315,133 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.__resolve_entities(childComplexity, args["representations"].([]map[string]any)), true
+		return e.ComplexityRoot.Query.__resolve_entities(childComplexity, args["representations"].([]map[string]any)), true
 
 	case "Treatment.added":
-		if e.complexity.Treatment.Added == nil {
+		if e.ComplexityRoot.Treatment.Added == nil {
 			break
 		}
 
-		return e.complexity.Treatment.Added(childComplexity), true
+		return e.ComplexityRoot.Treatment.Added(childComplexity), true
 	case "Treatment.boxId":
-		if e.complexity.Treatment.BoxId == nil {
+		if e.ComplexityRoot.Treatment.BoxId == nil {
 			break
 		}
 
-		return e.complexity.Treatment.BoxId(childComplexity), true
+		return e.ComplexityRoot.Treatment.BoxId(childComplexity), true
 	case "Treatment.familyId":
-		if e.complexity.Treatment.FamilyId == nil {
+		if e.ComplexityRoot.Treatment.FamilyId == nil {
 			break
 		}
 
-		return e.complexity.Treatment.FamilyId(childComplexity), true
+		return e.ComplexityRoot.Treatment.FamilyId(childComplexity), true
 	case "Treatment.hiveId":
-		if e.complexity.Treatment.HiveId == nil {
+		if e.ComplexityRoot.Treatment.HiveId == nil {
 			break
 		}
 
-		return e.complexity.Treatment.HiveId(childComplexity), true
+		return e.ComplexityRoot.Treatment.HiveId(childComplexity), true
 	case "Treatment.id":
-		if e.complexity.Treatment.ID == nil {
+		if e.ComplexityRoot.Treatment.ID == nil {
 			break
 		}
 
-		return e.complexity.Treatment.ID(childComplexity), true
+		return e.ComplexityRoot.Treatment.ID(childComplexity), true
 	case "Treatment.type":
-		if e.complexity.Treatment.Type == nil {
+		if e.ComplexityRoot.Treatment.Type == nil {
 			break
 		}
 
-		return e.complexity.Treatment.Type(childComplexity), true
+		return e.ComplexityRoot.Treatment.Type(childComplexity), true
 
 	case "WarehouseModule.count":
-		if e.complexity.WarehouseModule.Count == nil {
+		if e.ComplexityRoot.WarehouseModule.Count == nil {
 			break
 		}
 
-		return e.complexity.WarehouseModule.Count(childComplexity), true
+		return e.ComplexityRoot.WarehouseModule.Count(childComplexity), true
 	case "WarehouseModule.moduleType":
-		if e.complexity.WarehouseModule.ModuleType == nil {
+		if e.ComplexityRoot.WarehouseModule.ModuleType == nil {
 			break
 		}
 
-		return e.complexity.WarehouseModule.ModuleType(childComplexity), true
+		return e.ComplexityRoot.WarehouseModule.ModuleType(childComplexity), true
+
+	case "WarehouseModuleHiveUsage.apiaryId":
+		if e.ComplexityRoot.WarehouseModuleHiveUsage.ApiaryID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleHiveUsage.ApiaryID(childComplexity), true
+	case "WarehouseModuleHiveUsage.apiaryName":
+		if e.ComplexityRoot.WarehouseModuleHiveUsage.ApiaryName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleHiveUsage.ApiaryName(childComplexity), true
+	case "WarehouseModuleHiveUsage.count":
+		if e.ComplexityRoot.WarehouseModuleHiveUsage.Count == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleHiveUsage.Count(childComplexity), true
+	case "WarehouseModuleHiveUsage.hiveId":
+		if e.ComplexityRoot.WarehouseModuleHiveUsage.HiveID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleHiveUsage.HiveID(childComplexity), true
+	case "WarehouseModuleHiveUsage.hiveNumber":
+		if e.ComplexityRoot.WarehouseModuleHiveUsage.HiveNumber == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleHiveUsage.HiveNumber(childComplexity), true
+
+	case "WarehouseModuleStats.availableCount":
+		if e.ComplexityRoot.WarehouseModuleStats.AvailableCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleStats.AvailableCount(childComplexity), true
+	case "WarehouseModuleStats.inUseCount":
+		if e.ComplexityRoot.WarehouseModuleStats.InUseCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleStats.InUseCount(childComplexity), true
+	case "WarehouseModuleStats.moduleType":
+		if e.ComplexityRoot.WarehouseModuleStats.ModuleType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleStats.ModuleType(childComplexity), true
+	case "WarehouseModuleStats.topHives":
+		if e.ComplexityRoot.WarehouseModuleStats.TopHives == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleStats.TopHives(childComplexity), true
+	case "WarehouseModuleStats.totalCount":
+		if e.ComplexityRoot.WarehouseModuleStats.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.WarehouseModuleStats.TotalCount(childComplexity), true
 
 	case "WarehouseSettings.autoUpdateFromHives":
-		if e.complexity.WarehouseSettings.AutoUpdateFromHives == nil {
+		if e.ComplexityRoot.WarehouseSettings.AutoUpdateFromHives == nil {
 			break
 		}
 
-		return e.complexity.WarehouseSettings.AutoUpdateFromHives(childComplexity), true
+		return e.ComplexityRoot.WarehouseSettings.AutoUpdateFromHives(childComplexity), true
 
 	case "_Service.sdl":
-		if e.complexity._Service.SDL == nil {
+		if e.ComplexityRoot._Service.SDL == nil {
 			break
 		}
 
-		return e.complexity._Service.SDL(childComplexity), true
+		return e.ComplexityRoot._Service.SDL(childComplexity), true
 
 	}
 	return 0, false
@@ -1373,7 +1449,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
-	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
+	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputApiaryInput,
 		ec.unmarshalInputApiaryObstacleInput,
@@ -1400,9 +1476,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 				data = ec._Query(ctx, opCtx.Operation.SelectionSet)
 			} else {
-				if atomic.LoadInt32(&ec.pendingDeferred) > 0 {
-					result := <-ec.deferredResults
-					atomic.AddInt32(&ec.pendingDeferred, -1)
+				if atomic.LoadInt32(&ec.PendingDeferred) > 0 {
+					result := <-ec.DeferredResults
+					atomic.AddInt32(&ec.PendingDeferred, -1)
 					data = result.Result
 					response.Path = result.Path
 					response.Label = result.Label
@@ -1414,8 +1490,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
 			response.Data = buf.Bytes()
-			if atomic.LoadInt32(&ec.deferred) > 0 {
-				hasNext := atomic.LoadInt32(&ec.pendingDeferred) > 0
+			if atomic.LoadInt32(&ec.Deferred) > 0 {
+				hasNext := atomic.LoadInt32(&ec.PendingDeferred) > 0
 				response.HasNext = &hasNext
 			}
 
@@ -1443,44 +1519,22 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 }
 
 type executionContext struct {
-	*graphql.OperationContext
-	*executableSchema
-	deferred        int32
-	pendingDeferred int32
-	deferredResults chan graphql.DeferredResult
+	*graphql.ExecutionContextState[ResolverRoot, DirectiveRoot, ComplexityRoot]
 }
 
-func (ec *executionContext) processDeferredGroup(dg graphql.DeferredGroup) {
-	atomic.AddInt32(&ec.pendingDeferred, 1)
-	go func() {
-		ctx := graphql.WithFreshResponseContext(dg.Context)
-		dg.FieldSet.Dispatch(ctx)
-		ds := graphql.DeferredResult{
-			Path:   dg.Path,
-			Label:  dg.Label,
-			Result: dg.FieldSet,
-			Errors: graphql.GetErrors(ctx),
-		}
-		// null fields should bubble up
-		if dg.FieldSet.Invalids > 0 {
-			ds.Result = graphql.Null
-		}
-		ec.deferredResults <- ds
-	}()
-}
-
-func (ec *executionContext) introspectSchema() (*introspection.Schema, error) {
-	if ec.DisableIntrospection {
-		return nil, errors.New("introspection disabled")
+func newExecutionContext(
+	opCtx *graphql.OperationContext,
+	execSchema *executableSchema,
+	deferredResults chan graphql.DeferredResult,
+) executionContext {
+	return executionContext{
+		ExecutionContextState: graphql.NewExecutionContextState[ResolverRoot, DirectiveRoot, ComplexityRoot](
+			opCtx,
+			(*graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot])(execSchema),
+			parsedSchema,
+			deferredResults,
+		),
 	}
-	return introspection.WrapSchema(ec.Schema()), nil
-}
-
-func (ec *executionContext) introspectType(name string) (*introspection.Type, error) {
-	if ec.DisableIntrospection {
-		return nil, errors.New("introspection disabled")
-	}
-	return introspection.WrapTypeFromDef(ec.Schema(), ec.Schema().Types[name]), nil
 }
 
 var sources = []*ast.Source{
@@ -1533,6 +1587,9 @@ type Query {
 
   "Warehouse behavior settings for the authenticated user"
   warehouseSettings: WarehouseSettings!
+
+  "Detailed warehouse module usage based on active hive structure"
+  warehouseModuleStats(moduleType: WarehouseModuleType!): WarehouseModuleStats!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -1649,6 +1706,7 @@ type Mutation {
 enum WarehouseModuleType {
   DEEP
   SUPER
+  LARGE_HORIZONTAL_SECTION
   ROOF
   HORIZONTAL_FEEDER
   QUEEN_EXCLUDER
@@ -1666,6 +1724,22 @@ type WarehouseModule {
 
 type WarehouseSettings {
   autoUpdateFromHives: Boolean!
+}
+
+type WarehouseModuleHiveUsage {
+  hiveId: ID!
+  hiveNumber: Int
+  apiaryId: ID
+  apiaryName: String
+  count: Int!
+}
+
+type WarehouseModuleStats {
+  moduleType: WarehouseModuleType!
+  availableCount: Int!
+  inUseCount: Int!
+  totalCount: Int!
+  topHives: [WarehouseModuleHiveUsage!]!
 }
 
 enum DeviceType {
@@ -1777,6 +1851,8 @@ input HiveInput {
   boxCount: Int!
   "Number of frames per box"
   frameCount: Int!
+  "Initial section type used for first created boxes"
+  initialBoxType: BoxType
   "Color markers for each box"
   colors: [String]
 }
@@ -1971,6 +2047,10 @@ enum BoxType {
   DEEP
   "Shallow box for honey (10 frames, 5-11/16\" tall)"
   SUPER
+  "Protective top cover of the hive"
+  ROOF
+  "Long horizontal section with large frame capacity"
+  LARGE_HORIZONTAL_SECTION
   "Entrance management/reducer gate"
   GATE
   "Ventilation screen for airflow"
@@ -2724,6 +2804,17 @@ func (ec *executionContext) field_Query_randomHiveName_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_warehouseModuleStats_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "moduleType", ec.unmarshalNWarehouseModuleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleType)
+	if err != nil {
+		return nil, err
+	}
+	args["moduleType"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field___Directive_args_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2842,7 +2933,7 @@ func (ec *executionContext) _Apiary_hives(ctx context.Context, field graphql.Col
 		ec.fieldContext_Apiary_hives,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Apiary().Hives(ctx, obj, fc.Args["sortBy"].(*model.HiveSortBy), fc.Args["sortOrder"].(*model.SortOrder))
+			return ec.Resolvers.Apiary().Hives(ctx, obj, fc.Args["sortBy"].(*model.HiveSortBy), fc.Args["sortOrder"].(*model.SortOrder))
 		},
 		nil,
 		ec.marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -3071,7 +3162,7 @@ func (ec *executionContext) _ApiaryObstacle_type(ctx context.Context, field grap
 		field,
 		ec.fieldContext_ApiaryObstacle_type,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ApiaryObstacle().Type(ctx, obj)
+			return ec.Resolvers.ApiaryObstacle().Type(ctx, obj)
 		},
 		nil,
 		ec.marshalNObstacleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐObstacleType,
@@ -3419,7 +3510,7 @@ func (ec *executionContext) _Box_frames(ctx context.Context, field graphql.Colle
 		field,
 		ec.fieldContext_Box_frames,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Box().Frames(ctx, obj)
+			return ec.Resolvers.Box().Frames(ctx, obj)
 		},
 		nil,
 		ec.marshalOFrame2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame,
@@ -3693,7 +3784,7 @@ func (ec *executionContext) _Entity_findFrameSideByID(ctx context.Context, field
 		ec.fieldContext_Entity_findFrameSideByID,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Entity().FindFrameSideByID(ctx, fc.Args["id"].(*string))
+			return ec.Resolvers.Entity().FindFrameSideByID(ctx, fc.Args["id"].(*string))
 		},
 		nil,
 		ec.marshalNFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide,
@@ -3740,7 +3831,7 @@ func (ec *executionContext) _Entity_findHiveByID(ctx context.Context, field grap
 		ec.fieldContext_Entity_findHiveByID,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Entity().FindHiveByID(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Entity().FindHiveByID(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalNHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -3998,7 +4089,7 @@ func (ec *executionContext) _Family_lastTreatment(ctx context.Context, field gra
 		field,
 		ec.fieldContext_Family_lastTreatment,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Family().LastTreatment(ctx, obj)
+			return ec.Resolvers.Family().LastTreatment(ctx, obj)
 		},
 		nil,
 		ec.marshalODateTime2ᚖstring,
@@ -4027,7 +4118,7 @@ func (ec *executionContext) _Family_treatments(ctx context.Context, field graphq
 		field,
 		ec.fieldContext_Family_treatments,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Family().Treatments(ctx, obj)
+			return ec.Resolvers.Family().Treatments(ctx, obj)
 		},
 		nil,
 		ec.marshalOTreatment2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatment,
@@ -4157,7 +4248,7 @@ func (ec *executionContext) _Frame_leftSide(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Frame_leftSide,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Frame().LeftSide(ctx, obj)
+			return ec.Resolvers.Frame().LeftSide(ctx, obj)
 		},
 		nil,
 		ec.marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide,
@@ -4192,7 +4283,7 @@ func (ec *executionContext) _Frame_rightSide(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_Frame_rightSide,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Frame().RightSide(ctx, obj)
+			return ec.Resolvers.Frame().RightSide(ctx, obj)
 		},
 		nil,
 		ec.marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide,
@@ -4372,7 +4463,7 @@ func (ec *executionContext) _Hive_boxes(ctx context.Context, field graphql.Colle
 		field,
 		ec.fieldContext_Hive_boxes,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().Boxes(ctx, obj)
+			return ec.Resolvers.Hive().Boxes(ctx, obj)
 		},
 		nil,
 		ec.marshalOBox2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox,
@@ -4413,7 +4504,7 @@ func (ec *executionContext) _Hive_family(ctx context.Context, field graphql.Coll
 		field,
 		ec.fieldContext_Hive_family,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().Family(ctx, obj)
+			return ec.Resolvers.Hive().Family(ctx, obj)
 		},
 		nil,
 		ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily,
@@ -4460,7 +4551,7 @@ func (ec *executionContext) _Hive_families(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Hive_families,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().Families(ctx, obj)
+			return ec.Resolvers.Hive().Families(ctx, obj)
 		},
 		nil,
 		ec.marshalOFamily2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily,
@@ -4507,7 +4598,7 @@ func (ec *executionContext) _Hive_boxCount(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Hive_boxCount,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().BoxCount(ctx, obj)
+			return ec.Resolvers.Hive().BoxCount(ctx, obj)
 		},
 		nil,
 		ec.marshalNInt2int,
@@ -4536,7 +4627,7 @@ func (ec *executionContext) _Hive_inspectionCount(ctx context.Context, field gra
 		field,
 		ec.fieldContext_Hive_inspectionCount,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().InspectionCount(ctx, obj)
+			return ec.Resolvers.Hive().InspectionCount(ctx, obj)
 		},
 		nil,
 		ec.marshalNInt2int,
@@ -4623,7 +4714,7 @@ func (ec *executionContext) _Hive_isNew(ctx context.Context, field graphql.Colle
 		field,
 		ec.fieldContext_Hive_isNew,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().IsNew(ctx, obj)
+			return ec.Resolvers.Hive().IsNew(ctx, obj)
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -4652,7 +4743,7 @@ func (ec *executionContext) _Hive_lastInspection(ctx context.Context, field grap
 		field,
 		ec.fieldContext_Hive_lastInspection,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().LastInspection(ctx, obj)
+			return ec.Resolvers.Hive().LastInspection(ctx, obj)
 		},
 		nil,
 		ec.marshalODateTime2ᚖstring,
@@ -4739,7 +4830,7 @@ func (ec *executionContext) _Hive_parentHive(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_Hive_parentHive,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().ParentHive(ctx, obj)
+			return ec.Resolvers.Hive().ParentHive(ctx, obj)
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -4841,7 +4932,7 @@ func (ec *executionContext) _Hive_childHives(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_Hive_childHives,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().ChildHives(ctx, obj)
+			return ec.Resolvers.Hive().ChildHives(ctx, obj)
 		},
 		nil,
 		ec.marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -4914,7 +5005,7 @@ func (ec *executionContext) _Hive_mergedIntoHive(ctx context.Context, field grap
 		field,
 		ec.fieldContext_Hive_mergedIntoHive,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().MergedIntoHive(ctx, obj)
+			return ec.Resolvers.Hive().MergedIntoHive(ctx, obj)
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -5045,7 +5136,7 @@ func (ec *executionContext) _Hive_mergedFromHives(ctx context.Context, field gra
 		field,
 		ec.fieldContext_Hive_mergedFromHives,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Hive().MergedFromHives(ctx, obj)
+			return ec.Resolvers.Hive().MergedFromHives(ctx, obj)
 		},
 		nil,
 		ec.marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -5409,7 +5500,7 @@ func (ec *executionContext) _Mutation_addApiary(ctx context.Context, field graph
 		ec.fieldContext_Mutation_addApiary,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddApiary(ctx, fc.Args["apiary"].(model.ApiaryInput))
+			return ec.Resolvers.Mutation().AddApiary(ctx, fc.Args["apiary"].(model.ApiaryInput))
 		},
 		nil,
 		ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary,
@@ -5464,7 +5555,7 @@ func (ec *executionContext) _Mutation_updateApiary(ctx context.Context, field gr
 		ec.fieldContext_Mutation_updateApiary,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateApiary(ctx, fc.Args["id"].(string), fc.Args["apiary"].(model.ApiaryInput))
+			return ec.Resolvers.Mutation().UpdateApiary(ctx, fc.Args["id"].(string), fc.Args["apiary"].(model.ApiaryInput))
 		},
 		nil,
 		ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary,
@@ -5519,7 +5610,7 @@ func (ec *executionContext) _Mutation_deactivateApiary(ctx context.Context, fiel
 		ec.fieldContext_Mutation_deactivateApiary,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeactivateApiary(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeactivateApiary(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -5560,7 +5651,7 @@ func (ec *executionContext) _Mutation_addHive(ctx context.Context, field graphql
 		ec.fieldContext_Mutation_addHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddHive(ctx, fc.Args["hive"].(model.HiveInput))
+			return ec.Resolvers.Mutation().AddHive(ctx, fc.Args["hive"].(model.HiveInput))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -5645,7 +5736,7 @@ func (ec *executionContext) _Mutation_updateHive(ctx context.Context, field grap
 		ec.fieldContext_Mutation_updateHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateHive(ctx, fc.Args["hive"].(model.HiveUpdateInput))
+			return ec.Resolvers.Mutation().UpdateHive(ctx, fc.Args["hive"].(model.HiveUpdateInput))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -5730,7 +5821,7 @@ func (ec *executionContext) _Mutation_deactivateHive(ctx context.Context, field 
 		ec.fieldContext_Mutation_deactivateHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeactivateHive(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeactivateHive(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -5771,7 +5862,7 @@ func (ec *executionContext) _Mutation_addBox(ctx context.Context, field graphql.
 		ec.fieldContext_Mutation_addBox,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddBox(ctx, fc.Args["hiveId"].(string), fc.Args["position"].(int), fc.Args["color"].(*string), fc.Args["type"].(model.BoxType))
+			return ec.Resolvers.Mutation().AddBox(ctx, fc.Args["hiveId"].(string), fc.Args["position"].(int), fc.Args["color"].(*string), fc.Args["type"].(model.BoxType))
 		},
 		nil,
 		ec.marshalNBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox,
@@ -5824,7 +5915,7 @@ func (ec *executionContext) _Mutation_updateBoxColor(ctx context.Context, field 
 		ec.fieldContext_Mutation_updateBoxColor,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateBoxColor(ctx, fc.Args["id"].(string), fc.Args["color"].(*string))
+			return ec.Resolvers.Mutation().UpdateBoxColor(ctx, fc.Args["id"].(string), fc.Args["color"].(*string))
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -5865,7 +5956,7 @@ func (ec *executionContext) _Mutation_deactivateBox(ctx context.Context, field g
 		ec.fieldContext_Mutation_deactivateBox,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeactivateBox(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeactivateBox(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -5906,7 +5997,7 @@ func (ec *executionContext) _Mutation_swapBoxPositions(ctx context.Context, fiel
 		ec.fieldContext_Mutation_swapBoxPositions,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SwapBoxPositions(ctx, fc.Args["id"].(string), fc.Args["id2"].(string))
+			return ec.Resolvers.Mutation().SwapBoxPositions(ctx, fc.Args["id"].(string), fc.Args["id2"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -5947,7 +6038,7 @@ func (ec *executionContext) _Mutation_addFrame(ctx context.Context, field graphq
 		ec.fieldContext_Mutation_addFrame,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddFrame(ctx, fc.Args["boxId"].(string), fc.Args["type"].(string), fc.Args["position"].(int))
+			return ec.Resolvers.Mutation().AddFrame(ctx, fc.Args["boxId"].(string), fc.Args["type"].(string), fc.Args["position"].(int))
 		},
 		nil,
 		ec.marshalNFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame,
@@ -6000,7 +6091,7 @@ func (ec *executionContext) _Mutation_updateFrames(ctx context.Context, field gr
 		ec.fieldContext_Mutation_updateFrames,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateFrames(ctx, fc.Args["frames"].([]*model.FrameInput))
+			return ec.Resolvers.Mutation().UpdateFrames(ctx, fc.Args["frames"].([]*model.FrameInput))
 		},
 		nil,
 		ec.marshalOFrame2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame,
@@ -6053,7 +6144,7 @@ func (ec *executionContext) _Mutation_deactivateFrame(ctx context.Context, field
 		ec.fieldContext_Mutation_deactivateFrame,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeactivateFrame(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeactivateFrame(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -6094,7 +6185,7 @@ func (ec *executionContext) _Mutation_addInspection(ctx context.Context, field g
 		ec.fieldContext_Mutation_addInspection,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddInspection(ctx, fc.Args["inspection"].(model.InspectionInput))
+			return ec.Resolvers.Mutation().AddInspection(ctx, fc.Args["inspection"].(model.InspectionInput))
 		},
 		nil,
 		ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection,
@@ -6145,7 +6236,7 @@ func (ec *executionContext) _Mutation_addQueenToHive(ctx context.Context, field 
 		ec.fieldContext_Mutation_addQueenToHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddQueenToHive(ctx, fc.Args["hiveId"].(string), fc.Args["queen"].(model.FamilyInput))
+			return ec.Resolvers.Mutation().AddQueenToHive(ctx, fc.Args["hiveId"].(string), fc.Args["queen"].(model.FamilyInput))
 		},
 		nil,
 		ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily,
@@ -6204,7 +6295,7 @@ func (ec *executionContext) _Mutation_removeQueenFromHive(ctx context.Context, f
 		ec.fieldContext_Mutation_removeQueenFromHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RemoveQueenFromHive(ctx, fc.Args["hiveId"].(string), fc.Args["familyId"].(string))
+			return ec.Resolvers.Mutation().RemoveQueenFromHive(ctx, fc.Args["hiveId"].(string), fc.Args["familyId"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -6245,7 +6336,7 @@ func (ec *executionContext) _Mutation_treatHive(ctx context.Context, field graph
 		ec.fieldContext_Mutation_treatHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().TreatHive(ctx, fc.Args["treatment"].(model.TreatmentOfHiveInput))
+			return ec.Resolvers.Mutation().TreatHive(ctx, fc.Args["treatment"].(model.TreatmentOfHiveInput))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -6286,7 +6377,7 @@ func (ec *executionContext) _Mutation_treatBox(ctx context.Context, field graphq
 		ec.fieldContext_Mutation_treatBox,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().TreatBox(ctx, fc.Args["treatment"].(model.TreatmentOfBoxInput))
+			return ec.Resolvers.Mutation().TreatBox(ctx, fc.Args["treatment"].(model.TreatmentOfBoxInput))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -6327,7 +6418,7 @@ func (ec *executionContext) _Mutation_markHiveAsCollapsed(ctx context.Context, f
 		ec.fieldContext_Mutation_markHiveAsCollapsed,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().MarkHiveAsCollapsed(ctx, fc.Args["id"].(string), fc.Args["collapseDate"].(string), fc.Args["collapseCause"].(string))
+			return ec.Resolvers.Mutation().MarkHiveAsCollapsed(ctx, fc.Args["id"].(string), fc.Args["collapseDate"].(string), fc.Args["collapseCause"].(string))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -6412,7 +6503,7 @@ func (ec *executionContext) _Mutation_splitHive(ctx context.Context, field graph
 		ec.fieldContext_Mutation_splitHive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SplitHive(ctx, fc.Args["sourceHiveId"].(string), fc.Args["queenName"].(*string), fc.Args["queenAction"].(string), fc.Args["frameIds"].([]string))
+			return ec.Resolvers.Mutation().SplitHive(ctx, fc.Args["sourceHiveId"].(string), fc.Args["queenName"].(*string), fc.Args["queenAction"].(string), fc.Args["frameIds"].([]string))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -6497,7 +6588,7 @@ func (ec *executionContext) _Mutation_joinHives(ctx context.Context, field graph
 		ec.fieldContext_Mutation_joinHives,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().JoinHives(ctx, fc.Args["sourceHiveId"].(string), fc.Args["targetHiveId"].(string), fc.Args["mergeType"].(string))
+			return ec.Resolvers.Mutation().JoinHives(ctx, fc.Args["sourceHiveId"].(string), fc.Args["targetHiveId"].(string), fc.Args["mergeType"].(string))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -6582,7 +6673,7 @@ func (ec *executionContext) _Mutation_updateHivePlacement(ctx context.Context, f
 		ec.fieldContext_Mutation_updateHivePlacement,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateHivePlacement(ctx, fc.Args["apiaryId"].(string), fc.Args["hiveId"].(string), fc.Args["x"].(float64), fc.Args["y"].(float64), fc.Args["rotation"].(float64))
+			return ec.Resolvers.Mutation().UpdateHivePlacement(ctx, fc.Args["apiaryId"].(string), fc.Args["hiveId"].(string), fc.Args["x"].(float64), fc.Args["y"].(float64), fc.Args["rotation"].(float64))
 		},
 		nil,
 		ec.marshalOHivePlacement2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement,
@@ -6637,7 +6728,7 @@ func (ec *executionContext) _Mutation_addApiaryObstacle(ctx context.Context, fie
 		ec.fieldContext_Mutation_addApiaryObstacle,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddApiaryObstacle(ctx, fc.Args["apiaryId"].(string), fc.Args["obstacle"].(model.ApiaryObstacleInput))
+			return ec.Resolvers.Mutation().AddApiaryObstacle(ctx, fc.Args["apiaryId"].(string), fc.Args["obstacle"].(model.ApiaryObstacleInput))
 		},
 		nil,
 		ec.marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle,
@@ -6700,7 +6791,7 @@ func (ec *executionContext) _Mutation_updateApiaryObstacle(ctx context.Context, 
 		ec.fieldContext_Mutation_updateApiaryObstacle,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateApiaryObstacle(ctx, fc.Args["id"].(string), fc.Args["obstacle"].(model.ApiaryObstacleInput))
+			return ec.Resolvers.Mutation().UpdateApiaryObstacle(ctx, fc.Args["id"].(string), fc.Args["obstacle"].(model.ApiaryObstacleInput))
 		},
 		nil,
 		ec.marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle,
@@ -6763,7 +6854,7 @@ func (ec *executionContext) _Mutation_deleteApiaryObstacle(ctx context.Context, 
 		ec.fieldContext_Mutation_deleteApiaryObstacle,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeleteApiaryObstacle(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeleteApiaryObstacle(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -6804,7 +6895,7 @@ func (ec *executionContext) _Mutation_addDevice(ctx context.Context, field graph
 		ec.fieldContext_Mutation_addDevice,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddDevice(ctx, fc.Args["device"].(model.DeviceInput))
+			return ec.Resolvers.Mutation().AddDevice(ctx, fc.Args["device"].(model.DeviceInput))
 		},
 		nil,
 		ec.marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice,
@@ -6863,7 +6954,7 @@ func (ec *executionContext) _Mutation_updateDevice(ctx context.Context, field gr
 		ec.fieldContext_Mutation_updateDevice,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateDevice(ctx, fc.Args["id"].(string), fc.Args["device"].(model.DeviceUpdateInput))
+			return ec.Resolvers.Mutation().UpdateDevice(ctx, fc.Args["id"].(string), fc.Args["device"].(model.DeviceUpdateInput))
 		},
 		nil,
 		ec.marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice,
@@ -6922,7 +7013,7 @@ func (ec *executionContext) _Mutation_deactivateDevice(ctx context.Context, fiel
 		ec.fieldContext_Mutation_deactivateDevice,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeactivateDevice(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeactivateDevice(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -6963,7 +7054,7 @@ func (ec *executionContext) _Mutation_setWarehouseModuleCount(ctx context.Contex
 		ec.fieldContext_Mutation_setWarehouseModuleCount,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SetWarehouseModuleCount(ctx, fc.Args["moduleType"].(model.WarehouseModuleType), fc.Args["count"].(int))
+			return ec.Resolvers.Mutation().SetWarehouseModuleCount(ctx, fc.Args["moduleType"].(model.WarehouseModuleType), fc.Args["count"].(int))
 		},
 		nil,
 		ec.marshalNWarehouseModule2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModule,
@@ -7010,7 +7101,7 @@ func (ec *executionContext) _Mutation_setWarehouseAutoUpdateFromHives(ctx contex
 		ec.fieldContext_Mutation_setWarehouseAutoUpdateFromHives,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SetWarehouseAutoUpdateFromHives(ctx, fc.Args["enabled"].(bool))
+			return ec.Resolvers.Mutation().SetWarehouseAutoUpdateFromHives(ctx, fc.Args["enabled"].(bool))
 		},
 		nil,
 		ec.marshalNWarehouseSettings2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseSettings,
@@ -7055,7 +7146,7 @@ func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.Colle
 		ec.fieldContext_Query_hive,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Hive(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Query().Hive(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
@@ -7140,7 +7231,7 @@ func (ec *executionContext) _Query_apiary(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query_apiary,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Apiary(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Query().Apiary(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary,
@@ -7195,7 +7286,7 @@ func (ec *executionContext) _Query_hiveFrame(ctx context.Context, field graphql.
 		ec.fieldContext_Query_hiveFrame,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().HiveFrame(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Query().HiveFrame(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame,
@@ -7248,7 +7339,7 @@ func (ec *executionContext) _Query_hiveFrameSide(ctx context.Context, field grap
 		ec.fieldContext_Query_hiveFrameSide,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().HiveFrameSide(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Query().HiveFrameSide(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOFrameSide2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrameSide,
@@ -7294,7 +7385,7 @@ func (ec *executionContext) _Query_apiaries(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Query_apiaries,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().Apiaries(ctx)
+			return ec.Resolvers.Query().Apiaries(ctx)
 		},
 		nil,
 		ec.marshalOApiary2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary,
@@ -7338,7 +7429,7 @@ func (ec *executionContext) _Query_inspection(ctx context.Context, field graphql
 		ec.fieldContext_Query_inspection,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Inspection(ctx, fc.Args["inspectionId"].(string))
+			return ec.Resolvers.Query().Inspection(ctx, fc.Args["inspectionId"].(string))
 		},
 		nil,
 		ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection,
@@ -7389,7 +7480,7 @@ func (ec *executionContext) _Query_randomHiveName(ctx context.Context, field gra
 		ec.fieldContext_Query_randomHiveName,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().RandomHiveName(ctx, fc.Args["language"].(*string))
+			return ec.Resolvers.Query().RandomHiveName(ctx, fc.Args["language"].(*string))
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -7430,7 +7521,7 @@ func (ec *executionContext) _Query_inspections(ctx context.Context, field graphq
 		ec.fieldContext_Query_inspections,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Inspections(ctx, fc.Args["hiveId"].(string), fc.Args["limit"].(*int))
+			return ec.Resolvers.Query().Inspections(ctx, fc.Args["hiveId"].(string), fc.Args["limit"].(*int))
 		},
 		nil,
 		ec.marshalOInspection2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection,
@@ -7481,7 +7572,7 @@ func (ec *executionContext) _Query_hivePlacements(ctx context.Context, field gra
 		ec.fieldContext_Query_hivePlacements,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().HivePlacements(ctx, fc.Args["apiaryId"].(string))
+			return ec.Resolvers.Query().HivePlacements(ctx, fc.Args["apiaryId"].(string))
 		},
 		nil,
 		ec.marshalOHivePlacement2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement,
@@ -7536,7 +7627,7 @@ func (ec *executionContext) _Query_apiaryObstacles(ctx context.Context, field gr
 		ec.fieldContext_Query_apiaryObstacles,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ApiaryObstacles(ctx, fc.Args["apiaryId"].(string))
+			return ec.Resolvers.Query().ApiaryObstacles(ctx, fc.Args["apiaryId"].(string))
 		},
 		nil,
 		ec.marshalOApiaryObstacle2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle,
@@ -7598,7 +7689,7 @@ func (ec *executionContext) _Query_devices(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Query_devices,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().Devices(ctx)
+			return ec.Resolvers.Query().Devices(ctx)
 		},
 		nil,
 		ec.marshalODevice2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice,
@@ -7645,7 +7736,7 @@ func (ec *executionContext) _Query_warehouseModules(ctx context.Context, field g
 		field,
 		ec.fieldContext_Query_warehouseModules,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().WarehouseModules(ctx)
+			return ec.Resolvers.Query().WarehouseModules(ctx)
 		},
 		nil,
 		ec.marshalNWarehouseModule2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleᚄ,
@@ -7680,7 +7771,7 @@ func (ec *executionContext) _Query_warehouseSettings(ctx context.Context, field 
 		field,
 		ec.fieldContext_Query_warehouseSettings,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().WarehouseSettings(ctx)
+			return ec.Resolvers.Query().WarehouseSettings(ctx)
 		},
 		nil,
 		ec.marshalNWarehouseSettings2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseSettings,
@@ -7702,6 +7793,59 @@ func (ec *executionContext) fieldContext_Query_warehouseSettings(_ context.Conte
 			}
 			return nil, fmt.Errorf("no field named %q was found under type WarehouseSettings", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_warehouseModuleStats(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_warehouseModuleStats,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().WarehouseModuleStats(ctx, fc.Args["moduleType"].(model.WarehouseModuleType))
+		},
+		nil,
+		ec.marshalNWarehouseModuleStats2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_warehouseModuleStats(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "moduleType":
+				return ec.fieldContext_WarehouseModuleStats_moduleType(ctx, field)
+			case "availableCount":
+				return ec.fieldContext_WarehouseModuleStats_availableCount(ctx, field)
+			case "inUseCount":
+				return ec.fieldContext_WarehouseModuleStats_inUseCount(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_WarehouseModuleStats_totalCount(ctx, field)
+			case "topHives":
+				return ec.fieldContext_WarehouseModuleStats_topHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WarehouseModuleStats", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_warehouseModuleStats_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -7788,7 +7932,7 @@ func (ec *executionContext) _Query___type(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query___type,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.introspectType(fc.Args["name"].(string))
+			return ec.IntrospectType(fc.Args["name"].(string))
 		},
 		nil,
 		ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType,
@@ -7852,7 +7996,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Query___schema,
 		func(ctx context.Context) (any, error) {
-			return ec.introspectSchema()
+			return ec.IntrospectSchema()
 		},
 		nil,
 		ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema,
@@ -8115,6 +8259,308 @@ func (ec *executionContext) fieldContext_WarehouseModule_count(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleHiveUsage_hiveId(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleHiveUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleHiveUsage_hiveId,
+		func(ctx context.Context) (any, error) {
+			return obj.HiveID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleHiveUsage_hiveId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleHiveUsage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleHiveUsage_hiveNumber(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleHiveUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleHiveUsage_hiveNumber,
+		func(ctx context.Context) (any, error) {
+			return obj.HiveNumber, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleHiveUsage_hiveNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleHiveUsage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleHiveUsage_apiaryId(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleHiveUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleHiveUsage_apiaryId,
+		func(ctx context.Context) (any, error) {
+			return obj.ApiaryID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleHiveUsage_apiaryId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleHiveUsage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleHiveUsage_apiaryName(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleHiveUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleHiveUsage_apiaryName,
+		func(ctx context.Context) (any, error) {
+			return obj.ApiaryName, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleHiveUsage_apiaryName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleHiveUsage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleHiveUsage_count(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleHiveUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleHiveUsage_count,
+		func(ctx context.Context) (any, error) {
+			return obj.Count, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleHiveUsage_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleHiveUsage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleStats_moduleType(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleStats_moduleType,
+		func(ctx context.Context) (any, error) {
+			return obj.ModuleType, nil
+		},
+		nil,
+		ec.marshalNWarehouseModuleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleStats_moduleType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type WarehouseModuleType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleStats_availableCount(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleStats_availableCount,
+		func(ctx context.Context) (any, error) {
+			return obj.AvailableCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleStats_availableCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleStats_inUseCount(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleStats_inUseCount,
+		func(ctx context.Context) (any, error) {
+			return obj.InUseCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleStats_inUseCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleStats_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleStats_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleStats_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WarehouseModuleStats_topHives(ctx context.Context, field graphql.CollectedField, obj *model.WarehouseModuleStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WarehouseModuleStats_topHives,
+		func(ctx context.Context) (any, error) {
+			return obj.TopHives, nil
+		},
+		nil,
+		ec.marshalNWarehouseModuleHiveUsage2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleHiveUsageᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WarehouseModuleStats_topHives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WarehouseModuleStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hiveId":
+				return ec.fieldContext_WarehouseModuleHiveUsage_hiveId(ctx, field)
+			case "hiveNumber":
+				return ec.fieldContext_WarehouseModuleHiveUsage_hiveNumber(ctx, field)
+			case "apiaryId":
+				return ec.fieldContext_WarehouseModuleHiveUsage_apiaryId(ctx, field)
+			case "apiaryName":
+				return ec.fieldContext_WarehouseModuleHiveUsage_apiaryName(ctx, field)
+			case "count":
+				return ec.fieldContext_WarehouseModuleHiveUsage_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WarehouseModuleHiveUsage", field.Name)
 		},
 	}
 	return fc, nil
@@ -9626,6 +10072,10 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 func (ec *executionContext) unmarshalInputApiaryInput(ctx context.Context, obj any) (model.ApiaryInput, error) {
 	var it model.ApiaryInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -9661,12 +10111,15 @@ func (ec *executionContext) unmarshalInputApiaryInput(ctx context.Context, obj a
 			it.Lng = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputApiaryObstacleInput(ctx context.Context, obj any) (model.ApiaryObstacleInput, error) {
 	var it model.ApiaryObstacleInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -9737,12 +10190,15 @@ func (ec *executionContext) unmarshalInputApiaryObstacleInput(ctx context.Contex
 			it.Label = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj any) (model.BoxInput, error) {
 	var it model.BoxInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -9799,12 +10255,15 @@ func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj any)
 			it.Family = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputDeviceInput(ctx context.Context, obj any) (model.DeviceInput, error) {
 	var it model.DeviceInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -9854,12 +10313,15 @@ func (ec *executionContext) unmarshalInputDeviceInput(ctx context.Context, obj a
 			it.BoxID = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputDeviceUpdateInput(ctx context.Context, obj any) (model.DeviceUpdateInput, error) {
 	var it model.DeviceUpdateInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -9909,12 +10371,15 @@ func (ec *executionContext) unmarshalInputDeviceUpdateInput(ctx context.Context,
 			it.BoxID = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputFamilyInput(ctx context.Context, obj any) (model.FamilyInput, error) {
 	var it model.FamilyInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -9964,12 +10429,15 @@ func (ec *executionContext) unmarshalInputFamilyInput(ctx context.Context, obj a
 			it.Color = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputFrameInput(ctx context.Context, obj any) (model.FrameInput, error) {
 	var it model.FrameInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -10019,18 +10487,21 @@ func (ec *executionContext) unmarshalInputFrameInput(ctx context.Context, obj an
 			it.HiveID = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any) (model.HiveInput, error) {
 	var it model.HiveInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"apiaryId", "queenName", "queenYear", "queenColor", "hiveNumber", "boxCount", "frameCount", "colors"}
+	fieldsInOrder := [...]string{"apiaryId", "queenName", "queenYear", "queenColor", "hiveNumber", "boxCount", "frameCount", "initialBoxType", "colors"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10086,6 +10557,13 @@ func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any
 				return it, err
 			}
 			it.FrameCount = data
+		case "initialBoxType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("initialBoxType"))
+			data, err := ec.unmarshalOBoxType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InitialBoxType = data
 		case "colors":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("colors"))
 			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
@@ -10095,12 +10573,15 @@ func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any
 			it.Colors = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, obj any) (model.HiveUpdateInput, error) {
 	var it model.HiveUpdateInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -10143,12 +10624,15 @@ func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, o
 			it.Family = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputInspectionInput(ctx context.Context, obj any) (model.InspectionInput, error) {
 	var it model.InspectionInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -10177,12 +10661,15 @@ func (ec *executionContext) unmarshalInputInspectionInput(ctx context.Context, o
 			it.Data = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputTreatmentOfBoxInput(ctx context.Context, obj any) (model.TreatmentOfBoxInput, error) {
 	var it model.TreatmentOfBoxInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -10218,12 +10705,15 @@ func (ec *executionContext) unmarshalInputTreatmentOfBoxInput(ctx context.Contex
 			it.Type = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputTreatmentOfHiveInput(ctx context.Context, obj any) (model.TreatmentOfHiveInput, error) {
 	var it model.TreatmentOfHiveInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -10252,7 +10742,6 @@ func (ec *executionContext) unmarshalInputTreatmentOfHiveInput(ctx context.Conte
 			it.Type = data
 		}
 	}
-
 	return it, nil
 }
 
@@ -10279,8 +10768,8 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 		}
 		return ec._FrameSide(ctx, sel, obj)
 	default:
-		if obj, ok := obj.(graphql.Marshaler); ok {
-			return obj
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
 		} else {
 			panic(fmt.Errorf("unexpected type %T; non-generated variants of _Entity must implement graphql.Marshaler", obj))
 		}
@@ -10357,10 +10846,10 @@ func (ec *executionContext) _Apiary(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -10460,10 +10949,10 @@ func (ec *executionContext) _ApiaryObstacle(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -10538,10 +11027,10 @@ func (ec *executionContext) _Box(ctx context.Context, sel ast.SelectionSet, obj 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -10603,10 +11092,10 @@ func (ec *executionContext) _Device(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -10689,10 +11178,10 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -10804,10 +11293,10 @@ func (ec *executionContext) _Family(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -10916,10 +11405,10 @@ func (ec *executionContext) _Frame(ctx context.Context, sel ast.SelectionSet, ob
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -10954,10 +11443,10 @@ func (ec *executionContext) _FrameSide(ctx context.Context, sel ast.SelectionSet
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -11386,10 +11875,10 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -11450,10 +11939,10 @@ func (ec *executionContext) _HivePlacement(ctx context.Context, sel ast.Selectio
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -11504,10 +11993,10 @@ func (ec *executionContext) _Inspection(ctx context.Context, sel ast.SelectionSe
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -11681,10 +12170,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -11967,6 +12456,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "warehouseModuleStats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_warehouseModuleStats(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "_entities":
 			field := field
 
@@ -12028,10 +12539,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12092,10 +12603,10 @@ func (ec *executionContext) _Treatment(ctx context.Context, sel ast.SelectionSet
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12136,10 +12647,119 @@ func (ec *executionContext) _WarehouseModule(ctx context.Context, sel ast.Select
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var warehouseModuleHiveUsageImplementors = []string{"WarehouseModuleHiveUsage"}
+
+func (ec *executionContext) _WarehouseModuleHiveUsage(ctx context.Context, sel ast.SelectionSet, obj *model.WarehouseModuleHiveUsage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, warehouseModuleHiveUsageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WarehouseModuleHiveUsage")
+		case "hiveId":
+			out.Values[i] = ec._WarehouseModuleHiveUsage_hiveId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hiveNumber":
+			out.Values[i] = ec._WarehouseModuleHiveUsage_hiveNumber(ctx, field, obj)
+		case "apiaryId":
+			out.Values[i] = ec._WarehouseModuleHiveUsage_apiaryId(ctx, field, obj)
+		case "apiaryName":
+			out.Values[i] = ec._WarehouseModuleHiveUsage_apiaryName(ctx, field, obj)
+		case "count":
+			out.Values[i] = ec._WarehouseModuleHiveUsage_count(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var warehouseModuleStatsImplementors = []string{"WarehouseModuleStats"}
+
+func (ec *executionContext) _WarehouseModuleStats(ctx context.Context, sel ast.SelectionSet, obj *model.WarehouseModuleStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, warehouseModuleStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WarehouseModuleStats")
+		case "moduleType":
+			out.Values[i] = ec._WarehouseModuleStats_moduleType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "availableCount":
+			out.Values[i] = ec._WarehouseModuleStats_availableCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inUseCount":
+			out.Values[i] = ec._WarehouseModuleStats_inUseCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._WarehouseModuleStats_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "topHives":
+			out.Values[i] = ec._WarehouseModuleStats_topHives(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12175,10 +12795,10 @@ func (ec *executionContext) _WarehouseSettings(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12211,10 +12831,10 @@ func (ec *executionContext) __Service(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12267,10 +12887,10 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12315,10 +12935,10 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12373,10 +12993,10 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12428,10 +13048,10 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12483,10 +13103,10 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12542,10 +13162,10 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -12928,39 +13548,11 @@ func (ec *executionContext) marshalNWarehouseModule2githubᚗcomᚋGratheonᚋsw
 }
 
 func (ec *executionContext) marshalNWarehouseModule2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.WarehouseModule) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNWarehouseModule2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModule(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNWarehouseModule2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModule(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -12979,6 +13571,46 @@ func (ec *executionContext) marshalNWarehouseModule2ᚖgithubᚗcomᚋGratheon�
 		return graphql.Null
 	}
 	return ec._WarehouseModule(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWarehouseModuleHiveUsage2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleHiveUsageᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.WarehouseModuleHiveUsage) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNWarehouseModuleHiveUsage2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleHiveUsage(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNWarehouseModuleHiveUsage2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleHiveUsage(ctx context.Context, sel ast.SelectionSet, v *model.WarehouseModuleHiveUsage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._WarehouseModuleHiveUsage(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWarehouseModuleStats2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleStats(ctx context.Context, sel ast.SelectionSet, v model.WarehouseModuleStats) graphql.Marshaler {
+	return ec._WarehouseModuleStats(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWarehouseModuleStats2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleStats(ctx context.Context, sel ast.SelectionSet, v *model.WarehouseModuleStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._WarehouseModuleStats(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNWarehouseModuleType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐWarehouseModuleType(ctx context.Context, v any) (model.WarehouseModuleType, error) {
@@ -13058,39 +13690,11 @@ func (ec *executionContext) marshalN_Any2ᚕmapᚄ(ctx context.Context, sel ast.
 }
 
 func (ec *executionContext) marshalN_Entity2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋpluginᚋfederationᚋfedruntimeᚐEntity(ctx context.Context, sel ast.SelectionSet, v []fedruntime.Entity) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalO_Entity2githubᚗcomᚋ99designsᚋgqlgenᚋpluginᚋfederationᚋfedruntimeᚐEntity(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalO_Entity2githubᚗcomᚋ99designsᚋgqlgenᚋpluginᚋfederationᚋfedruntimeᚐEntity(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13120,39 +13724,11 @@ func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlge
 }
 
 func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Directive) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -13195,39 +13771,11 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx conte
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__DirectiveLocation2string(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__DirectiveLocation2string(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -13251,39 +13799,11 @@ func (ec *executionContext) marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlg
 }
 
 func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -13299,39 +13819,11 @@ func (ec *executionContext) marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋg
 }
 
 func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -13372,39 +13864,11 @@ func (ec *executionContext) marshalOApiary2ᚕᚖgithubᚗcomᚋGratheonᚋswarm
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13420,39 +13884,11 @@ func (ec *executionContext) marshalOApiaryObstacle2ᚕᚖgithubᚗcomᚋGratheon
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryObstacle(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13498,39 +13934,11 @@ func (ec *executionContext) marshalOBox2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑ
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13540,6 +13948,22 @@ func (ec *executionContext) marshalOBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapi
 		return graphql.Null
 	}
 	return ec._Box(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOBoxType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx context.Context, v any) (*model.BoxType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.BoxType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOBoxType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx context.Context, sel ast.SelectionSet, v *model.BoxType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalODateTime2ᚖstring(ctx context.Context, v any) (*string, error) {
@@ -13564,39 +13988,11 @@ func (ec *executionContext) marshalODevice2ᚕᚖgithubᚗcomᚋGratheonᚋswarm
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalODevice2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐDevice(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13628,39 +14024,11 @@ func (ec *executionContext) marshalOFamily2ᚕᚖgithubᚗcomᚋGratheonᚋswarm
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOFamily2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFamily(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13701,39 +14069,11 @@ func (ec *executionContext) marshalOFrame2ᚕᚖgithubᚗcomᚋGratheonᚋswarm�
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOFrame2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐFrame(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13764,39 +14104,11 @@ func (ec *executionContext) marshalOHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarm�
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13812,39 +14124,11 @@ func (ec *executionContext) marshalOHivePlacement2ᚕᚖgithubᚗcomᚋGratheon�
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOHivePlacement2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOHivePlacement2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -13924,39 +14208,11 @@ func (ec *executionContext) marshalOInspection2ᚕᚖgithubᚗcomᚋGratheonᚋs
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -14066,39 +14322,11 @@ func (ec *executionContext) marshalOTreatment2ᚕᚖgithubᚗcomᚋGratheonᚋsw
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOTreatment2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatment(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOTreatment2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐTreatment(ctx, sel, v[i])
+	})
 
 	return ret
 }
@@ -14121,39 +14349,11 @@ func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgq
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -14168,39 +14368,11 @@ func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgen
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -14215,39 +14387,11 @@ func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -14269,39 +14413,11 @@ func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {

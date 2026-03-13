@@ -165,7 +165,7 @@ func (ec *executionContext) resolveEntity(
 			if err != nil {
 				return nil, fmt.Errorf(`unmarshalling param 0 for findFrameSideByID(): %w`, err)
 			}
-			entity, err := ec.resolvers.Entity().FindFrameSideByID(ctx, id0)
+			entity, err := ec.Resolvers.Entity().FindFrameSideByID(ctx, id0)
 			if err != nil {
 				return nil, fmt.Errorf(`resolving Entity "FrameSide": %w`, err)
 			}
@@ -184,7 +184,7 @@ func (ec *executionContext) resolveEntity(
 			if err != nil {
 				return nil, fmt.Errorf(`unmarshalling param 0 for findHiveByID(): %w`, err)
 			}
-			entity, err := ec.resolvers.Entity().FindHiveByID(ctx, id0)
+			entity, err := ec.Resolvers.Entity().FindHiveByID(ctx, id0)
 			if err != nil {
 				return nil, fmt.Errorf(`resolving Entity "Hive": %w`, err)
 			}

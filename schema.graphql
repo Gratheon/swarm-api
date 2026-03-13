@@ -47,6 +47,9 @@ type Query {
 
   "Warehouse behavior settings for the authenticated user"
   warehouseSettings: WarehouseSettings!
+
+  "Detailed warehouse module usage based on active hive structure"
+  warehouseModuleStats(moduleType: WarehouseModuleType!): WarehouseModuleStats!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -163,6 +166,7 @@ type Mutation {
 enum WarehouseModuleType {
   DEEP
   SUPER
+  LARGE_HORIZONTAL_SECTION
   ROOF
   HORIZONTAL_FEEDER
   QUEEN_EXCLUDER
@@ -180,6 +184,22 @@ type WarehouseModule {
 
 type WarehouseSettings {
   autoUpdateFromHives: Boolean!
+}
+
+type WarehouseModuleHiveUsage {
+  hiveId: ID!
+  hiveNumber: Int
+  apiaryId: ID
+  apiaryName: String
+  count: Int!
+}
+
+type WarehouseModuleStats {
+  moduleType: WarehouseModuleType!
+  availableCount: Int!
+  inUseCount: Int!
+  totalCount: Int!
+  topHives: [WarehouseModuleHiveUsage!]!
 }
 
 enum DeviceType {
@@ -291,6 +311,8 @@ input HiveInput {
   boxCount: Int!
   "Number of frames per box"
   frameCount: Int!
+  "Initial section type used for first created boxes"
+  initialBoxType: BoxType
   "Color markers for each box"
   colors: [String]
 }
@@ -485,6 +507,10 @@ enum BoxType {
   DEEP
   "Shallow box for honey (10 frames, 5-11/16\" tall)"
   SUPER
+  "Protective top cover of the hive"
+  ROOF
+  "Long horizontal section with large frame capacity"
+  LARGE_HORIZONTAL_SECTION
   "Entrance management/reducer gate"
   GATE
   "Ventilation screen for airflow"

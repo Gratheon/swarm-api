@@ -33,17 +33,23 @@ func (r *Box) Get(id string) (*Box, error) {
 	return &box, err
 }
 
-func (r *Box) CreateByHiveId(hiveId string, boxCount int, colors []*string) error {
+func (r *Box) CreateByHiveId(hiveId string, boxCount int, colors []*string, boxType BoxType) error {
 	tx := r.Db.MustBegin()
 
 	for position := 0; position < boxCount; position++ {
+		color := "#ffc848"
+		if position < len(colors) && colors[position] != nil {
+			color = *colors[position]
+		}
+
 		_, err2 := tx.NamedExec(
-			"INSERT INTO boxes (hive_id, position, color, user_id) VALUES (:hiveId, :position, :color, :userID)",
+			"INSERT INTO boxes (hive_id, position, color, user_id, type) VALUES (:hiveId, :position, :color, :userID, :type)",
 			map[string]interface{}{
 				"hiveId":   hiveId,
 				"position": position,
-				"color":    colors[position],
+				"color":    color,
 				"userID":   r.UserID,
+				"type":     boxType,
 			},
 		)
 

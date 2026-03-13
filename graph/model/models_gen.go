@@ -122,6 +122,8 @@ type HiveInput struct {
 	BoxCount int `json:"boxCount"`
 	// Number of frames per box
 	FrameCount int `json:"frameCount"`
+	// Initial section type used for first created boxes
+	InitialBoxType *BoxType `json:"initialBoxType,omitempty"`
 	// Color markers for each box
 	Colors []*string `json:"colors,omitempty"`
 }
@@ -173,6 +175,10 @@ const (
 	BoxTypeDeep BoxType = "DEEP"
 	// Shallow box for honey (10 frames, 5-11/16" tall)
 	BoxTypeSuper BoxType = "SUPER"
+	// Protective top cover of the hive
+	BoxTypeRoof BoxType = "ROOF"
+	// Long horizontal section with large frame capacity
+	BoxTypeLargeHorizontalSection BoxType = "LARGE_HORIZONTAL_SECTION"
 	// Entrance management/reducer gate
 	BoxTypeGate BoxType = "GATE"
 	// Ventilation screen for airflow
@@ -188,6 +194,8 @@ const (
 var AllBoxType = []BoxType{
 	BoxTypeDeep,
 	BoxTypeSuper,
+	BoxTypeRoof,
+	BoxTypeLargeHorizontalSection,
 	BoxTypeGate,
 	BoxTypeVentilation,
 	BoxTypeQueenExcluder,
@@ -197,7 +205,7 @@ var AllBoxType = []BoxType{
 
 func (e BoxType) IsValid() bool {
 	switch e {
-	case BoxTypeDeep, BoxTypeSuper, BoxTypeGate, BoxTypeVentilation, BoxTypeQueenExcluder, BoxTypeHorizontalFeeder, BoxTypeBottom:
+	case BoxTypeDeep, BoxTypeSuper, BoxTypeRoof, BoxTypeLargeHorizontalSection, BoxTypeGate, BoxTypeVentilation, BoxTypeQueenExcluder, BoxTypeHorizontalFeeder, BoxTypeBottom:
 		return true
 	}
 	return false
@@ -539,21 +547,23 @@ func (e SortOrder) MarshalJSON() ([]byte, error) {
 type WarehouseModuleType string
 
 const (
-	WarehouseModuleTypeDeep             WarehouseModuleType = "DEEP"
-	WarehouseModuleTypeSuper            WarehouseModuleType = "SUPER"
-	WarehouseModuleTypeRoof             WarehouseModuleType = "ROOF"
-	WarehouseModuleTypeHorizontalFeeder WarehouseModuleType = "HORIZONTAL_FEEDER"
-	WarehouseModuleTypeQueenExcluder    WarehouseModuleType = "QUEEN_EXCLUDER"
-	WarehouseModuleTypeBottom           WarehouseModuleType = "BOTTOM"
-	WarehouseModuleTypeFrameFoundation  WarehouseModuleType = "FRAME_FOUNDATION"
-	WarehouseModuleTypeFrameEmptyComb   WarehouseModuleType = "FRAME_EMPTY_COMB"
-	WarehouseModuleTypeFramePartition   WarehouseModuleType = "FRAME_PARTITION"
-	WarehouseModuleTypeFrameFeeder      WarehouseModuleType = "FRAME_FEEDER"
+	WarehouseModuleTypeDeep                   WarehouseModuleType = "DEEP"
+	WarehouseModuleTypeSuper                  WarehouseModuleType = "SUPER"
+	WarehouseModuleTypeLargeHorizontalSection WarehouseModuleType = "LARGE_HORIZONTAL_SECTION"
+	WarehouseModuleTypeRoof                   WarehouseModuleType = "ROOF"
+	WarehouseModuleTypeHorizontalFeeder       WarehouseModuleType = "HORIZONTAL_FEEDER"
+	WarehouseModuleTypeQueenExcluder          WarehouseModuleType = "QUEEN_EXCLUDER"
+	WarehouseModuleTypeBottom                 WarehouseModuleType = "BOTTOM"
+	WarehouseModuleTypeFrameFoundation        WarehouseModuleType = "FRAME_FOUNDATION"
+	WarehouseModuleTypeFrameEmptyComb         WarehouseModuleType = "FRAME_EMPTY_COMB"
+	WarehouseModuleTypeFramePartition         WarehouseModuleType = "FRAME_PARTITION"
+	WarehouseModuleTypeFrameFeeder            WarehouseModuleType = "FRAME_FEEDER"
 )
 
 var AllWarehouseModuleType = []WarehouseModuleType{
 	WarehouseModuleTypeDeep,
 	WarehouseModuleTypeSuper,
+	WarehouseModuleTypeLargeHorizontalSection,
 	WarehouseModuleTypeRoof,
 	WarehouseModuleTypeHorizontalFeeder,
 	WarehouseModuleTypeQueenExcluder,
@@ -566,7 +576,7 @@ var AllWarehouseModuleType = []WarehouseModuleType{
 
 func (e WarehouseModuleType) IsValid() bool {
 	switch e {
-	case WarehouseModuleTypeDeep, WarehouseModuleTypeSuper, WarehouseModuleTypeRoof, WarehouseModuleTypeHorizontalFeeder, WarehouseModuleTypeQueenExcluder, WarehouseModuleTypeBottom, WarehouseModuleTypeFrameFoundation, WarehouseModuleTypeFrameEmptyComb, WarehouseModuleTypeFramePartition, WarehouseModuleTypeFrameFeeder:
+	case WarehouseModuleTypeDeep, WarehouseModuleTypeSuper, WarehouseModuleTypeLargeHorizontalSection, WarehouseModuleTypeRoof, WarehouseModuleTypeHorizontalFeeder, WarehouseModuleTypeQueenExcluder, WarehouseModuleTypeBottom, WarehouseModuleTypeFrameFoundation, WarehouseModuleTypeFrameEmptyComb, WarehouseModuleTypeFramePartition, WarehouseModuleTypeFrameFeeder:
 		return true
 	}
 	return false
