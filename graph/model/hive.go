@@ -73,6 +73,24 @@ func (r *Hive) ListByApiary(apiaryId int) ([]*Hive, error) {
 	return hives, err2
 }
 
+func (r *Hive) CountActive() (int, error) {
+	var count int
+	err := r.Db.Get(&count,
+		`SELECT COUNT(*)
+		FROM hives h
+		INNER JOIN apiaries a ON a.id = h.apiary_id
+		WHERE h.user_id=?
+		  AND h.active=1
+		  AND h.collapse_date IS NULL
+		  AND h.merged_into_hive_id IS NULL
+		  AND a.user_id=?
+		  AND a.active=1`,
+		r.UserID,
+		r.UserID,
+	)
+	return count, err
+}
+
 func (r *Hive) ListByApiarySorted(apiaryID int, sortBy HiveSortBy, sortOrder SortOrder) ([]*Hive, error) {
 	sortExpr := map[HiveSortBy]string{
 		HiveSortByHiveNumber:     "h.hive_number",

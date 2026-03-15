@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Gratheon/swarm-api/graph/generated"
@@ -18,6 +19,54 @@ import (
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/Gratheon/swarm-api/redisPubSub"
 )
+
+var hiveLimitByBillingPlan = map[string]int{
+	"free":         3,
+	"hobbyist":     15,
+	"starter":      50,
+	"professional": 200,
+	"addon":        200,
+	"enterprise":   200,
+}
+
+func normalizeBillingPlan(plan string) string {
+	normalized := strings.TrimSpace(strings.ToLower(plan))
+	if normalized == "" {
+		return "free"
+	}
+	return normalized
+}
+
+func getHiveLimitForBillingPlan(plan string) int {
+	normalized := normalizeBillingPlan(plan)
+	if limit, ok := hiveLimitByBillingPlan[normalized]; ok {
+		return limit
+	}
+	return hiveLimitByBillingPlan["free"]
+}
+
+func getBillingPlanFromContext(ctx context.Context) string {
+	if value := ctx.Value("billingPlan"); value != nil {
+		if plan, ok := value.(string); ok {
+			return normalizeBillingPlan(plan)
+		}
+	}
+	return "free"
+}
+
+func enforceHiveCreationLimit(ctx context.Context, hiveModel *model.Hive) error {
+	activeHiveCount, err := hiveModel.CountActive()
+	if err != nil {
+		return err
+	}
+
+	billingPlan := getBillingPlanFromContext(ctx)
+	hiveLimit := getHiveLimitForBillingPlan(billingPlan)
+	if activeHiveCount >= hiveLimit {
+		return fmt.Errorf("hive limit reached for %s plan (%d)", billingPlan, hiveLimit)
+	}
+	return nil
+}
 
 // Hives is the resolver for the hives field.
 func (r *apiaryResolver) Hives(ctx context.Context, obj *model.Apiary, sortBy *model.HiveSortBy, sortOrder *model.SortOrder) ([]*model.Hive, error) {
@@ -328,6 +377,15 @@ func (r *mutationResolver) DeactivateApiary(ctx context.Context, id string) (*bo
 // AddHive is the resolver for the addHive field.
 func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
+	hiveModel := &model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	if err := enforceHiveCreationLimit(ctx, hiveModel); err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
 
 	race := "unknown"
 	var added string
@@ -338,10 +396,7 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 		added = strconv.Itoa(year)
 	}
 
-	hiveResult, err := (&model.Hive{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}).Create(hive)
+	hiveResult, err := hiveModel.Create(hive)
 
 	if err != nil {
 		logger.ErrorWithContext(ctx, err.Error())
@@ -785,6 +840,11 @@ func (r *mutationResolver) SplitHive(ctx context.Context, sourceHiveID string, q
 	hiveModel := &model.Hive{
 		Db:     r.Resolver.Db,
 		UserID: uid,
+	}
+
+	if err := enforceHiveCreationLimit(ctx, hiveModel); err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
 	}
 
 	sourceHive, err := hiveModel.Get(sourceHiveID)

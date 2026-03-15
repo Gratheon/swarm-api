@@ -67,11 +67,19 @@ func authMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
-			// Get context from an HTTP request
 			ctx := context.WithValue(r.Context(), "userID", fmt.Sprintf("%v", claims["user_id"]))
+			if claims["billing_plan"] != nil {
+				ctx = context.WithValue(ctx, "billingPlan", fmt.Sprintf("%v", claims["billing_plan"]))
+			} else if claims["billingPlan"] != nil {
+				ctx = context.WithValue(ctx, "billingPlan", fmt.Sprintf("%v", claims["billingPlan"]))
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			ctx := context.WithValue(r.Context(), "userID", uid)
+			internalBillingPlan := r.Header.Get("internal-billing-plan")
+			if internalBillingPlan != "" {
+				ctx = context.WithValue(ctx, "billingPlan", internalBillingPlan)
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
