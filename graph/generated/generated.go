@@ -177,6 +177,24 @@ type ComplexityRoot struct {
 		Status          func(childComplexity int) int
 	}
 
+	HiveLog struct {
+		Action       func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		DedupeKey    func(childComplexity int) int
+		Details      func(childComplexity int) int
+		HiveID       func(childComplexity int) int
+		ID           func(childComplexity int) int
+		RelatedHives func(childComplexity int) int
+		Source       func(childComplexity int) int
+		Title        func(childComplexity int) int
+		UpdatedAt    func(childComplexity int) int
+	}
+
+	HiveLogRelatedHive struct {
+		HiveNumber func(childComplexity int) int
+		ID         func(childComplexity int) int
+	}
+
 	HivePlacement struct {
 		ApiaryID func(childComplexity int) int
 		HiveID   func(childComplexity int) int
@@ -200,6 +218,7 @@ type ComplexityRoot struct {
 		AddDevice                            func(childComplexity int, device model.DeviceInput) int
 		AddFrame                             func(childComplexity int, boxID string, typeArg string, position int) int
 		AddHive                              func(childComplexity int, hive model.HiveInput) int
+		AddHiveLog                           func(childComplexity int, log model.HiveLogInput) int
 		AddInspection                        func(childComplexity int, inspection model.InspectionInput) int
 		AddQueenToHive                       func(childComplexity int, hiveID string, queen model.FamilyInput) int
 		AddWarehouseQueen                    func(childComplexity int, queen model.FamilyInput) int
@@ -214,6 +233,7 @@ type ComplexityRoot struct {
 		DeactivateFrame                      func(childComplexity int, id string) int
 		DeactivateHive                       func(childComplexity int, id string) int
 		DeleteApiaryObstacle                 func(childComplexity int, id string) int
+		DeleteHiveLog                        func(childComplexity int, id string) int
 		DeleteWarehouseQueen                 func(childComplexity int, familyID string) int
 		JoinHives                            func(childComplexity int, sourceHiveID string, targetHiveID string, mergeType string) int
 		MarkHiveAsCollapsed                  func(childComplexity int, id string, collapseDate string, collapseCause string) int
@@ -236,6 +256,7 @@ type ComplexityRoot struct {
 		UpdateDevice                         func(childComplexity int, id string, device model.DeviceUpdateInput) int
 		UpdateFrames                         func(childComplexity int, frames []*model.FrameInput) int
 		UpdateHive                           func(childComplexity int, hive model.HiveUpdateInput) int
+		UpdateHiveLog                        func(childComplexity int, id string, log model.HiveLogUpdateInput) int
 		UpdateHivePlacement                  func(childComplexity int, apiaryID string, hiveID string, x float64, y float64, rotation float64) int
 	}
 
@@ -251,6 +272,7 @@ type ComplexityRoot struct {
 		Hive                    func(childComplexity int, id string) int
 		HiveFrame               func(childComplexity int, id string) int
 		HiveFrameSide           func(childComplexity int, id string) int
+		HiveLogs                func(childComplexity int, hiveID string, limit *int) int
 		HivePlacements          func(childComplexity int, apiaryID string) int
 		Inspection              func(childComplexity int, inspectionID string) int
 		Inspections             func(childComplexity int, hiveID string, limit *int) int
@@ -406,6 +428,9 @@ type MutationResolver interface {
 	MoveQueenToWarehouse(ctx context.Context, hiveID string, familyID string) (*model.Family, error)
 	AssignQueenFromWarehouse(ctx context.Context, hiveID string, familyID string) (*model.Family, error)
 	DeleteWarehouseQueen(ctx context.Context, familyID string) (*bool, error)
+	AddHiveLog(ctx context.Context, log model.HiveLogInput) (*model.HiveLog, error)
+	UpdateHiveLog(ctx context.Context, id string, log model.HiveLogUpdateInput) (*model.HiveLog, error)
+	DeleteHiveLog(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
 	Hive(ctx context.Context, id string) (*model.Hive, error)
@@ -429,6 +454,7 @@ type QueryResolver interface {
 	BoxSpecs(ctx context.Context, systemID string) ([]*model.BoxSpec, error)
 	BoxSystemFrameSettings(ctx context.Context) ([]*model.BoxSystemFrameSetting, error)
 	WarehouseQueens(ctx context.Context) ([]*model.Family, error)
+	HiveLogs(ctx context.Context, hiveID string, limit *int) ([]*model.HiveLog, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -1043,6 +1069,80 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Hive.Status(childComplexity), true
 
+	case "HiveLog.action":
+		if e.ComplexityRoot.HiveLog.Action == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.Action(childComplexity), true
+	case "HiveLog.createdAt":
+		if e.ComplexityRoot.HiveLog.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.CreatedAt(childComplexity), true
+	case "HiveLog.dedupeKey":
+		if e.ComplexityRoot.HiveLog.DedupeKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.DedupeKey(childComplexity), true
+	case "HiveLog.details":
+		if e.ComplexityRoot.HiveLog.Details == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.Details(childComplexity), true
+	case "HiveLog.hiveId":
+		if e.ComplexityRoot.HiveLog.HiveID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.HiveID(childComplexity), true
+	case "HiveLog.id":
+		if e.ComplexityRoot.HiveLog.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.ID(childComplexity), true
+	case "HiveLog.relatedHives":
+		if e.ComplexityRoot.HiveLog.RelatedHives == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.RelatedHives(childComplexity), true
+	case "HiveLog.source":
+		if e.ComplexityRoot.HiveLog.Source == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.Source(childComplexity), true
+	case "HiveLog.title":
+		if e.ComplexityRoot.HiveLog.Title == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.Title(childComplexity), true
+	case "HiveLog.updatedAt":
+		if e.ComplexityRoot.HiveLog.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLog.UpdatedAt(childComplexity), true
+
+	case "HiveLogRelatedHive.hiveNumber":
+		if e.ComplexityRoot.HiveLogRelatedHive.HiveNumber == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLogRelatedHive.HiveNumber(childComplexity), true
+	case "HiveLogRelatedHive.id":
+		if e.ComplexityRoot.HiveLogRelatedHive.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.HiveLogRelatedHive.ID(childComplexity), true
+
 	case "HivePlacement.apiaryId":
 		if e.ComplexityRoot.HivePlacement.ApiaryID == nil {
 			break
@@ -1171,6 +1271,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddHive(childComplexity, args["hive"].(model.HiveInput)), true
+	case "Mutation.addHiveLog":
+		if e.ComplexityRoot.Mutation.AddHiveLog == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addHiveLog_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.AddHiveLog(childComplexity, args["log"].(model.HiveLogInput)), true
 	case "Mutation.addInspection":
 		if e.ComplexityRoot.Mutation.AddInspection == nil {
 			break
@@ -1325,6 +1436,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteApiaryObstacle(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteHiveLog":
+		if e.ComplexityRoot.Mutation.DeleteHiveLog == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteHiveLog_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteHiveLog(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteWarehouseQueen":
 		if e.ComplexityRoot.Mutation.DeleteWarehouseQueen == nil {
 			break
@@ -1567,6 +1689,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateHive(childComplexity, args["hive"].(model.HiveUpdateInput)), true
+	case "Mutation.updateHiveLog":
+		if e.ComplexityRoot.Mutation.UpdateHiveLog == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateHiveLog_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateHiveLog(childComplexity, args["id"].(string), args["log"].(model.HiveLogUpdateInput)), true
 	case "Mutation.updateHivePlacement":
 		if e.ComplexityRoot.Mutation.UpdateHivePlacement == nil {
 			break
@@ -1680,6 +1813,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.HiveFrameSide(childComplexity, args["id"].(string)), true
+	case "Query.hiveLogs":
+		if e.ComplexityRoot.Query.HiveLogs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hiveLogs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.HiveLogs(childComplexity, args["hiveId"].(string), args["limit"].(*int)), true
 	case "Query.hivePlacements":
 		if e.ComplexityRoot.Query.HivePlacements == nil {
 			break
@@ -2011,6 +2155,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputFamilyInput,
 		ec.unmarshalInputFrameInput,
 		ec.unmarshalInputHiveInput,
+		ec.unmarshalInputHiveLogInput,
+		ec.unmarshalInputHiveLogRelatedHiveInput,
+		ec.unmarshalInputHiveLogUpdateInput,
 		ec.unmarshalInputHiveUpdateInput,
 		ec.unmarshalInputInspectionInput,
 		ec.unmarshalInputTreatmentOfBoxInput,
@@ -2163,6 +2310,9 @@ type Query {
 
   "Queens stored in warehouse (family records not assigned to any hive)"
   warehouseQueens: [Family!]!
+
+  "Chronological change history entries for a hive"
+  hiveLogs(hiveId: ID!, limit: Int): [HiveLog!]!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -2323,6 +2473,15 @@ type Mutation {
 
   "Soft-delete a queen from warehouse storage"
   deleteWarehouseQueen(familyId: ID!): Boolean
+
+  "Add a history log entry for a hive"
+  addHiveLog(log: HiveLogInput!): HiveLog!
+
+  "Update an existing hive history log entry"
+  updateHiveLog(id: ID!, log: HiveLogUpdateInput!): HiveLog!
+
+  "Soft-delete hive history log entry"
+  deleteHiveLog(id: ID!): Boolean!
 }
 
 enum WarehouseModuleType {
@@ -2647,6 +2806,45 @@ type Treatment {
   boxId: ID!
   "Queen family being treated (enables tracking across hive moves)"
   familyId: ID!
+}
+
+type HiveLogRelatedHive {
+  id: ID!
+  hiveNumber: Int
+}
+
+type HiveLog {
+  id: ID!
+  hiveId: ID!
+  action: String!
+  title: String!
+  details: String
+  source: String
+  dedupeKey: String
+  relatedHives: [HiveLogRelatedHive!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input HiveLogRelatedHiveInput {
+  id: ID!
+  hiveNumber: Int
+}
+
+input HiveLogInput {
+  hiveId: ID!
+  action: String!
+  title: String!
+  details: String
+  source: String
+  dedupeKey: String
+  relatedHives: [HiveLogRelatedHiveInput!]
+}
+
+input HiveLogUpdateInput {
+  title: String
+  details: String
+  relatedHives: [HiveLogRelatedHiveInput!]
 }
 
 "Queen bee family - represents a queen and her colony genetics"
@@ -3000,6 +3198,17 @@ func (ec *executionContext) field_Mutation_addFrame_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_addHiveLog_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "log", ec.unmarshalNHiveLogInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogInput)
+	if err != nil {
+		return nil, err
+	}
+	args["log"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addHive_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3185,6 +3394,17 @@ func (ec *executionContext) field_Mutation_deactivateHive_args(ctx context.Conte
 }
 
 func (ec *executionContext) field_Mutation_deleteApiaryObstacle_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteHiveLog_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -3566,6 +3786,22 @@ func (ec *executionContext) field_Mutation_updateFrames_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateHiveLog_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "log", ec.unmarshalNHiveLogUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogUpdateInput)
+	if err != nil {
+		return nil, err
+	}
+	args["log"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateHivePlacement_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3693,6 +3929,22 @@ func (ec *executionContext) field_Query_hiveFrame_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_hiveLogs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "hiveId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["hiveId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
 	return args, nil
 }
 
@@ -7039,6 +7291,360 @@ func (ec *executionContext) fieldContext_Hive_mergedFromHives(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _HiveLog_id(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_hiveId(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_hiveId,
+		func(ctx context.Context) (any, error) {
+			return obj.HiveID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_hiveId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_action(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_action,
+		func(ctx context.Context) (any, error) {
+			return obj.Action, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_action(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_title(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_details(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_details,
+		func(ctx context.Context) (any, error) {
+			return obj.Details, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_details(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_source(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_source,
+		func(ctx context.Context) (any, error) {
+			return obj.Source, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_dedupeKey(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_dedupeKey,
+		func(ctx context.Context) (any, error) {
+			return obj.DedupeKey, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_dedupeKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_relatedHives(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_relatedHives,
+		func(ctx context.Context) (any, error) {
+			return obj.RelatedHives, nil
+		},
+		nil,
+		ec.marshalNHiveLogRelatedHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHiveᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_relatedHives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HiveLogRelatedHive_id(ctx, field)
+			case "hiveNumber":
+				return ec.fieldContext_HiveLogRelatedHive_hiveNumber(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HiveLogRelatedHive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLog_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.HiveLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLog_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLog_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLogRelatedHive_id(ctx context.Context, field graphql.CollectedField, obj *model.HiveLogRelatedHive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLogRelatedHive_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLogRelatedHive_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLogRelatedHive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HiveLogRelatedHive_hiveNumber(ctx context.Context, field graphql.CollectedField, obj *model.HiveLogRelatedHive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HiveLogRelatedHive_hiveNumber,
+		func(ctx context.Context) (any, error) {
+			return obj.HiveNumber, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_HiveLogRelatedHive_hiveNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HiveLogRelatedHive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _HivePlacement_id(ctx context.Context, field graphql.CollectedField, obj *model.HivePlacement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9654,6 +10260,173 @@ func (ec *executionContext) fieldContext_Mutation_deleteWarehouseQueen(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_addHiveLog(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_addHiveLog,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().AddHiveLog(ctx, fc.Args["log"].(model.HiveLogInput))
+		},
+		nil,
+		ec.marshalNHiveLog2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLog,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addHiveLog(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HiveLog_id(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_HiveLog_hiveId(ctx, field)
+			case "action":
+				return ec.fieldContext_HiveLog_action(ctx, field)
+			case "title":
+				return ec.fieldContext_HiveLog_title(ctx, field)
+			case "details":
+				return ec.fieldContext_HiveLog_details(ctx, field)
+			case "source":
+				return ec.fieldContext_HiveLog_source(ctx, field)
+			case "dedupeKey":
+				return ec.fieldContext_HiveLog_dedupeKey(ctx, field)
+			case "relatedHives":
+				return ec.fieldContext_HiveLog_relatedHives(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_HiveLog_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_HiveLog_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HiveLog", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addHiveLog_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateHiveLog(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateHiveLog,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateHiveLog(ctx, fc.Args["id"].(string), fc.Args["log"].(model.HiveLogUpdateInput))
+		},
+		nil,
+		ec.marshalNHiveLog2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLog,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateHiveLog(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HiveLog_id(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_HiveLog_hiveId(ctx, field)
+			case "action":
+				return ec.fieldContext_HiveLog_action(ctx, field)
+			case "title":
+				return ec.fieldContext_HiveLog_title(ctx, field)
+			case "details":
+				return ec.fieldContext_HiveLog_details(ctx, field)
+			case "source":
+				return ec.fieldContext_HiveLog_source(ctx, field)
+			case "dedupeKey":
+				return ec.fieldContext_HiveLog_dedupeKey(ctx, field)
+			case "relatedHives":
+				return ec.fieldContext_HiveLog_relatedHives(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_HiveLog_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_HiveLog_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HiveLog", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateHiveLog_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteHiveLog(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteHiveLog,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteHiveLog(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteHiveLog(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteHiveLog_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_hive(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10713,6 +11486,69 @@ func (ec *executionContext) fieldContext_Query_warehouseQueens(_ context.Context
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Family", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_hiveLogs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_hiveLogs,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().HiveLogs(ctx, fc.Args["hiveId"].(string), fc.Args["limit"].(*int))
+		},
+		nil,
+		ec.marshalNHiveLog2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_hiveLogs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HiveLog_id(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_HiveLog_hiveId(ctx, field)
+			case "action":
+				return ec.fieldContext_HiveLog_action(ctx, field)
+			case "title":
+				return ec.fieldContext_HiveLog_title(ctx, field)
+			case "details":
+				return ec.fieldContext_HiveLog_details(ctx, field)
+			case "source":
+				return ec.fieldContext_HiveLog_source(ctx, field)
+			case "dedupeKey":
+				return ec.fieldContext_HiveLog_dedupeKey(ctx, field)
+			case "relatedHives":
+				return ec.fieldContext_HiveLog_relatedHives(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_HiveLog_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_HiveLog_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HiveLog", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_hiveLogs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -13851,6 +14687,159 @@ func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputHiveLogInput(ctx context.Context, obj any) (model.HiveLogInput, error) {
+	var it model.HiveLogInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"hiveId", "action", "title", "details", "source", "dedupeKey", "relatedHives"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "hiveId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HiveID = data
+		case "action":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Action = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "details":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("details"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Details = data
+		case "source":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("source"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Source = data
+		case "dedupeKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dedupeKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DedupeKey = data
+		case "relatedHives":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relatedHives"))
+			data, err := ec.unmarshalOHiveLogRelatedHiveInput2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHiveInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RelatedHives = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputHiveLogRelatedHiveInput(ctx context.Context, obj any) (model.HiveLogRelatedHiveInput, error) {
+	var it model.HiveLogRelatedHiveInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "hiveNumber"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "hiveNumber":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveNumber"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HiveNumber = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputHiveLogUpdateInput(ctx context.Context, obj any) (model.HiveLogUpdateInput, error) {
+	var it model.HiveLogUpdateInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "details", "relatedHives"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "details":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("details"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Details = data
+		case "relatedHives":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relatedHives"))
+			data, err := ec.unmarshalOHiveLogRelatedHiveInput2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHiveInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RelatedHives = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputHiveUpdateInput(ctx context.Context, obj any) (model.HiveUpdateInput, error) {
 	var it model.HiveUpdateInput
 	if obj == nil {
@@ -15438,6 +16427,122 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var hiveLogImplementors = []string{"HiveLog"}
+
+func (ec *executionContext) _HiveLog(ctx context.Context, sel ast.SelectionSet, obj *model.HiveLog) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, hiveLogImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HiveLog")
+		case "id":
+			out.Values[i] = ec._HiveLog_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hiveId":
+			out.Values[i] = ec._HiveLog_hiveId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "action":
+			out.Values[i] = ec._HiveLog_action(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._HiveLog_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "details":
+			out.Values[i] = ec._HiveLog_details(ctx, field, obj)
+		case "source":
+			out.Values[i] = ec._HiveLog_source(ctx, field, obj)
+		case "dedupeKey":
+			out.Values[i] = ec._HiveLog_dedupeKey(ctx, field, obj)
+		case "relatedHives":
+			out.Values[i] = ec._HiveLog_relatedHives(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._HiveLog_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._HiveLog_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var hiveLogRelatedHiveImplementors = []string{"HiveLogRelatedHive"}
+
+func (ec *executionContext) _HiveLogRelatedHive(ctx context.Context, sel ast.SelectionSet, obj *model.HiveLogRelatedHive) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, hiveLogRelatedHiveImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HiveLogRelatedHive")
+		case "id":
+			out.Values[i] = ec._HiveLogRelatedHive_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hiveNumber":
+			out.Values[i] = ec._HiveLogRelatedHive_hiveNumber(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var hivePlacementImplementors = []string{"HivePlacement"}
 
 func (ec *executionContext) _HivePlacement(ctx context.Context, sel ast.SelectionSet, obj *model.HivePlacement) graphql.Marshaler {
@@ -15783,6 +16888,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteWarehouseQueen(ctx, field)
 			})
+		case "addHiveLog":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addHiveLog(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateHiveLog":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateHiveLog(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteHiveLog":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteHiveLog(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16242,6 +17368,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_warehouseQueens(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "hiveLogs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_hiveLogs(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17418,6 +18566,77 @@ func (ec *executionContext) unmarshalNHiveInput2githubᚗcomᚋGratheonᚋswarm�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNHiveLog2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLog(ctx context.Context, sel ast.SelectionSet, v model.HiveLog) graphql.Marshaler {
+	return ec._HiveLog(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHiveLog2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HiveLog) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNHiveLog2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLog(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNHiveLog2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLog(ctx context.Context, sel ast.SelectionSet, v *model.HiveLog) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HiveLog(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNHiveLogInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogInput(ctx context.Context, v any) (model.HiveLogInput, error) {
+	res, err := ec.unmarshalInputHiveLogInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNHiveLogRelatedHive2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHiveᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HiveLogRelatedHive) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNHiveLogRelatedHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHive(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNHiveLogRelatedHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHive(ctx context.Context, sel ast.SelectionSet, v *model.HiveLogRelatedHive) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HiveLogRelatedHive(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNHiveLogRelatedHiveInput2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHiveInput(ctx context.Context, v any) (*model.HiveLogRelatedHiveInput, error) {
+	res, err := ec.unmarshalInputHiveLogRelatedHiveInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNHiveLogUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogUpdateInput(ctx context.Context, v any) (model.HiveLogUpdateInput, error) {
+	res, err := ec.unmarshalInputHiveLogUpdateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNHiveUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveUpdateInput(ctx context.Context, v any) (model.HiveUpdateInput, error) {
 	res, err := ec.unmarshalInputHiveUpdateInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -18223,6 +19442,24 @@ func (ec *executionContext) marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑap
 		return graphql.Null
 	}
 	return ec._Hive(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOHiveLogRelatedHiveInput2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHiveInputᚄ(ctx context.Context, v any) ([]*model.HiveLogRelatedHiveInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.HiveLogRelatedHiveInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNHiveLogRelatedHiveInput2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveLogRelatedHiveInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalOHivePlacement2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHivePlacement(ctx context.Context, sel ast.SelectionSet, v []*model.HivePlacement) graphql.Marshaler {

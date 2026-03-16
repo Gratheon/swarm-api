@@ -71,6 +71,9 @@ type Query {
 
   "Queens stored in warehouse (family records not assigned to any hive)"
   warehouseQueens: [Family!]!
+
+  "Chronological change history entries for a hive"
+  hiveLogs(hiveId: ID!, limit: Int): [HiveLog!]!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -231,6 +234,15 @@ type Mutation {
 
   "Soft-delete a queen from warehouse storage"
   deleteWarehouseQueen(familyId: ID!): Boolean
+
+  "Add a history log entry for a hive"
+  addHiveLog(log: HiveLogInput!): HiveLog!
+
+  "Update an existing hive history log entry"
+  updateHiveLog(id: ID!, log: HiveLogUpdateInput!): HiveLog!
+
+  "Soft-delete hive history log entry"
+  deleteHiveLog(id: ID!): Boolean!
 }
 
 enum WarehouseModuleType {
@@ -555,6 +567,45 @@ type Treatment {
   boxId: ID!
   "Queen family being treated (enables tracking across hive moves)"
   familyId: ID!
+}
+
+type HiveLogRelatedHive {
+  id: ID!
+  hiveNumber: Int
+}
+
+type HiveLog {
+  id: ID!
+  hiveId: ID!
+  action: String!
+  title: String!
+  details: String
+  source: String
+  dedupeKey: String
+  relatedHives: [HiveLogRelatedHive!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input HiveLogRelatedHiveInput {
+  id: ID!
+  hiveNumber: Int
+}
+
+input HiveLogInput {
+  hiveId: ID!
+  action: String!
+  title: String!
+  details: String
+  source: String
+  dedupeKey: String
+  relatedHives: [HiveLogRelatedHiveInput!]
+}
+
+input HiveLogUpdateInput {
+  title: String
+  details: String
+  relatedHives: [HiveLogRelatedHiveInput!]
 }
 
 "Queen bee family - represents a queen and her colony genetics"

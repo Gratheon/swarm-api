@@ -1276,6 +1276,33 @@ func (r *mutationResolver) DeleteWarehouseQueen(ctx context.Context, familyID st
 	return &success, nil
 }
 
+// AddHiveLog is the resolver for the addHiveLog field.
+func (r *mutationResolver) AddHiveLog(ctx context.Context, log model.HiveLogInput) (*model.HiveLog, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.HiveLog{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Create(log)
+}
+
+// UpdateHiveLog is the resolver for the updateHiveLog field.
+func (r *mutationResolver) UpdateHiveLog(ctx context.Context, id string, log model.HiveLogUpdateInput) (*model.HiveLog, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.HiveLog{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Update(id, log)
+}
+
+// DeleteHiveLog is the resolver for the deleteHiveLog field.
+func (r *mutationResolver) DeleteHiveLog(ctx context.Context, id string) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.HiveLog{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Delete(id)
+}
+
 // Hive is the resolver for the hive field.
 func (r *queryResolver) Hive(ctx context.Context, id string) (*model.Hive, error) {
 	uid := ctx.Value("userID").(string)
@@ -1492,6 +1519,15 @@ func (r *queryResolver) WarehouseQueens(ctx context.Context) ([]*model.Family, e
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).ListUnassigned()
+}
+
+// HiveLogs is the resolver for the hiveLogs field.
+func (r *queryResolver) HiveLogs(ctx context.Context, hiveID string, limit *int) ([]*model.HiveLog, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.HiveLog{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListByHive(hiveID, limit)
 }
 
 // Apiary returns generated.ApiaryResolver implementation.

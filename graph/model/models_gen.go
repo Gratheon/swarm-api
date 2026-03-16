@@ -130,6 +130,32 @@ type HiveInput struct {
 	Colors []*string `json:"colors,omitempty"`
 }
 
+type HiveLogInput struct {
+	HiveID       string                     `json:"hiveId"`
+	Action       string                     `json:"action"`
+	Title        string                     `json:"title"`
+	Details      *string                    `json:"details,omitempty"`
+	Source       *string                    `json:"source,omitempty"`
+	DedupeKey    *string                    `json:"dedupeKey,omitempty"`
+	RelatedHives []*HiveLogRelatedHiveInput `json:"relatedHives,omitempty"`
+}
+
+type HiveLogRelatedHive struct {
+	ID         string `json:"id"`
+	HiveNumber *int   `json:"hiveNumber,omitempty"`
+}
+
+type HiveLogRelatedHiveInput struct {
+	ID         string `json:"id"`
+	HiveNumber *int   `json:"hiveNumber,omitempty"`
+}
+
+type HiveLogUpdateInput struct {
+	Title        *string                    `json:"title,omitempty"`
+	Details      *string                    `json:"details,omitempty"`
+	RelatedHives []*HiveLogRelatedHiveInput `json:"relatedHives,omitempty"`
+}
+
 // Input for updating existing hive details
 type HiveUpdateInput struct {
 	ID string `json:"id"`
