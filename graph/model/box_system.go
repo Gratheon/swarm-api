@@ -84,7 +84,7 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ownedCount >= 4 {
+	if ownedCount >= 5 {
 		return nil, errors.New("maximum 5 box systems allowed")
 	}
 
