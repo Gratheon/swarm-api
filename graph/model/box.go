@@ -21,7 +21,12 @@ func (r *Box) resolveSpecForHive(tx *sqlx.Tx, hiveID string, boxType BoxType) (*
 	}
 
 	if systemID.Valid {
-		spec, err := getBoxSpecForTypeInSystem(tx, r.UserID, int(systemID.Int64), boxType)
+		effectiveSystemID, err := resolveEffectiveBoxProfileSystemID(tx, r.UserID, int(systemID.Int64))
+		if err != nil {
+			return nil, err
+		}
+
+		spec, err := getBoxSpecForTypeInSystem(tx, r.UserID, effectiveSystemID, boxType)
 		if err != nil {
 			return nil, err
 		}

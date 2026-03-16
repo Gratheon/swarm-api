@@ -1151,6 +1151,24 @@ func (r *mutationResolver) DeactivateBoxSystem(ctx context.Context, id string, r
 	}).Deactivate(id, replacementSystemID)
 }
 
+// SetBoxSystemBoxProfileSource is the resolver for the setBoxSystemBoxProfileSource field.
+func (r *mutationResolver) SetBoxSystemBoxProfileSource(ctx context.Context, systemID string, boxSourceSystemID *string) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSystem{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).SetBoxProfileSource(systemID, boxSourceSystemID)
+}
+
+// SetBoxSystemFrameSource is the resolver for the setBoxSystemFrameSource field.
+func (r *mutationResolver) SetBoxSystemFrameSource(ctx context.Context, systemID string, boxType model.BoxType, frameSourceSystemID string) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSystemFrameSetting{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).SetFrameSource(systemID, boxType, frameSourceSystemID)
+}
+
 // AdjustWarehouseFrameInventory is the resolver for the adjustWarehouseFrameInventory field.
 func (r *mutationResolver) AdjustWarehouseFrameInventory(ctx context.Context, boxID string, frameType model.FrameType, delta int) (*model.WarehouseInventoryItem, error) {
 	uid := ctx.Value("userID").(string)
@@ -1437,6 +1455,15 @@ func (r *queryResolver) BoxSpecs(ctx context.Context, systemID string) ([]*model
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).ListVisible(systemID)
+}
+
+// BoxSystemFrameSettings is the resolver for the boxSystemFrameSettings field.
+func (r *queryResolver) BoxSystemFrameSettings(ctx context.Context) ([]*model.BoxSystemFrameSetting, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSystemFrameSetting{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListAllVisible()
 }
 
 // WarehouseQueens is the resolver for the warehouseQueens field.

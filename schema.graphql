@@ -66,6 +66,9 @@ type Query {
   "Visible box specs for a specific system"
   boxSpecs(systemId: ID!): [BoxSpec!]!
 
+  "Per-system frame compatibility settings for frame-carrying box types"
+  boxSystemFrameSettings: [BoxSystemFrameSetting!]!
+
   "Queens stored in warehouse (family records not assigned to any hive)"
   warehouseQueens: [Family!]!
 }
@@ -192,6 +195,12 @@ type Mutation {
   "Deactivate custom box system. If active hives use this system, replacementSystemId is required and those hives are reassigned."
   deactivateBoxSystem(id: ID!, replacementSystemId: ID): Boolean!
 
+  "Set box-size profile source for a custom box system (null means own profile)"
+  setBoxSystemBoxProfileSource(systemId: ID!, boxSourceSystemId: ID): Boolean!
+
+  "Set frame source system for a specific box type inside an owned box system"
+  setBoxSystemFrameSource(systemId: ID!, boxType: BoxType!, frameSourceSystemId: ID!): Boolean!
+
   "Adjust frame inventory using target box compatibility and frame type"
   adjustWarehouseFrameInventory(boxId: ID!, frameType: FrameType!, delta: Int!): WarehouseInventoryItem
 
@@ -259,6 +268,7 @@ type BoxSystem {
   id: ID!
   name: String!
   isDefault: Boolean!
+  boxProfileSourceSystemId: ID
 }
 
 type BoxSpec {
@@ -267,6 +277,14 @@ type BoxSpec {
   code: String!
   legacyBoxType: BoxType!
   displayName: String!
+}
+
+type BoxSystemFrameSetting {
+  systemId: ID!
+  boxSpecId: ID!
+  boxType: BoxType!
+  boxDisplayName: String!
+  frameSourceSystemId: ID
 }
 
 type FrameSpec {

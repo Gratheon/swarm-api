@@ -95,7 +95,7 @@ func main() {
 	err := http.ListenAndServe(httpHost, router)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logrusInstance.WithError(err).Error("HTTP server failed")
 		panic(err)
 	}
 }

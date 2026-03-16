@@ -10,12 +10,13 @@ import (
 )
 
 type BoxSystem struct {
-	Db        *sqlx.DB
-	ID        string `json:"id" db:"id"`
-	UserID    string `json:"user_id" db:"user_id"`
-	Name      string `json:"name" db:"name"`
-	IsDefault bool   `json:"isDefault" db:"is_default"`
-	Active    bool   `json:"active" db:"active"`
+	Db                       *sqlx.DB
+	ID                       string  `json:"id" db:"id"`
+	UserID                   string  `json:"user_id" db:"user_id"`
+	Name                     string  `json:"name" db:"name"`
+	BoxProfileSourceSystemID *string `json:"boxProfileSourceSystemId" db:"box_profile_source_system_id"`
+	IsDefault                bool    `json:"isDefault" db:"is_default"`
+	Active                   bool    `json:"active" db:"active"`
 }
 
 func (r *BoxSystem) ListVisible() ([]*BoxSystem, error) {
@@ -25,6 +26,7 @@ func (r *BoxSystem) ListVisible() ([]*BoxSystem, error) {
 			CAST(id AS CHAR) AS id,
 			COALESCE(user_id, '') AS user_id,
 			name,
+			CAST(box_profile_source_system_id AS CHAR) AS box_profile_source_system_id,
 			is_default,
 			active
 		FROM box_systems
@@ -137,7 +139,7 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 		SELECT ?, code, frame_type, display_name, active
 		FROM frame_specs
 		WHERE system_id = ?
-		  AND frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+		  AND active = 1
 	`, systemID, sourceID)
 	if err != nil {
 		tx.Rollback()
@@ -148,11 +150,25 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 		INSERT INTO frame_spec_compatibility (frame_spec_id, box_spec_id)
 		SELECT f2.id, b2.id
 		FROM frame_spec_compatibility c
-		INNER JOIN frame_specs f1 ON f1.id = c.frame_spec_id AND f1.system_id = ?
 		INNER JOIN box_specs b1 ON b1.id = c.box_spec_id AND b1.system_id = ?
-		INNER JOIN frame_specs f2 ON f2.system_id = ? AND f2.code = f1.code
+		INNER JOIN frame_specs f1 ON f1.id = c.frame_spec_id AND f1.system_id = ? AND f1.active = 1
+		INNER JOIN frame_specs f2 ON f2.system_id = ? AND f2.code = f1.code AND f2.active = 1
 		INNER JOIN box_specs b2 ON b2.system_id = ? AND b2.code = b1.code
 	`, sourceID, sourceID, systemID, systemID)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO box_spec_frame_sources (box_spec_id, frame_source_system_id)
+		SELECT b2.id, ?
+		FROM box_specs b2
+		WHERE b2.system_id = ?
+		  AND b2.active = 1
+		  AND b2.legacy_box_type IN ('DEEP', 'SUPER', 'LARGE_HORIZONTAL_SECTION')
+		ON DUPLICATE KEY UPDATE frame_source_system_id = VALUES(frame_source_system_id)
+	`, sourceID, systemID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -172,6 +188,7 @@ func (r *BoxSystem) GetOwnedByID(id int) (*BoxSystem, error) {
 			CAST(id AS CHAR) AS id,
 			COALESCE(user_id, '') AS user_id,
 			name,
+			CAST(box_profile_source_system_id AS CHAR) AS box_profile_source_system_id,
 			is_default,
 			active
 		FROM box_systems
@@ -345,6 +362,117 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 	}
 
 	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *BoxSystem) SetBoxProfileSource(systemID string, boxSourceSystemID *string) (bool, error) {
+	targetID := strings.TrimSpace(systemID)
+	if targetID == "" {
+		return false, errors.New("system id is required")
+	}
+
+	var isDefault bool
+	err := r.Db.Get(&isDefault, `
+		SELECT is_default
+		FROM box_systems
+		WHERE id = ?
+		  AND user_id = ?
+		  AND active = 1
+		LIMIT 1
+	`, targetID, r.UserID)
+	if err == sql.ErrNoRows {
+		return false, errors.New("box system not found")
+	}
+	if err != nil {
+		return false, err
+	}
+	if isDefault {
+		return false, errors.New("default box system profile cannot be changed")
+	}
+
+	sourceID := strings.TrimSpace(func() string {
+		if boxSourceSystemID == nil {
+			return ""
+		}
+		return *boxSourceSystemID
+	}())
+
+	// Own profile
+	if sourceID == "" || sourceID == targetID {
+		_, err = r.Db.NamedExec(`
+			UPDATE box_systems
+			SET box_profile_source_system_id = NULL
+			WHERE id = :id
+			  AND user_id = :user_id
+			  AND active = 1
+		`, map[string]interface{}{
+			"id":      targetID,
+			"user_id": r.UserID,
+		})
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	var sourceVisible int
+	err = r.Db.Get(&sourceVisible, `
+		SELECT COUNT(*)
+		FROM box_systems
+		WHERE id = ?
+		  AND active = 1
+		  AND (user_id = ? OR user_id IS NULL)
+	`, sourceID, r.UserID)
+	if err != nil {
+		return false, err
+	}
+	if sourceVisible == 0 {
+		return false, errors.New("box source system not found")
+	}
+
+	visited := map[string]bool{targetID: true}
+	current := sourceID
+	for current != "" {
+		if visited[current] {
+			return false, errors.New("box profile source relationship would create a cycle")
+		}
+		visited[current] = true
+
+		var next sql.NullString
+		err = r.Db.Get(&next, `
+			SELECT CAST(box_profile_source_system_id AS CHAR)
+			FROM box_systems
+			WHERE id = ?
+			  AND active = 1
+			  AND (user_id = ? OR user_id IS NULL)
+			LIMIT 1
+		`, current, r.UserID)
+		if err == sql.ErrNoRows {
+			break
+		}
+		if err != nil {
+			return false, err
+		}
+		if !next.Valid || strings.TrimSpace(next.String) == "" {
+			break
+		}
+		current = strings.TrimSpace(next.String)
+	}
+
+	_, err = r.Db.NamedExec(`
+		UPDATE box_systems
+		SET box_profile_source_system_id = :source_id
+		WHERE id = :id
+		  AND user_id = :user_id
+		  AND active = 1
+	`, map[string]interface{}{
+		"id":        targetID,
+		"user_id":   r.UserID,
+		"source_id": sourceID,
+	})
+	if err != nil {
 		return false, err
 	}
 	return true, nil

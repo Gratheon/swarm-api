@@ -99,3 +99,37 @@ func resolveFrameSpecForTargetBox(db sqlx.QueryerContext, userID string, boxID s
 	}
 	return frameSpecID, err
 }
+
+func resolveEffectiveBoxProfileSystemID(db sqlx.QueryerContext, userID string, systemID int) (int, error) {
+	current := systemID
+	visited := map[int]bool{}
+
+	for {
+		if visited[current] {
+			return 0, errors.New("box profile source cycle detected")
+		}
+		visited[current] = true
+
+		var next sql.NullInt64
+		err := sqlx.GetContext(
+			context.Background(),
+			db,
+			&next,
+			`SELECT box_profile_source_system_id
+			FROM box_systems
+			WHERE id = ?
+			  AND active = 1
+			  AND (user_id = ? OR user_id IS NULL)
+			LIMIT 1`,
+			current,
+			userID,
+		)
+		if err != nil {
+			return 0, err
+		}
+		if !next.Valid || int(next.Int64) <= 0 {
+			return current, nil
+		}
+		current = int(next.Int64)
+	}
+}

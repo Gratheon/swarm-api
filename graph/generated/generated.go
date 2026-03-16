@@ -82,9 +82,18 @@ type ComplexityRoot struct {
 	}
 
 	BoxSystem struct {
-		ID        func(childComplexity int) int
-		IsDefault func(childComplexity int) int
-		Name      func(childComplexity int) int
+		BoxProfileSourceSystemID func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		IsDefault                func(childComplexity int) int
+		Name                     func(childComplexity int) int
+	}
+
+	BoxSystemFrameSetting struct {
+		BoxDisplayName      func(childComplexity int) int
+		BoxSpecID           func(childComplexity int) int
+		BoxType             func(childComplexity int) int
+		FrameSourceSystemID func(childComplexity int) int
+		SystemID            func(childComplexity int) int
 	}
 
 	Device struct {
@@ -204,6 +213,8 @@ type ComplexityRoot struct {
 		MoveQueenToWarehouse                 func(childComplexity int, hiveID string, familyID string) int
 		RemoveQueenFromHive                  func(childComplexity int, hiveID string, familyID string) int
 		RenameBoxSystem                      func(childComplexity int, id string, name string) int
+		SetBoxSystemBoxProfileSource         func(childComplexity int, systemID string, boxSourceSystemID *string) int
+		SetBoxSystemFrameSource              func(childComplexity int, systemID string, boxType model.BoxType, frameSourceSystemID string) int
 		SetWarehouseAutoUpdateFromHives      func(childComplexity int, enabled bool) int
 		SetWarehouseInventoryCount           func(childComplexity int, itemKey string, count int) int
 		SetWarehouseModuleCount              func(childComplexity int, moduleType model.WarehouseModuleType, count int) int
@@ -225,6 +236,7 @@ type ComplexityRoot struct {
 		Apiary                  func(childComplexity int, id string) int
 		ApiaryObstacles         func(childComplexity int, apiaryID string) int
 		BoxSpecs                func(childComplexity int, systemID string) int
+		BoxSystemFrameSettings  func(childComplexity int) int
 		BoxSystems              func(childComplexity int) int
 		Devices                 func(childComplexity int) int
 		FrameSpecs              func(childComplexity int, systemID *string) int
@@ -377,6 +389,8 @@ type MutationResolver interface {
 	CreateBoxSystem(ctx context.Context, name string) (*model.BoxSystem, error)
 	RenameBoxSystem(ctx context.Context, id string, name string) (*model.BoxSystem, error)
 	DeactivateBoxSystem(ctx context.Context, id string, replacementSystemID *string) (bool, error)
+	SetBoxSystemBoxProfileSource(ctx context.Context, systemID string, boxSourceSystemID *string) (bool, error)
+	SetBoxSystemFrameSource(ctx context.Context, systemID string, boxType model.BoxType, frameSourceSystemID string) (bool, error)
 	AdjustWarehouseFrameInventory(ctx context.Context, boxID string, frameType model.FrameType, delta int) (*model.WarehouseInventoryItem, error)
 	AdjustWarehouseFrameInventoryByFrame(ctx context.Context, frameID string, delta int) (*model.WarehouseInventoryItem, error)
 	SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error)
@@ -404,6 +418,7 @@ type QueryResolver interface {
 	BoxSystems(ctx context.Context) ([]*model.BoxSystem, error)
 	FrameSpecs(ctx context.Context, systemID *string) ([]*model.FrameSpec, error)
 	BoxSpecs(ctx context.Context, systemID string) ([]*model.BoxSpec, error)
+	BoxSystemFrameSettings(ctx context.Context) ([]*model.BoxSystemFrameSetting, error)
 	WarehouseQueens(ctx context.Context) ([]*model.Family, error)
 }
 
@@ -586,6 +601,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.BoxSpec.SystemID(childComplexity), true
 
+	case "BoxSystem.boxProfileSourceSystemId":
+		if e.ComplexityRoot.BoxSystem.BoxProfileSourceSystemID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSystem.BoxProfileSourceSystemID(childComplexity), true
 	case "BoxSystem.id":
 		if e.ComplexityRoot.BoxSystem.ID == nil {
 			break
@@ -604,6 +625,37 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BoxSystem.Name(childComplexity), true
+
+	case "BoxSystemFrameSetting.boxDisplayName":
+		if e.ComplexityRoot.BoxSystemFrameSetting.BoxDisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSystemFrameSetting.BoxDisplayName(childComplexity), true
+	case "BoxSystemFrameSetting.boxSpecId":
+		if e.ComplexityRoot.BoxSystemFrameSetting.BoxSpecID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSystemFrameSetting.BoxSpecID(childComplexity), true
+	case "BoxSystemFrameSetting.boxType":
+		if e.ComplexityRoot.BoxSystemFrameSetting.BoxType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSystemFrameSetting.BoxType(childComplexity), true
+	case "BoxSystemFrameSetting.frameSourceSystemId":
+		if e.ComplexityRoot.BoxSystemFrameSetting.FrameSourceSystemID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSystemFrameSetting.FrameSourceSystemID(childComplexity), true
+	case "BoxSystemFrameSetting.systemId":
+		if e.ComplexityRoot.BoxSystemFrameSetting.SystemID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSystemFrameSetting.SystemID(childComplexity), true
 
 	case "Device.apiToken":
 		if e.ComplexityRoot.Device.APIToken == nil {
@@ -1288,6 +1340,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RenameBoxSystem(childComplexity, args["id"].(string), args["name"].(string)), true
+	case "Mutation.setBoxSystemBoxProfileSource":
+		if e.ComplexityRoot.Mutation.SetBoxSystemBoxProfileSource == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setBoxSystemBoxProfileSource_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetBoxSystemBoxProfileSource(childComplexity, args["systemId"].(string), args["boxSourceSystemId"].(*string)), true
+	case "Mutation.setBoxSystemFrameSource":
+		if e.ComplexityRoot.Mutation.SetBoxSystemFrameSource == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setBoxSystemFrameSource_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetBoxSystemFrameSource(childComplexity, args["systemId"].(string), args["boxType"].(model.BoxType), args["frameSourceSystemId"].(string)), true
 	case "Mutation.setWarehouseAutoUpdateFromHives":
 		if e.ComplexityRoot.Mutation.SetWarehouseAutoUpdateFromHives == nil {
 			break
@@ -1482,6 +1556,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.BoxSpecs(childComplexity, args["systemId"].(string)), true
+	case "Query.boxSystemFrameSettings":
+		if e.ComplexityRoot.Query.BoxSystemFrameSettings == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.BoxSystemFrameSettings(childComplexity), true
 	case "Query.boxSystems":
 		if e.ComplexityRoot.Query.BoxSystems == nil {
 			break
@@ -2016,6 +2096,9 @@ type Query {
   "Visible box specs for a specific system"
   boxSpecs(systemId: ID!): [BoxSpec!]!
 
+  "Per-system frame compatibility settings for frame-carrying box types"
+  boxSystemFrameSettings: [BoxSystemFrameSetting!]!
+
   "Queens stored in warehouse (family records not assigned to any hive)"
   warehouseQueens: [Family!]!
 }
@@ -2142,6 +2225,12 @@ type Mutation {
   "Deactivate custom box system. If active hives use this system, replacementSystemId is required and those hives are reassigned."
   deactivateBoxSystem(id: ID!, replacementSystemId: ID): Boolean!
 
+  "Set box-size profile source for a custom box system (null means own profile)"
+  setBoxSystemBoxProfileSource(systemId: ID!, boxSourceSystemId: ID): Boolean!
+
+  "Set frame source system for a specific box type inside an owned box system"
+  setBoxSystemFrameSource(systemId: ID!, boxType: BoxType!, frameSourceSystemId: ID!): Boolean!
+
   "Adjust frame inventory using target box compatibility and frame type"
   adjustWarehouseFrameInventory(boxId: ID!, frameType: FrameType!, delta: Int!): WarehouseInventoryItem
 
@@ -2209,6 +2298,7 @@ type BoxSystem {
   id: ID!
   name: String!
   isDefault: Boolean!
+  boxProfileSourceSystemId: ID
 }
 
 type BoxSpec {
@@ -2217,6 +2307,14 @@ type BoxSpec {
   code: String!
   legacyBoxType: BoxType!
   displayName: String!
+}
+
+type BoxSystemFrameSetting {
+  systemId: ID!
+  boxSpecId: ID!
+  boxType: BoxType!
+  boxDisplayName: String!
+  frameSourceSystemId: ID
 }
 
 type FrameSpec {
@@ -3113,6 +3211,43 @@ func (ec *executionContext) field_Mutation_renameBoxSystem_args(ctx context.Cont
 		return nil, err
 	}
 	args["name"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setBoxSystemBoxProfileSource_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "systemId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["systemId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "boxSourceSystemId", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["boxSourceSystemId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setBoxSystemFrameSource_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "systemId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["systemId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "boxType", ec.unmarshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType)
+	if err != nil {
+		return nil, err
+	}
+	args["boxType"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "frameSourceSystemId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["frameSourceSystemId"] = arg2
 	return args, nil
 }
 
@@ -4468,6 +4603,180 @@ func (ec *executionContext) fieldContext_BoxSystem_isDefault(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSystem_boxProfileSourceSystemId(ctx context.Context, field graphql.CollectedField, obj *model.BoxSystem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSystem_boxProfileSourceSystemId,
+		func(ctx context.Context) (any, error) {
+			return obj.BoxProfileSourceSystemID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSystem_boxProfileSourceSystemId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSystem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSystemFrameSetting_systemId(ctx context.Context, field graphql.CollectedField, obj *model.BoxSystemFrameSetting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSystemFrameSetting_systemId,
+		func(ctx context.Context) (any, error) {
+			return obj.SystemID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSystemFrameSetting_systemId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSystemFrameSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSystemFrameSetting_boxSpecId(ctx context.Context, field graphql.CollectedField, obj *model.BoxSystemFrameSetting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSystemFrameSetting_boxSpecId,
+		func(ctx context.Context) (any, error) {
+			return obj.BoxSpecID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSystemFrameSetting_boxSpecId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSystemFrameSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSystemFrameSetting_boxType(ctx context.Context, field graphql.CollectedField, obj *model.BoxSystemFrameSetting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSystemFrameSetting_boxType,
+		func(ctx context.Context) (any, error) {
+			return obj.BoxType, nil
+		},
+		nil,
+		ec.marshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSystemFrameSetting_boxType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSystemFrameSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BoxType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSystemFrameSetting_boxDisplayName(ctx context.Context, field graphql.CollectedField, obj *model.BoxSystemFrameSetting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSystemFrameSetting_boxDisplayName,
+		func(ctx context.Context) (any, error) {
+			return obj.BoxDisplayName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSystemFrameSetting_boxDisplayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSystemFrameSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSystemFrameSetting_frameSourceSystemId(ctx context.Context, field graphql.CollectedField, obj *model.BoxSystemFrameSetting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSystemFrameSetting_frameSourceSystemId,
+		func(ctx context.Context) (any, error) {
+			return obj.FrameSourceSystemID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSystemFrameSetting_frameSourceSystemId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSystemFrameSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8448,6 +8757,8 @@ func (ec *executionContext) fieldContext_Mutation_createBoxSystem(ctx context.Co
 				return ec.fieldContext_BoxSystem_name(ctx, field)
 			case "isDefault":
 				return ec.fieldContext_BoxSystem_isDefault(ctx, field)
+			case "boxProfileSourceSystemId":
+				return ec.fieldContext_BoxSystem_boxProfileSourceSystemId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BoxSystem", field.Name)
 		},
@@ -8497,6 +8808,8 @@ func (ec *executionContext) fieldContext_Mutation_renameBoxSystem(ctx context.Co
 				return ec.fieldContext_BoxSystem_name(ctx, field)
 			case "isDefault":
 				return ec.fieldContext_BoxSystem_isDefault(ctx, field)
+			case "boxProfileSourceSystemId":
+				return ec.fieldContext_BoxSystem_boxProfileSourceSystemId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BoxSystem", field.Name)
 		},
@@ -8550,6 +8863,88 @@ func (ec *executionContext) fieldContext_Mutation_deactivateBoxSystem(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deactivateBoxSystem_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setBoxSystemBoxProfileSource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_setBoxSystemBoxProfileSource,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetBoxSystemBoxProfileSource(ctx, fc.Args["systemId"].(string), fc.Args["boxSourceSystemId"].(*string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setBoxSystemBoxProfileSource(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setBoxSystemBoxProfileSource_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setBoxSystemFrameSource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_setBoxSystemFrameSource,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetBoxSystemFrameSource(ctx, fc.Args["systemId"].(string), fc.Args["boxType"].(model.BoxType), fc.Args["frameSourceSystemId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setBoxSystemFrameSource(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setBoxSystemFrameSource_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9726,6 +10121,8 @@ func (ec *executionContext) fieldContext_Query_boxSystems(_ context.Context, fie
 				return ec.fieldContext_BoxSystem_name(ctx, field)
 			case "isDefault":
 				return ec.fieldContext_BoxSystem_isDefault(ctx, field)
+			case "boxProfileSourceSystemId":
+				return ec.fieldContext_BoxSystem_boxProfileSourceSystemId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BoxSystem", field.Name)
 		},
@@ -9835,6 +10232,47 @@ func (ec *executionContext) fieldContext_Query_boxSpecs(ctx context.Context, fie
 	if fc.Args, err = ec.field_Query_boxSpecs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_boxSystemFrameSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_boxSystemFrameSettings,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().BoxSystemFrameSettings(ctx)
+		},
+		nil,
+		ec.marshalNBoxSystemFrameSetting2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxSystemFrameSettingᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_boxSystemFrameSettings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "systemId":
+				return ec.fieldContext_BoxSystemFrameSetting_systemId(ctx, field)
+			case "boxSpecId":
+				return ec.fieldContext_BoxSystemFrameSetting_boxSpecId(ctx, field)
+			case "boxType":
+				return ec.fieldContext_BoxSystemFrameSetting_boxType(ctx, field)
+			case "boxDisplayName":
+				return ec.fieldContext_BoxSystemFrameSetting_boxDisplayName(ctx, field)
+			case "frameSourceSystemId":
+				return ec.fieldContext_BoxSystemFrameSetting_frameSourceSystemId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BoxSystemFrameSetting", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -13572,6 +14010,64 @@ func (ec *executionContext) _BoxSystem(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "boxProfileSourceSystemId":
+			out.Values[i] = ec._BoxSystem_boxProfileSourceSystemId(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var boxSystemFrameSettingImplementors = []string{"BoxSystemFrameSetting"}
+
+func (ec *executionContext) _BoxSystemFrameSetting(ctx context.Context, sel ast.SelectionSet, obj *model.BoxSystemFrameSetting) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, boxSystemFrameSettingImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BoxSystemFrameSetting")
+		case "systemId":
+			out.Values[i] = ec._BoxSystemFrameSetting_systemId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "boxSpecId":
+			out.Values[i] = ec._BoxSystemFrameSetting_boxSpecId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "boxType":
+			out.Values[i] = ec._BoxSystemFrameSetting_boxType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "boxDisplayName":
+			out.Values[i] = ec._BoxSystemFrameSetting_boxDisplayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "frameSourceSystemId":
+			out.Values[i] = ec._BoxSystemFrameSetting_frameSourceSystemId(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14834,6 +15330,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "setBoxSystemBoxProfileSource":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setBoxSystemBoxProfileSource(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setBoxSystemFrameSource":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setBoxSystemFrameSource(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "adjustWarehouseFrameInventory":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_adjustWarehouseFrameInventory(ctx, field)
@@ -15276,6 +15786,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_boxSpecs(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "boxSystemFrameSettings":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_boxSystemFrameSettings(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -16233,6 +16765,32 @@ func (ec *executionContext) marshalNBoxSystem2ᚖgithubᚗcomᚋGratheonᚋswarm
 		return graphql.Null
 	}
 	return ec._BoxSystem(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNBoxSystemFrameSetting2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxSystemFrameSettingᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.BoxSystemFrameSetting) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNBoxSystemFrameSetting2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxSystemFrameSetting(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNBoxSystemFrameSetting2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxSystemFrameSetting(ctx context.Context, sel ast.SelectionSet, v *model.BoxSystemFrameSetting) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._BoxSystemFrameSetting(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType(ctx context.Context, v any) (model.BoxType, error) {
