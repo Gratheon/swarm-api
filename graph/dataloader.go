@@ -89,7 +89,7 @@ func (l *HiveLoader) processBatch(apiaryID int, wait time.Duration) {
 
 	hives := []*model.Hive{}
 	err := l.db.Select(&hives,
-		`SELECT id, user_id, apiary_id, active, hive_number, notes, color, status, added, 
+		`SELECT id, user_id, apiary_id, box_system_id, active, hive_number, notes, color, status, added, 
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
 		WHERE apiary_id=? AND user_id=? AND active=1 AND collapse_date IS NULL AND merged_into_hive_id IS NULL`,

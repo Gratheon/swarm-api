@@ -30,13 +30,22 @@ type warehouseUsageScanRow struct {
 }
 
 func (r *WarehouseModule) GetCountByType(moduleType WarehouseModuleType) (int, error) {
+	return r.GetCountByTypeAndSystem(moduleType, nil)
+}
+
+func (r *WarehouseModule) GetCountByTypeAndSystem(moduleType WarehouseModuleType, boxSystemID *int) (int, error) {
+	systemID := 0
+	if boxSystemID != nil && *boxSystemID > 0 {
+		systemID = *boxSystemID
+	}
+
 	var count int
 	err := r.Db.Get(&count,
 		`SELECT count
 		FROM warehouse_modules
-		WHERE user_id=? AND module_type=?
+		WHERE user_id=? AND module_type=? AND box_system_id=?
 		LIMIT 1`,
-		r.UserID, moduleType)
+		r.UserID, moduleType, systemID)
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
@@ -44,7 +53,11 @@ func (r *WarehouseModule) GetCountByType(moduleType WarehouseModuleType) (int, e
 }
 
 func (r *WarehouseModule) UsageStats(moduleType WarehouseModuleType) (*WarehouseModuleStats, error) {
-	availableCount, err := r.GetCountByType(moduleType)
+	return r.UsageStatsForSystem(moduleType, nil)
+}
+
+func (r *WarehouseModule) UsageStatsForSystem(moduleType WarehouseModuleType, boxSystemID *int) (*WarehouseModuleStats, error) {
+	availableCount, err := r.GetCountByTypeAndSystem(moduleType, boxSystemID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,12 +68,12 @@ func (r *WarehouseModule) UsageStats(moduleType WarehouseModuleType) (*Warehouse
 	kind, mappedType := mapModuleTypeToHiveSource(moduleType)
 	switch kind {
 	case "box":
-		inUseCount, err = r.countBoxesInUse(mappedType)
+		inUseCount, err = r.countBoxesInUse(mappedType, boxSystemID)
 		if err != nil {
 			return nil, err
 		}
 
-		topHives, err = r.topHivesByBoxType(mappedType, 10)
+		topHives, err = r.topHivesByBoxType(mappedType, boxSystemID, 10)
 		if err != nil {
 			return nil, err
 		}
@@ -114,10 +127,9 @@ func mapModuleTypeToHiveSource(moduleType WarehouseModuleType) (string, string) 
 	}
 }
 
-func (r *WarehouseModule) countBoxesInUse(boxType string) (int, error) {
+func (r *WarehouseModule) countBoxesInUse(boxType string, boxSystemID *int) (int, error) {
 	var count int
-	err := r.Db.Get(&count,
-		`SELECT COUNT(*) AS cnt
+	query := `SELECT COUNT(*) AS cnt
 		FROM boxes b
 		INNER JOIN hives h ON h.id = b.hive_id AND h.user_id = b.user_id
 		WHERE b.user_id = ?
@@ -125,8 +137,13 @@ func (r *WarehouseModule) countBoxesInUse(boxType string) (int, error) {
 		  AND b.type = ?
 		  AND h.active = 1
 		  AND h.collapse_date IS NULL
-		  AND h.merged_into_hive_id IS NULL`,
-		r.UserID, boxType)
+		  AND h.merged_into_hive_id IS NULL`
+	args := []interface{}{r.UserID, boxType}
+	if boxSystemID != nil && *boxSystemID > 0 {
+		query += " AND h.box_system_id = ?"
+		args = append(args, *boxSystemID)
+	}
+	err := r.Db.Get(&count, query, args...)
 	return count, err
 }
 
@@ -147,10 +164,9 @@ func (r *WarehouseModule) countFramesInUse(frameType string) (int, error) {
 	return count, err
 }
 
-func (r *WarehouseModule) topHivesByBoxType(boxType string, limit int) ([]*WarehouseModuleHiveUsage, error) {
+func (r *WarehouseModule) topHivesByBoxType(boxType string, boxSystemID *int, limit int) ([]*WarehouseModuleHiveUsage, error) {
 	rows := []warehouseUsageScanRow{}
-	err := r.Db.Select(&rows,
-		`SELECT
+	query := `SELECT
 			h.id AS hive_id,
 			h.hive_number AS hive_number,
 			h.apiary_id AS apiary_id,
@@ -164,11 +180,18 @@ func (r *WarehouseModule) topHivesByBoxType(boxType string, limit int) ([]*Wareh
 		  AND b.type = ?
 		  AND h.active = 1
 		  AND h.collapse_date IS NULL
-		  AND h.merged_into_hive_id IS NULL
+		  AND h.merged_into_hive_id IS NULL`
+	args := []interface{}{r.UserID, boxType}
+	if boxSystemID != nil && *boxSystemID > 0 {
+		query += " AND h.box_system_id = ?"
+		args = append(args, *boxSystemID)
+	}
+	query += `
 		GROUP BY h.id, h.hive_number, h.apiary_id, a.name
 		ORDER BY usage_count DESC, h.hive_number IS NULL ASC, h.hive_number ASC, h.id ASC
-		LIMIT ?`,
-		r.UserID, boxType, limit)
+		LIMIT ?`
+	args = append(args, limit)
+	err := r.Db.Select(&rows, query, args...)
 	if err != nil {
 		return nil, err
 	}

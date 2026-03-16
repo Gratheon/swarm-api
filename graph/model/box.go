@@ -2,20 +2,66 @@ package model
 
 import (
 	"database/sql"
+	"errors"
 	"strconv"
 
 	"github.com/jmoiron/sqlx"
 )
 
+func (r *Box) resolveSpecForHive(tx *sqlx.Tx, hiveID string, boxType BoxType) (*boxSpecLookupRow, error) {
+	var systemID sql.NullInt64
+	err := tx.Get(&systemID, `
+		SELECT box_system_id
+		FROM hives
+		WHERE id=? AND user_id=?
+		LIMIT 1
+	`, hiveID, r.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if systemID.Valid {
+		spec, err := getBoxSpecForTypeInSystem(tx, r.UserID, int(systemID.Int64), boxType)
+		if err != nil {
+			return nil, err
+		}
+		if spec != nil {
+			return spec, nil
+		}
+	}
+
+	return getDefaultBoxSpecForType(tx, r.UserID, boxType)
+}
+
 type Box struct {
-	Db       *sqlx.DB
-	ID       *string `json:"id"`
-	UserID   string  `db:"user_id"`
-	HiveId   int     `json:"hive_id" db:"hive_id"`
-	Position *int    `json:"position"`
-	Color    *string `json:"color"`
-	Type     BoxType `json:"type" db:"type"`
-	Active   int     `db:"active"`
+	Db          *sqlx.DB
+	ID          *string `json:"id"`
+	UserID      string  `db:"user_id"`
+	HiveId      int     `json:"hive_id" db:"hive_id"`
+	Position    *int    `json:"position"`
+	Color       *string `json:"color"`
+	Type        BoxType `json:"type" db:"type"`
+	BoxSystemID *int    `json:"box_system_id" db:"box_system_id"`
+	BoxSpecID   *int    `json:"box_spec_id" db:"box_spec_id"`
+	Active      int     `db:"active"`
+}
+
+func (r *Box) getHiveBoxSystemID(tx *sqlx.Tx, hiveID string) (*int, error) {
+	var systemID sql.NullInt64
+	err := tx.Get(&systemID, `
+		SELECT box_system_id
+		FROM hives
+		WHERE id=? AND user_id=?
+		LIMIT 1
+	`, hiveID, r.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if !systemID.Valid {
+		return nil, nil
+	}
+	value := int(systemID.Int64)
+	return &value, nil
 }
 
 func (r *Box) Get(id string) (*Box, error) {
@@ -35,6 +81,24 @@ func (r *Box) Get(id string) (*Box, error) {
 
 func (r *Box) CreateByHiveId(hiveId string, boxCount int, colors []*string, boxType BoxType) error {
 	tx := r.Db.MustBegin()
+	spec, err := r.resolveSpecForHive(tx, hiveId, boxType)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	if spec == nil {
+		tx.Rollback()
+		return errors.New("no box specification found for box type")
+	}
+	hiveBoxSystemID, err := r.getHiveBoxSystemID(tx, hiveId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	var hiveBoxSystemValue interface{} = nil
+	if hiveBoxSystemID != nil {
+		hiveBoxSystemValue = *hiveBoxSystemID
+	}
 
 	for position := 0; position < boxCount; position++ {
 		color := "#ffc848"
@@ -43,13 +107,16 @@ func (r *Box) CreateByHiveId(hiveId string, boxCount int, colors []*string, boxT
 		}
 
 		_, err2 := tx.NamedExec(
-			"INSERT INTO boxes (hive_id, position, color, user_id, type) VALUES (:hiveId, :position, :color, :userID, :type)",
+			`INSERT INTO boxes (hive_id, position, color, user_id, type, box_system_id, box_spec_id)
+			 VALUES (:hiveId, :position, :color, :userID, :type, :boxSystemID, :boxSpecID)`,
 			map[string]interface{}{
-				"hiveId":   hiveId,
-				"position": position,
-				"color":    color,
-				"userID":   r.UserID,
-				"type":     boxType,
+				"hiveId":      hiveId,
+				"position":    position,
+				"color":       color,
+				"userID":      r.UserID,
+				"type":        boxType,
+				"boxSystemID": hiveBoxSystemValue,
+				"boxSpecID":   spec.BoxSpecID,
 			},
 		)
 
@@ -63,16 +130,36 @@ func (r *Box) CreateByHiveId(hiveId string, boxCount int, colors []*string, boxT
 
 func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType) (*string, error) {
 	tx := r.Db.MustBegin()
+	spec, err := r.resolveSpecForHive(tx, hiveId, boxType)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	if spec == nil {
+		tx.Rollback()
+		return nil, errors.New("no box specification found for box type")
+	}
+	hiveBoxSystemID, err := r.getHiveBoxSystemID(tx, hiveId)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	var hiveBoxSystemValue interface{} = nil
+	if hiveBoxSystemID != nil {
+		hiveBoxSystemValue = *hiveBoxSystemID
+	}
 
 	result, err := tx.NamedExec(
-		`INSERT INTO boxes (hive_id, position, color, user_id, type)
-			VALUES (:hiveId, :position, :color, :userID, :boxType)`,
+		`INSERT INTO boxes (hive_id, position, color, user_id, type, box_system_id, box_spec_id)
+			VALUES (:hiveId, :position, :color, :userID, :boxType, :boxSystemID, :boxSpecID)`,
 		map[string]interface{}{
-			"hiveId":   hiveId,
-			"position": position,
-			"color":    color,
-			"userID":   r.UserID,
-			"boxType":  boxType,
+			"hiveId":      hiveId,
+			"position":    position,
+			"color":       color,
+			"userID":      r.UserID,
+			"boxType":     boxType,
+			"boxSystemID": hiveBoxSystemValue,
+			"boxSpecID":   spec.BoxSpecID,
 		},
 	)
 
@@ -93,16 +180,36 @@ func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType
 
 func (r *Box) CreateSingleBox(hiveId string, position int, color string, boxType BoxType) (string, error) {
 	tx := r.Db.MustBegin()
+	spec, err := r.resolveSpecForHive(tx, hiveId, boxType)
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	if spec == nil {
+		tx.Rollback()
+		return "", errors.New("no box specification found for box type")
+	}
+	hiveBoxSystemID, err := r.getHiveBoxSystemID(tx, hiveId)
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	var hiveBoxSystemValue interface{} = nil
+	if hiveBoxSystemID != nil {
+		hiveBoxSystemValue = *hiveBoxSystemID
+	}
 
 	result, err := tx.NamedExec(
-		`INSERT INTO boxes (hive_id, position, color, user_id, type)
-			VALUES (:hiveId, :position, :color, :userID, :boxType)`,
+		`INSERT INTO boxes (hive_id, position, color, user_id, type, box_system_id, box_spec_id)
+			VALUES (:hiveId, :position, :color, :userID, :boxType, :boxSystemID, :boxSpecID)`,
 		map[string]interface{}{
-			"hiveId":   hiveId,
-			"position": position,
-			"color":    color,
-			"userID":   r.UserID,
-			"boxType":  boxType,
+			"hiveId":      hiveId,
+			"position":    position,
+			"color":       color,
+			"userID":      r.UserID,
+			"boxType":     boxType,
+			"boxSystemID": hiveBoxSystemValue,
+			"boxSpecID":   spec.BoxSpecID,
 		},
 	)
 

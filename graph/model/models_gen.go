@@ -124,6 +124,8 @@ type HiveInput struct {
 	FrameCount int `json:"frameCount"`
 	// Initial section type used for first created boxes
 	InitialBoxType *BoxType `json:"initialBoxType,omitempty"`
+	// Selected box system for this hive (defaults to Langstroth)
+	BoxSystemID *string `json:"boxSystemId,omitempty"`
 	// Color markers for each box
 	Colors []*string `json:"colors,omitempty"`
 }

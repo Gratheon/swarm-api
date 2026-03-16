@@ -7,17 +7,18 @@ import (
 )
 
 type Frame struct {
-	Db        *sqlx.DB
-	ID        int        `json:"id"`
-	UserID    string     `db:"user_id"`
-	BoxId     int        `db:"box_id"`
-	Position  int        `json:"position"`
-	Type      FrameType  `json:"type" db:"type"`
-	LeftID    *int       `json:"left" db:"left_id"`
-	RightID   *int       `json:"right" db:"right_id"`
-	LeftSide  *FrameSide `json:"left" `
-	RightSide *FrameSide `json:"right"`
-	Active    int        `db:"active"`
+	Db          *sqlx.DB
+	ID          int        `json:"id"`
+	UserID      string     `db:"user_id"`
+	BoxId       int        `db:"box_id"`
+	Position    int        `json:"position"`
+	Type        FrameType  `json:"type" db:"type"`
+	FrameSpecID *int       `json:"frame_spec_id" db:"frame_spec_id"`
+	LeftID      *int       `json:"left" db:"left_id"`
+	RightID     *int       `json:"right" db:"right_id"`
+	LeftSide    *FrameSide `json:"left" `
+	RightSide   *FrameSide `json:"right"`
+	Active      int        `db:"active"`
 }
 
 func (r *Frame) Get(id int64) (*Frame, error) {
@@ -75,25 +76,44 @@ func (r *Frame) CreateFramesForBox(boxID *string, frameCount int) error {
 }
 
 func (r *Frame) Create(boxID *string, position int, frameType FrameType, leftID *int64, rightID *int64) (*int64, error) {
-	result, err := r.Db.NamedExec(
-		`INSERT INTO frames (box_id, position, left_id, right_id, user_id, type) 
-		VALUES (:boxID, :position, :left_id, :right_id, :userID, :frameType)`,
+	if boxID == nil {
+		return nil, errNoCompatibleFrameSpec
+	}
+
+	tx := r.Db.MustBegin()
+	frameSpecID, err := resolveFrameSpecForTargetBox(tx, r.UserID, *boxID, frameType)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	result, err := tx.NamedExec(
+		`INSERT INTO frames (box_id, position, left_id, right_id, user_id, type, frame_spec_id) 
+		VALUES (:boxID, :position, :left_id, :right_id, :userID, :frameType, :frameSpecID)`,
 		map[string]interface{}{
-			"boxID":     boxID,
-			"position":  position,
-			"left_id":   leftID,
-			"right_id":  rightID,
-			"userID":    r.UserID,
-			"frameType": frameType,
+			"boxID":       boxID,
+			"position":    position,
+			"left_id":     leftID,
+			"right_id":    rightID,
+			"userID":      r.UserID,
+			"frameType":   frameType,
+			"frameSpecID": frameSpecID,
 		},
 	)
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
 	id, err := result.LastInsertId()
-
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return &id, err
 }
 
@@ -102,15 +122,34 @@ func (r *Frame) IsFrameWithSides(frameType FrameType) bool {
 }
 
 func (r *Frame) Update(frameID string, boxID string, position int) (*int64, error) {
-	_, err := r.Db.NamedExec(
+	var frameType FrameType
+	err := r.Db.Get(
+		&frameType,
+		`SELECT type
+		FROM frames
+		WHERE id=? AND user_id=? AND active=1
+		LIMIT 1`,
+		frameID, r.UserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	frameSpecID, err := resolveFrameSpecForTargetBox(r.Db, r.UserID, boxID, frameType)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = r.Db.NamedExec(
 		`UPDATE frames 
-		SET box_id=:boxID, position=:position
+		SET box_id=:boxID, position=:position, frame_spec_id=:frameSpecID
 		WHERE id=:id AND user_id=:userID`,
 		map[string]interface{}{
-			"id":       frameID,
-			"boxID":    boxID,
-			"position": position,
-			"userID":   r.UserID,
+			"id":          frameID,
+			"boxID":       boxID,
+			"position":    position,
+			"frameSpecID": frameSpecID,
+			"userID":      r.UserID,
 		},
 	)
 
@@ -193,15 +232,36 @@ func (r *Frame) MoveFramesToBox(frameIDs []string, targetBoxID string) error {
 	tx := r.Db.MustBegin()
 
 	for i, frameID := range frameIDs {
-		_, err := tx.NamedExec(
+		var frameType FrameType
+		err := tx.Get(
+			&frameType,
+			`SELECT type
+			FROM frames
+			WHERE id=? AND user_id=? AND active=1
+			LIMIT 1`,
+			frameID, r.UserID,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		frameSpecID, err := resolveFrameSpecForTargetBox(tx, r.UserID, targetBoxID, frameType)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		_, err = tx.NamedExec(
 			`UPDATE frames 
-			SET box_id=:boxID, position=:position
+			SET box_id=:boxID, position=:position, frame_spec_id=:frameSpecID
 			WHERE id=:id AND user_id=:userID AND active=1`,
 			map[string]interface{}{
-				"id":       frameID,
-				"boxID":    targetBoxID,
-				"position": i,
-				"userID":   r.UserID,
+				"id":          frameID,
+				"boxID":       targetBoxID,
+				"position":    i,
+				"frameSpecID": frameSpecID,
+				"userID":      r.UserID,
 			},
 		)
 		if err != nil {

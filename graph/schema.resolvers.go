@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Gratheon/swarm-api/graph/generated"
@@ -19,54 +18,6 @@ import (
 	"github.com/Gratheon/swarm-api/logger"
 	"github.com/Gratheon/swarm-api/redisPubSub"
 )
-
-var hiveLimitByBillingPlan = map[string]int{
-	"free":         3,
-	"hobbyist":     15,
-	"starter":      50,
-	"professional": 200,
-	"addon":        200,
-	"enterprise":   200,
-}
-
-func normalizeBillingPlan(plan string) string {
-	normalized := strings.TrimSpace(strings.ToLower(plan))
-	if normalized == "" {
-		return "free"
-	}
-	return normalized
-}
-
-func getHiveLimitForBillingPlan(plan string) int {
-	normalized := normalizeBillingPlan(plan)
-	if limit, ok := hiveLimitByBillingPlan[normalized]; ok {
-		return limit
-	}
-	return hiveLimitByBillingPlan["free"]
-}
-
-func getBillingPlanFromContext(ctx context.Context) string {
-	if value := ctx.Value("billingPlan"); value != nil {
-		if plan, ok := value.(string); ok {
-			return normalizeBillingPlan(plan)
-		}
-	}
-	return "free"
-}
-
-func enforceHiveCreationLimit(ctx context.Context, hiveModel *model.Hive) error {
-	activeHiveCount, err := hiveModel.CountActive()
-	if err != nil {
-		return err
-	}
-
-	billingPlan := getBillingPlanFromContext(ctx)
-	hiveLimit := getHiveLimitForBillingPlan(billingPlan)
-	if activeHiveCount >= hiveLimit {
-		return fmt.Errorf("hive limit reached for %s plan (%d)", billingPlan, hiveLimit)
-	}
-	return nil
-}
 
 // Hives is the resolver for the hives field.
 func (r *apiaryResolver) Hives(ctx context.Context, obj *model.Apiary, sortBy *model.HiveSortBy, sortOrder *model.SortOrder) ([]*model.Hive, error) {
@@ -572,13 +523,17 @@ func (r *mutationResolver) SwapBoxPositions(ctx context.Context, id string, id2 
 // AddFrame is the resolver for the addFrame field.
 func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error) {
 	uid := ctx.Value("userID").(string)
+	frameType := model.FrameType(typeArg)
+	if frameType == model.FrameTypePartition || frameType == model.FrameTypeFeeder {
+		return nil, errors.New("partition and frame feeder types are not available")
+	}
 
 	frameModel := &model.Frame{
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}
 
-	if frameModel.IsFrameWithSides(model.FrameType(typeArg)) {
+	if frameModel.IsFrameWithSides(frameType) {
 		leftSide := &model.FrameSide{
 			Db:     r.Resolver.Db,
 			UserID: uid,
@@ -600,7 +555,7 @@ func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg s
 			return nil, err
 		}
 
-		frameId, err := frameModel.Create(&boxID, position, model.FrameType(typeArg), leftID, rightID)
+		frameId, err := frameModel.Create(&boxID, position, frameType, leftID, rightID)
 
 		if err != nil {
 			logger.ErrorWithContext(ctx, err.Error())
@@ -610,7 +565,7 @@ func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg s
 		return frameModel.Get(*frameId)
 
 	} else {
-		frameId, err := frameModel.Create(&boxID, position, model.FrameType(typeArg), nil, nil)
+		frameId, err := frameModel.Create(&boxID, position, frameType, nil, nil)
 
 		if err != nil {
 			logger.ErrorWithContext(ctx, err.Error())
@@ -632,7 +587,9 @@ func (r *mutationResolver) UpdateFrames(ctx context.Context, frames []*model.Fra
 	results := []*model.Frame{}
 
 	for _, frame := range frames {
-		frameModel.Update(frame.ID, frame.BoxID, frame.Position)
+		if _, err := frameModel.Update(frame.ID, frame.BoxID, frame.Position); err != nil {
+			return nil, err
+		}
 		id, err := strconv.ParseInt(frame.ID, 10, 64)
 		if err != nil {
 			return nil, err
@@ -1158,6 +1115,70 @@ func (r *mutationResolver) SetWarehouseModuleCount(ctx context.Context, moduleTy
 	return updated, nil
 }
 
+// SetWarehouseInventoryCount is the resolver for the setWarehouseInventoryCount field.
+func (r *mutationResolver) SetWarehouseInventoryCount(ctx context.Context, itemKey string, count int) (*model.WarehouseInventoryItem, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.WarehouseInventory{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).UpsertByKey(itemKey, count)
+}
+
+// CreateBoxSystem is the resolver for the createBoxSystem field.
+func (r *mutationResolver) CreateBoxSystem(ctx context.Context, name string) (*model.BoxSystem, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSystem{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Create(name)
+}
+
+// RenameBoxSystem is the resolver for the renameBoxSystem field.
+func (r *mutationResolver) RenameBoxSystem(ctx context.Context, id string, name string) (*model.BoxSystem, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSystem{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Rename(id, name)
+}
+
+// DeactivateBoxSystem is the resolver for the deactivateBoxSystem field.
+func (r *mutationResolver) DeactivateBoxSystem(ctx context.Context, id string) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSystem{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).Deactivate(id)
+}
+
+// AdjustWarehouseFrameInventory is the resolver for the adjustWarehouseFrameInventory field.
+func (r *mutationResolver) AdjustWarehouseFrameInventory(ctx context.Context, boxID string, frameType model.FrameType, delta int) (*model.WarehouseInventoryItem, error) {
+	uid := ctx.Value("userID").(string)
+	inv := &model.WarehouseInventory{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+	specID, err := inv.ResolveFrameSpecIDByBoxAndFrameType(boxID, frameType)
+	if err != nil {
+		return nil, err
+	}
+	return inv.UpdateFrameSpecByDelta(specID, delta)
+}
+
+// AdjustWarehouseFrameInventoryByFrame is the resolver for the adjustWarehouseFrameInventoryByFrame field.
+func (r *mutationResolver) AdjustWarehouseFrameInventoryByFrame(ctx context.Context, frameID string, delta int) (*model.WarehouseInventoryItem, error) {
+	uid := ctx.Value("userID").(string)
+	inv := &model.WarehouseInventory{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+	specID, err := inv.ResolveFrameSpecIDByFrameID(frameID)
+	if err != nil {
+		return nil, err
+	}
+	return inv.UpdateFrameSpecByDelta(specID, delta)
+}
+
 // SetWarehouseAutoUpdateFromHives is the resolver for the setWarehouseAutoUpdateFromHives field.
 func (r *mutationResolver) SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error) {
 	uid := ctx.Value("userID").(string)
@@ -1355,6 +1376,15 @@ func (r *queryResolver) WarehouseModules(ctx context.Context) ([]*model.Warehous
 	}).List()
 }
 
+// WarehouseInventory is the resolver for the warehouseInventory field.
+func (r *queryResolver) WarehouseInventory(ctx context.Context) ([]*model.WarehouseInventoryItem, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.WarehouseInventory{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).List()
+}
+
 // WarehouseSettings is the resolver for the warehouseSettings field.
 func (r *queryResolver) WarehouseSettings(ctx context.Context) (*model.WarehouseSettings, error) {
 	uid := ctx.Value("userID").(string)
@@ -1371,6 +1401,42 @@ func (r *queryResolver) WarehouseModuleStats(ctx context.Context, moduleType mod
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).UsageStats(moduleType)
+}
+
+// WarehouseInventoryStats is the resolver for the warehouseInventoryStats field.
+func (r *queryResolver) WarehouseInventoryStats(ctx context.Context, itemKey string) (*model.WarehouseInventoryStats, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.WarehouseInventory{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).StatsByKey(itemKey)
+}
+
+// BoxSystems is the resolver for the boxSystems field.
+func (r *queryResolver) BoxSystems(ctx context.Context) ([]*model.BoxSystem, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSystem{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListVisible()
+}
+
+// FrameSpecs is the resolver for the frameSpecs field.
+func (r *queryResolver) FrameSpecs(ctx context.Context, systemID *string) ([]*model.FrameSpec, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.FrameSpec{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListVisible(systemID)
+}
+
+// BoxSpecs is the resolver for the boxSpecs field.
+func (r *queryResolver) BoxSpecs(ctx context.Context, systemID string) ([]*model.BoxSpec, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSpec{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).ListVisible(systemID)
 }
 
 // WarehouseQueens is the resolver for the warehouseQueens field.

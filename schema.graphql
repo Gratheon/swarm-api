@@ -45,11 +45,26 @@ type Query {
   "List warehouse module counts for the authenticated user"
   warehouseModules: [WarehouseModule!]!
 
+  "List flexible warehouse inventory items (box modules + frame specs)"
+  warehouseInventory: [WarehouseInventoryItem!]!
+
   "Warehouse behavior settings for the authenticated user"
   warehouseSettings: WarehouseSettings!
 
   "Detailed warehouse module usage based on active hive structure"
   warehouseModuleStats(moduleType: WarehouseModuleType!): WarehouseModuleStats!
+
+  "Detailed warehouse inventory usage by dynamic inventory key"
+  warehouseInventoryStats(itemKey: String!): WarehouseInventoryStats!
+
+  "Visible box systems (global + user-owned)"
+  boxSystems: [BoxSystem!]!
+
+  "Visible frame specs for a specific system (or all when omitted)"
+  frameSpecs(systemId: ID): [FrameSpec!]!
+
+  "Visible box specs for a specific system"
+  boxSpecs(systemId: ID!): [BoxSpec!]!
 
   "Queens stored in warehouse (family records not assigned to any hive)"
   warehouseQueens: [Family!]!
@@ -165,6 +180,24 @@ type Mutation {
   "Set warehouse module count for the authenticated user"
   setWarehouseModuleCount(moduleType: WarehouseModuleType!, count: Int!): WarehouseModule!
 
+  "Set dynamic warehouse inventory count by item key"
+  setWarehouseInventoryCount(itemKey: String!, count: Int!): WarehouseInventoryItem!
+
+  "Create a custom box system by cloning the default Langstroth compatibility"
+  createBoxSystem(name: String!): BoxSystem!
+
+  "Rename existing custom box system"
+  renameBoxSystem(id: ID!, name: String!): BoxSystem!
+
+  "Deactivate custom box system"
+  deactivateBoxSystem(id: ID!): Boolean!
+
+  "Adjust frame inventory using target box compatibility and frame type"
+  adjustWarehouseFrameInventory(boxId: ID!, frameType: FrameType!, delta: Int!): WarehouseInventoryItem
+
+  "Adjust frame inventory using existing frame identity"
+  adjustWarehouseFrameInventoryByFrame(frameId: ID!, delta: Int!): WarehouseInventoryItem
+
   "Set automatic warehouse count updates from hive structure changes"
   setWarehouseAutoUpdateFromHives(enabled: Boolean!): WarehouseSettings!
 
@@ -211,6 +244,52 @@ type WarehouseModuleHiveUsage {
 
 type WarehouseModuleStats {
   moduleType: WarehouseModuleType!
+  availableCount: Int!
+  inUseCount: Int!
+  totalCount: Int!
+  topHives: [WarehouseModuleHiveUsage!]!
+}
+
+enum WarehouseInventoryItemKind {
+  BOX_MODULE
+  FRAME_SPEC
+}
+
+type BoxSystem {
+  id: ID!
+  name: String!
+  isDefault: Boolean!
+}
+
+type BoxSpec {
+  id: ID!
+  systemId: ID!
+  code: String!
+  legacyBoxType: BoxType!
+  displayName: String!
+}
+
+type FrameSpec {
+  id: ID!
+  systemId: ID!
+  code: String!
+  frameType: FrameType!
+  displayName: String!
+}
+
+type WarehouseInventoryItem {
+  key: String!
+  kind: WarehouseInventoryItemKind!
+  groupKey: String!
+  title: String!
+  description: String!
+  count: Int!
+  moduleType: WarehouseModuleType
+  frameSpec: FrameSpec
+}
+
+type WarehouseInventoryStats {
+  key: String!
   availableCount: Int!
   inUseCount: Int!
   totalCount: Int!
@@ -328,6 +407,9 @@ input HiveInput {
   frameCount: Int!
   "Initial section type used for first created boxes"
   initialBoxType: BoxType
+
+  "Selected box system for this hive (defaults to Langstroth)"
+  boxSystemId: ID
   "Color markers for each box"
   colors: [String]
 }
@@ -346,6 +428,8 @@ input HiveUpdateInput {
 "Hive name is now stored in Family.name"
 type Hive @key(fields: "id") {
   id: ID!
+  "Assigned box system (null for horizontal hives that are independent)"
+  boxSystemId: ID
   "Hive identifier number for easy reference"
   hiveNumber: Int
   "Free-form notes about hive condition or observations"
