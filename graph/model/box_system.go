@@ -83,7 +83,7 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 		return nil, err
 	}
 	if ownedCount >= 4 {
-		return nil, errors.New("maximum 4 box systems allowed")
+		return nil, errors.New("maximum 5 box systems allowed")
 	}
 
 	tx := r.Db.MustBegin()
@@ -231,7 +231,7 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 	return r.GetOwnedByID(idNum)
 }
 
-func (r *BoxSystem) Deactivate(id string) (bool, error) {
+func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, error) {
 	var isDefault bool
 	err := r.Db.Get(&isDefault, `
 		SELECT is_default
@@ -251,7 +251,64 @@ func (r *BoxSystem) Deactivate(id string) (bool, error) {
 		return false, errors.New("default box system cannot be deactivated")
 	}
 
+	replacementID := strings.TrimSpace(func() string {
+		if replacementSystemID == nil {
+			return ""
+		}
+		return *replacementSystemID
+	}())
+
+	if replacementID != "" {
+		var replacementExists int
+		err = r.Db.Get(&replacementExists, `
+			SELECT COUNT(*)
+			FROM box_systems
+			WHERE id = ?
+			  AND active = 1
+			  AND (user_id = ? OR user_id IS NULL)
+		`, replacementID, r.UserID)
+		if err != nil {
+			return false, err
+		}
+		if replacementExists == 0 {
+			return false, errors.New("replacement box system not found")
+		}
+		if replacementID == id {
+			return false, errors.New("replacement box system must be different")
+		}
+	}
+
 	tx := r.Db.MustBegin()
+	var hivesUsingSystem int
+	err = tx.Get(&hivesUsingSystem, `
+		SELECT COUNT(*)
+		FROM hives
+		WHERE user_id = ?
+		  AND active = 1
+		  AND box_system_id = ?
+	`, r.UserID, id)
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+	if hivesUsingSystem > 0 && replacementID == "" {
+		tx.Rollback()
+		return false, errors.New("replacement box system is required for active hives using this system")
+	}
+	if hivesUsingSystem > 0 {
+		_, err = tx.Exec(`
+			UPDATE hives
+			SET box_system_id = ?
+			WHERE user_id = ?
+			  AND active = 1
+			  AND box_system_id = ?
+		`, replacementID, r.UserID, id)
+		if err != nil {
+			tx.Rollback()
+			return false, err
+		}
+	}
+
 	_, err = tx.NamedExec(`
 		UPDATE box_systems
 		SET active = 0

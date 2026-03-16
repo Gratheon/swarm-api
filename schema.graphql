@@ -189,8 +189,8 @@ type Mutation {
   "Rename existing custom box system"
   renameBoxSystem(id: ID!, name: String!): BoxSystem!
 
-  "Deactivate custom box system"
-  deactivateBoxSystem(id: ID!): Boolean!
+  "Deactivate custom box system. If active hives use this system, replacementSystemId is required and those hives are reassigned."
+  deactivateBoxSystem(id: ID!, replacementSystemId: ID): Boolean!
 
   "Adjust frame inventory using target box compatibility and frame type"
   adjustWarehouseFrameInventory(boxId: ID!, frameType: FrameType!, delta: Int!): WarehouseInventoryItem

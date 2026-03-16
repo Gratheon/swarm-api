@@ -1143,12 +1143,12 @@ func (r *mutationResolver) RenameBoxSystem(ctx context.Context, id string, name 
 }
 
 // DeactivateBoxSystem is the resolver for the deactivateBoxSystem field.
-func (r *mutationResolver) DeactivateBoxSystem(ctx context.Context, id string) (bool, error) {
+func (r *mutationResolver) DeactivateBoxSystem(ctx context.Context, id string, replacementSystemID *string) (bool, error) {
 	uid := ctx.Value("userID").(string)
 	return (&model.BoxSystem{
 		Db:     r.Resolver.Db,
 		UserID: uid,
-	}).Deactivate(id)
+	}).Deactivate(id, replacementSystemID)
 }
 
 // AdjustWarehouseFrameInventory is the resolver for the adjustWarehouseFrameInventory field.

@@ -193,7 +193,7 @@ type ComplexityRoot struct {
 		CreateBoxSystem                      func(childComplexity int, name string) int
 		DeactivateApiary                     func(childComplexity int, id string) int
 		DeactivateBox                        func(childComplexity int, id string) int
-		DeactivateBoxSystem                  func(childComplexity int, id string) int
+		DeactivateBoxSystem                  func(childComplexity int, id string, replacementSystemID *string) int
 		DeactivateDevice                     func(childComplexity int, id string) int
 		DeactivateFrame                      func(childComplexity int, id string) int
 		DeactivateHive                       func(childComplexity int, id string) int
@@ -376,7 +376,7 @@ type MutationResolver interface {
 	SetWarehouseInventoryCount(ctx context.Context, itemKey string, count int) (*model.WarehouseInventoryItem, error)
 	CreateBoxSystem(ctx context.Context, name string) (*model.BoxSystem, error)
 	RenameBoxSystem(ctx context.Context, id string, name string) (*model.BoxSystem, error)
-	DeactivateBoxSystem(ctx context.Context, id string) (bool, error)
+	DeactivateBoxSystem(ctx context.Context, id string, replacementSystemID *string) (bool, error)
 	AdjustWarehouseFrameInventory(ctx context.Context, boxID string, frameType model.FrameType, delta int) (*model.WarehouseInventoryItem, error)
 	AdjustWarehouseFrameInventoryByFrame(ctx context.Context, frameID string, delta int) (*model.WarehouseInventoryItem, error)
 	SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error)
@@ -1177,7 +1177,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DeactivateBoxSystem(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeactivateBoxSystem(childComplexity, args["id"].(string), args["replacementSystemId"].(*string)), true
 	case "Mutation.deactivateDevice":
 		if e.ComplexityRoot.Mutation.DeactivateDevice == nil {
 			break
@@ -2139,8 +2139,8 @@ type Mutation {
   "Rename existing custom box system"
   renameBoxSystem(id: ID!, name: String!): BoxSystem!
 
-  "Deactivate custom box system"
-  deactivateBoxSystem(id: ID!): Boolean!
+  "Deactivate custom box system. If active hives use this system, replacementSystemId is required and those hives are reassigned."
+  deactivateBoxSystem(id: ID!, replacementSystemId: ID): Boolean!
 
   "Adjust frame inventory using target box compatibility and frame type"
   adjustWarehouseFrameInventory(boxId: ID!, frameType: FrameType!, delta: Int!): WarehouseInventoryItem
@@ -2952,6 +2952,11 @@ func (ec *executionContext) field_Mutation_deactivateBoxSystem_args(ctx context.
 		return nil, err
 	}
 	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "replacementSystemId", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["replacementSystemId"] = arg1
 	return args, nil
 }
 
@@ -8518,7 +8523,7 @@ func (ec *executionContext) _Mutation_deactivateBoxSystem(ctx context.Context, f
 		ec.fieldContext_Mutation_deactivateBoxSystem,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DeactivateBoxSystem(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeactivateBoxSystem(ctx, fc.Args["id"].(string), fc.Args["replacementSystemId"].(*string))
 		},
 		nil,
 		ec.marshalNBoolean2bool,
