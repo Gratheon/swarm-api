@@ -31,9 +31,24 @@ func (r *BoxSystem) ListVisible() ([]*BoxSystem, error) {
 			active
 		FROM box_systems
 		WHERE active = 1
-		  AND (user_id = ? OR user_id IS NULL)
+		  AND (
+			user_id = ?
+			OR (
+				user_id IS NULL
+				AND (
+					is_default = 0
+					OR NOT EXISTS (
+						SELECT 1
+						FROM box_systems owned_defaults
+						WHERE owned_defaults.user_id = ?
+						  AND owned_defaults.active = 1
+						  AND owned_defaults.is_default = 1
+					)
+				)
+			)
+		  )
 		ORDER BY (user_id IS NULL) ASC, is_default DESC, id ASC
-	`, r.UserID)
+	`, r.UserID, r.UserID)
 	return rows, err
 }
 
@@ -209,13 +224,16 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 		return nil, errors.New("name is required")
 	}
 
-	var isDefault bool
-	err := r.Db.Get(&isDefault, `
-		SELECT is_default
+	var row struct {
+		UserID    sql.NullString `db:"user_id"`
+		IsDefault bool           `db:"is_default"`
+	}
+	err := r.Db.Get(&row, `
+		SELECT user_id, is_default
 		FROM box_systems
 		WHERE id = ?
-		  AND user_id = ?
 		  AND active = 1
+		  AND (user_id = ? OR user_id IS NULL)
 		LIMIT 1
 	`, id, r.UserID)
 	if err == sql.ErrNoRows {
@@ -224,9 +242,69 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 	if err != nil {
 		return nil, err
 	}
-	if isDefault {
-		return nil, errors.New("default box system cannot be renamed")
+
+	if !row.UserID.Valid {
+		if !row.IsDefault {
+			return nil, errors.New("box system is not editable")
+		}
+
+		var existingOwnedDefaultID int
+		existingOwnedDefaultErr := r.Db.Get(&existingOwnedDefaultID, `
+			SELECT id
+			FROM box_systems
+			WHERE user_id = ?
+			  AND is_default = 1
+			  AND active = 1
+			ORDER BY id ASC
+			LIMIT 1
+		`, r.UserID)
+		if existingOwnedDefaultErr == nil {
+			_, err = r.Db.NamedExec(`
+				UPDATE box_systems
+				SET name = :name
+				WHERE id = :id
+				  AND user_id = :user_id
+				  AND active = 1
+			`, map[string]interface{}{
+				"id":      existingOwnedDefaultID,
+				"user_id": r.UserID,
+				"name":    trimmed,
+			})
+			if err != nil {
+				return nil, err
+			}
+			return r.GetOwnedByID(existingOwnedDefaultID)
+		}
+		if existingOwnedDefaultErr != nil && existingOwnedDefaultErr != sql.ErrNoRows {
+			return nil, existingOwnedDefaultErr
+		}
+
+		created, createErr := r.Create(trimmed)
+		if createErr != nil {
+			return nil, createErr
+		}
+
+		_, err = r.Db.NamedExec(`
+			UPDATE box_systems
+			SET is_default = 1
+			WHERE id = :id
+			  AND user_id = :user_id
+			  AND active = 1
+		`, map[string]interface{}{
+			"id":      created.ID,
+			"user_id": r.UserID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		idNum, convErr := strconv.Atoi(created.ID)
+		if convErr != nil {
+			return nil, convErr
+		}
+		return r.GetOwnedByID(idNum)
 	}
+
 	_, err = r.Db.NamedExec(`
 		UPDATE box_systems
 		SET name = :name

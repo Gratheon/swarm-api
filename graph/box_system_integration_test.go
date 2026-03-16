@@ -110,3 +110,70 @@ func TestSetBoxProfileSourceDetectsCycle(t *testing.T) {
 	assert.ErrorContains(t, err, "would create a cycle")
 	assert.False(t, ok)
 }
+
+func TestRenameGlobalDefaultCreatesOwnedDefault(t *testing.T) {
+	t.Parallel()
+
+	dbConn := setupTestDB(t)
+	if dbConn == nil {
+		return
+	}
+	defer dbConn.Close()
+
+	userID := "999303"
+	systemModel := &model.BoxSystem{
+		Db:     dbConn,
+		UserID: userID,
+	}
+	defer cleanupBoxSystemsByUser(t, systemModel)
+	requireLangstrothSeeded(t, systemModel)
+
+	var globalDefaultID string
+	err := dbConn.Get(&globalDefaultID, `
+		SELECT CAST(id AS CHAR)
+		FROM box_systems
+		WHERE user_id IS NULL
+		  AND is_default = 1
+		  AND active = 1
+		ORDER BY id ASC
+		LIMIT 1
+	`)
+	require.NoError(t, err)
+	require.NotEmpty(t, globalDefaultID)
+
+	renamed, err := systemModel.Rename(globalDefaultID, "My Hive System")
+	require.NoError(t, err)
+	require.NotNil(t, renamed)
+	assert.Equal(t, userID, renamed.UserID)
+	assert.Equal(t, "My Hive System", renamed.Name)
+	assert.True(t, renamed.IsDefault)
+
+	var globalName string
+	err = dbConn.Get(&globalName, `
+		SELECT name
+		FROM box_systems
+		WHERE id = ?
+		  AND user_id IS NULL
+		  AND active = 1
+		LIMIT 1
+	`, globalDefaultID)
+	require.NoError(t, err)
+	assert.Equal(t, "Langstroth", globalName)
+
+	visible, err := systemModel.ListVisible()
+	require.NoError(t, err)
+	require.NotEmpty(t, visible)
+
+	hasOwnedDefault := false
+	hasGlobalDefault := false
+	for _, item := range visible {
+		if item.IsDefault && item.UserID == userID {
+			hasOwnedDefault = true
+		}
+		if item.IsDefault && item.UserID == "" {
+			hasGlobalDefault = true
+		}
+	}
+	assert.True(t, hasOwnedDefault)
+	assert.False(t, hasGlobalDefault)
+}
