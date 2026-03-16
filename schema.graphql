@@ -201,6 +201,19 @@ type Mutation {
   "Set frame source system for a specific box type inside an owned box system"
   setBoxSystemFrameSource(systemId: ID!, boxType: BoxType!, frameSourceSystemId: ID!): Boolean!
 
+  "Set reference dimensions for a section type inside an owned box system"
+  setBoxSpecDimensions(
+    systemId: ID!
+    boxType: BoxType!
+    internalWidthMm: Int
+    internalLengthMm: Int
+    internalHeightMm: Int
+    externalWidthMm: Int
+    externalLengthMm: Int
+    frameWidthMm: Int
+    frameHeightMm: Int
+  ): Boolean!
+
   "Adjust frame inventory using target box compatibility and frame type"
   adjustWarehouseFrameInventory(boxId: ID!, frameType: FrameType!, delta: Int!): WarehouseInventoryItem
 
@@ -277,6 +290,13 @@ type BoxSpec {
   code: String!
   legacyBoxType: BoxType!
   displayName: String!
+  internalWidthMm: Int
+  internalLengthMm: Int
+  internalHeightMm: Int
+  externalWidthMm: Int
+  externalLengthMm: Int
+  frameWidthMm: Int
+  frameHeightMm: Int
 }
 
 type BoxSystemFrameSetting {

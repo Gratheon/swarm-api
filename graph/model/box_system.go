@@ -139,8 +139,33 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 	}
 
 	_, err = tx.Exec(`
-		INSERT INTO box_specs (system_id, code, legacy_box_type, display_name, active)
-		SELECT ?, code, legacy_box_type, display_name, active
+		INSERT INTO box_specs (
+			system_id,
+			code,
+			legacy_box_type,
+			display_name,
+			internal_width_mm,
+			internal_length_mm,
+			internal_height_mm,
+			external_width_mm,
+			external_length_mm,
+			frame_width_mm,
+			frame_height_mm,
+			active
+		)
+		SELECT
+			?,
+			code,
+			legacy_box_type,
+				display_name,
+				internal_width_mm,
+				internal_length_mm,
+				internal_height_mm,
+				external_width_mm,
+				external_length_mm,
+				frame_width_mm,
+				frame_height_mm,
+				active
 		FROM box_specs
 		WHERE system_id = ?
 	`, systemID, sourceID)

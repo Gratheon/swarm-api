@@ -1169,6 +1169,25 @@ func (r *mutationResolver) SetBoxSystemFrameSource(ctx context.Context, systemID
 	}).SetFrameSource(systemID, boxType, frameSourceSystemID)
 }
 
+// SetBoxSpecDimensions is the resolver for the setBoxSpecDimensions field.
+func (r *mutationResolver) SetBoxSpecDimensions(ctx context.Context, systemID string, boxType model.BoxType, internalWidthMm *int, internalLengthMm *int, internalHeightMm *int, externalWidthMm *int, externalLengthMm *int, frameWidthMm *int, frameHeightMm *int) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	return (&model.BoxSpec{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}).SetDimensionsBySystemAndType(
+		systemID,
+		boxType,
+		internalWidthMm,
+		internalLengthMm,
+		internalHeightMm,
+		externalWidthMm,
+		externalLengthMm,
+		frameWidthMm,
+		frameHeightMm,
+	)
+}
+
 // AdjustWarehouseFrameInventory is the resolver for the adjustWarehouseFrameInventory field.
 func (r *mutationResolver) AdjustWarehouseFrameInventory(ctx context.Context, boxID string, frameType model.FrameType, delta int) (*model.WarehouseInventoryItem, error) {
 	uid := ctx.Value("userID").(string)

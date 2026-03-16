@@ -74,11 +74,18 @@ type ComplexityRoot struct {
 	}
 
 	BoxSpec struct {
-		Code          func(childComplexity int) int
-		DisplayName   func(childComplexity int) int
-		ID            func(childComplexity int) int
-		LegacyBoxType func(childComplexity int) int
-		SystemID      func(childComplexity int) int
+		Code             func(childComplexity int) int
+		DisplayName      func(childComplexity int) int
+		ExternalLengthMM func(childComplexity int) int
+		ExternalWidthMM  func(childComplexity int) int
+		FrameHeightMM    func(childComplexity int) int
+		FrameWidthMM     func(childComplexity int) int
+		ID               func(childComplexity int) int
+		InternalHeightMM func(childComplexity int) int
+		InternalLengthMM func(childComplexity int) int
+		InternalWidthMM  func(childComplexity int) int
+		LegacyBoxType    func(childComplexity int) int
+		SystemID         func(childComplexity int) int
 	}
 
 	BoxSystem struct {
@@ -213,6 +220,7 @@ type ComplexityRoot struct {
 		MoveQueenToWarehouse                 func(childComplexity int, hiveID string, familyID string) int
 		RemoveQueenFromHive                  func(childComplexity int, hiveID string, familyID string) int
 		RenameBoxSystem                      func(childComplexity int, id string, name string) int
+		SetBoxSpecDimensions                 func(childComplexity int, systemID string, boxType model.BoxType, internalWidthMm *int, internalLengthMm *int, internalHeightMm *int, externalWidthMm *int, externalLengthMm *int, frameWidthMm *int, frameHeightMm *int) int
 		SetBoxSystemBoxProfileSource         func(childComplexity int, systemID string, boxSourceSystemID *string) int
 		SetBoxSystemFrameSource              func(childComplexity int, systemID string, boxType model.BoxType, frameSourceSystemID string) int
 		SetWarehouseAutoUpdateFromHives      func(childComplexity int, enabled bool) int
@@ -391,6 +399,7 @@ type MutationResolver interface {
 	DeactivateBoxSystem(ctx context.Context, id string, replacementSystemID *string) (bool, error)
 	SetBoxSystemBoxProfileSource(ctx context.Context, systemID string, boxSourceSystemID *string) (bool, error)
 	SetBoxSystemFrameSource(ctx context.Context, systemID string, boxType model.BoxType, frameSourceSystemID string) (bool, error)
+	SetBoxSpecDimensions(ctx context.Context, systemID string, boxType model.BoxType, internalWidthMm *int, internalLengthMm *int, internalHeightMm *int, externalWidthMm *int, externalLengthMm *int, frameWidthMm *int, frameHeightMm *int) (bool, error)
 	AdjustWarehouseFrameInventory(ctx context.Context, boxID string, frameType model.FrameType, delta int) (*model.WarehouseInventoryItem, error)
 	AdjustWarehouseFrameInventoryByFrame(ctx context.Context, frameID string, delta int) (*model.WarehouseInventoryItem, error)
 	SetWarehouseAutoUpdateFromHives(ctx context.Context, enabled bool) (*model.WarehouseSettings, error)
@@ -582,12 +591,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BoxSpec.DisplayName(childComplexity), true
+	case "BoxSpec.externalLengthMm":
+		if e.ComplexityRoot.BoxSpec.ExternalLengthMM == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSpec.ExternalLengthMM(childComplexity), true
+	case "BoxSpec.externalWidthMm":
+		if e.ComplexityRoot.BoxSpec.ExternalWidthMM == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSpec.ExternalWidthMM(childComplexity), true
+	case "BoxSpec.frameHeightMm":
+		if e.ComplexityRoot.BoxSpec.FrameHeightMM == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSpec.FrameHeightMM(childComplexity), true
+	case "BoxSpec.frameWidthMm":
+		if e.ComplexityRoot.BoxSpec.FrameWidthMM == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSpec.FrameWidthMM(childComplexity), true
 	case "BoxSpec.id":
 		if e.ComplexityRoot.BoxSpec.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.BoxSpec.ID(childComplexity), true
+	case "BoxSpec.internalHeightMm":
+		if e.ComplexityRoot.BoxSpec.InternalHeightMM == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSpec.InternalHeightMM(childComplexity), true
+	case "BoxSpec.internalLengthMm":
+		if e.ComplexityRoot.BoxSpec.InternalLengthMM == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSpec.InternalLengthMM(childComplexity), true
+	case "BoxSpec.internalWidthMm":
+		if e.ComplexityRoot.BoxSpec.InternalWidthMM == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BoxSpec.InternalWidthMM(childComplexity), true
 	case "BoxSpec.legacyBoxType":
 		if e.ComplexityRoot.BoxSpec.LegacyBoxType == nil {
 			break
@@ -1340,6 +1391,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RenameBoxSystem(childComplexity, args["id"].(string), args["name"].(string)), true
+	case "Mutation.setBoxSpecDimensions":
+		if e.ComplexityRoot.Mutation.SetBoxSpecDimensions == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setBoxSpecDimensions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetBoxSpecDimensions(childComplexity, args["systemId"].(string), args["boxType"].(model.BoxType), args["internalWidthMm"].(*int), args["internalLengthMm"].(*int), args["internalHeightMm"].(*int), args["externalWidthMm"].(*int), args["externalLengthMm"].(*int), args["frameWidthMm"].(*int), args["frameHeightMm"].(*int)), true
 	case "Mutation.setBoxSystemBoxProfileSource":
 		if e.ComplexityRoot.Mutation.SetBoxSystemBoxProfileSource == nil {
 			break
@@ -2231,6 +2293,19 @@ type Mutation {
   "Set frame source system for a specific box type inside an owned box system"
   setBoxSystemFrameSource(systemId: ID!, boxType: BoxType!, frameSourceSystemId: ID!): Boolean!
 
+  "Set reference dimensions for a section type inside an owned box system"
+  setBoxSpecDimensions(
+    systemId: ID!
+    boxType: BoxType!
+    internalWidthMm: Int
+    internalLengthMm: Int
+    internalHeightMm: Int
+    externalWidthMm: Int
+    externalLengthMm: Int
+    frameWidthMm: Int
+    frameHeightMm: Int
+  ): Boolean!
+
   "Adjust frame inventory using target box compatibility and frame type"
   adjustWarehouseFrameInventory(boxId: ID!, frameType: FrameType!, delta: Int!): WarehouseInventoryItem
 
@@ -2307,6 +2382,13 @@ type BoxSpec {
   code: String!
   legacyBoxType: BoxType!
   displayName: String!
+  internalWidthMm: Int
+  internalLengthMm: Int
+  internalHeightMm: Int
+  externalWidthMm: Int
+  externalLengthMm: Int
+  frameWidthMm: Int
+  frameHeightMm: Int
 }
 
 type BoxSystemFrameSetting {
@@ -3211,6 +3293,57 @@ func (ec *executionContext) field_Mutation_renameBoxSystem_args(ctx context.Cont
 		return nil, err
 	}
 	args["name"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setBoxSpecDimensions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "systemId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["systemId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "boxType", ec.unmarshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBoxType)
+	if err != nil {
+		return nil, err
+	}
+	args["boxType"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "internalWidthMm", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["internalWidthMm"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "internalLengthMm", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["internalLengthMm"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "internalHeightMm", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["internalHeightMm"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "externalWidthMm", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["externalWidthMm"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "externalLengthMm", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["externalLengthMm"] = arg6
+	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "frameWidthMm", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["frameWidthMm"] = arg7
+	arg8, err := graphql.ProcessArgField(ctx, rawArgs, "frameHeightMm", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["frameHeightMm"] = arg8
 	return args, nil
 }
 
@@ -4516,6 +4649,209 @@ func (ec *executionContext) fieldContext_BoxSpec_displayName(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSpec_internalWidthMm(ctx context.Context, field graphql.CollectedField, obj *model.BoxSpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSpec_internalWidthMm,
+		func(ctx context.Context) (any, error) {
+			return obj.InternalWidthMM, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSpec_internalWidthMm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSpec_internalLengthMm(ctx context.Context, field graphql.CollectedField, obj *model.BoxSpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSpec_internalLengthMm,
+		func(ctx context.Context) (any, error) {
+			return obj.InternalLengthMM, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSpec_internalLengthMm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSpec_internalHeightMm(ctx context.Context, field graphql.CollectedField, obj *model.BoxSpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSpec_internalHeightMm,
+		func(ctx context.Context) (any, error) {
+			return obj.InternalHeightMM, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSpec_internalHeightMm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSpec_externalWidthMm(ctx context.Context, field graphql.CollectedField, obj *model.BoxSpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSpec_externalWidthMm,
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalWidthMM, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSpec_externalWidthMm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSpec_externalLengthMm(ctx context.Context, field graphql.CollectedField, obj *model.BoxSpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSpec_externalLengthMm,
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalLengthMM, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSpec_externalLengthMm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSpec_frameWidthMm(ctx context.Context, field graphql.CollectedField, obj *model.BoxSpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSpec_frameWidthMm,
+		func(ctx context.Context) (any, error) {
+			return obj.FrameWidthMM, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSpec_frameWidthMm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BoxSpec_frameHeightMm(ctx context.Context, field graphql.CollectedField, obj *model.BoxSpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoxSpec_frameHeightMm,
+		func(ctx context.Context) (any, error) {
+			return obj.FrameHeightMM, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoxSpec_frameHeightMm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoxSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8951,6 +9287,47 @@ func (ec *executionContext) fieldContext_Mutation_setBoxSystemFrameSource(ctx co
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_setBoxSpecDimensions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_setBoxSpecDimensions,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetBoxSpecDimensions(ctx, fc.Args["systemId"].(string), fc.Args["boxType"].(model.BoxType), fc.Args["internalWidthMm"].(*int), fc.Args["internalLengthMm"].(*int), fc.Args["internalHeightMm"].(*int), fc.Args["externalWidthMm"].(*int), fc.Args["externalLengthMm"].(*int), fc.Args["frameWidthMm"].(*int), fc.Args["frameHeightMm"].(*int))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setBoxSpecDimensions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setBoxSpecDimensions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_adjustWarehouseFrameInventory(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10218,6 +10595,20 @@ func (ec *executionContext) fieldContext_Query_boxSpecs(ctx context.Context, fie
 				return ec.fieldContext_BoxSpec_legacyBoxType(ctx, field)
 			case "displayName":
 				return ec.fieldContext_BoxSpec_displayName(ctx, field)
+			case "internalWidthMm":
+				return ec.fieldContext_BoxSpec_internalWidthMm(ctx, field)
+			case "internalLengthMm":
+				return ec.fieldContext_BoxSpec_internalLengthMm(ctx, field)
+			case "internalHeightMm":
+				return ec.fieldContext_BoxSpec_internalHeightMm(ctx, field)
+			case "externalWidthMm":
+				return ec.fieldContext_BoxSpec_externalWidthMm(ctx, field)
+			case "externalLengthMm":
+				return ec.fieldContext_BoxSpec_externalLengthMm(ctx, field)
+			case "frameWidthMm":
+				return ec.fieldContext_BoxSpec_frameWidthMm(ctx, field)
+			case "frameHeightMm":
+				return ec.fieldContext_BoxSpec_frameHeightMm(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BoxSpec", field.Name)
 		},
@@ -13961,6 +14352,20 @@ func (ec *executionContext) _BoxSpec(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "internalWidthMm":
+			out.Values[i] = ec._BoxSpec_internalWidthMm(ctx, field, obj)
+		case "internalLengthMm":
+			out.Values[i] = ec._BoxSpec_internalLengthMm(ctx, field, obj)
+		case "internalHeightMm":
+			out.Values[i] = ec._BoxSpec_internalHeightMm(ctx, field, obj)
+		case "externalWidthMm":
+			out.Values[i] = ec._BoxSpec_externalWidthMm(ctx, field, obj)
+		case "externalLengthMm":
+			out.Values[i] = ec._BoxSpec_externalLengthMm(ctx, field, obj)
+		case "frameWidthMm":
+			out.Values[i] = ec._BoxSpec_frameWidthMm(ctx, field, obj)
+		case "frameHeightMm":
+			out.Values[i] = ec._BoxSpec_frameHeightMm(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15340,6 +15745,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "setBoxSystemFrameSource":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setBoxSystemFrameSource(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setBoxSpecDimensions":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setBoxSpecDimensions(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
