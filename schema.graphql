@@ -407,16 +407,25 @@ input TreatmentOfHiveInput {
 input ApiaryInput {
   "Display name of the apiary"
   name: String!
+  "Apiary mode: fixed location or transported mobile setup"
+  type: ApiaryType
   "Latitude coordinate as string"
   lat: String
   "Longitude coordinate as string"
   lng: String
 }
 
+"Defines whether an apiary is fixed in one location or transported"
+enum ApiaryType {
+  STATIC
+  MOBILE
+}
+
 "Represents a beekeeping location containing multiple hives"
 type Apiary {
   id: ID!
   name: String
+  type: ApiaryType!
   "List of active hives in this apiary"
   hives(sortBy: HiveSortBy, sortOrder: SortOrder): [Hive]
   "Computed from lat/lng coordinates"

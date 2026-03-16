@@ -13,6 +13,8 @@ import (
 type ApiaryInput struct {
 	// Display name of the apiary
 	Name string `json:"name"`
+	// Apiary mode: fixed location or transported mobile setup
+	Type *ApiaryType `json:"type,omitempty"`
 	// Latitude coordinate as string
 	Lat *string `json:"lat,omitempty"`
 	// Longitude coordinate as string

@@ -50,6 +50,7 @@ type ComplexityRoot struct {
 		Lng      func(childComplexity int) int
 		Location func(childComplexity int) int
 		Name     func(childComplexity int) int
+		Type     func(childComplexity int) int
 	}
 
 	ApiaryObstacle struct {
@@ -512,6 +513,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Apiary.Name(childComplexity), true
+	case "Apiary.type":
+		if e.ComplexityRoot.Apiary.Type == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Apiary.Type(childComplexity), true
 
 	case "ApiaryObstacle.apiaryId":
 		if e.ComplexityRoot.ApiaryObstacle.ApiaryID == nil {
@@ -2646,16 +2653,25 @@ input TreatmentOfHiveInput {
 input ApiaryInput {
   "Display name of the apiary"
   name: String!
+  "Apiary mode: fixed location or transported mobile setup"
+  type: ApiaryType
   "Latitude coordinate as string"
   lat: String
   "Longitude coordinate as string"
   lng: String
 }
 
+"Defines whether an apiary is fixed in one location or transported"
+enum ApiaryType {
+  STATIC
+  MOBILE
+}
+
 "Represents a beekeeping location containing multiple hives"
 type Apiary {
   id: ID!
   name: String
+  type: ApiaryType!
   "List of active hives in this apiary"
   hives(sortBy: HiveSortBy, sortOrder: SortOrder): [Hive]
   "Computed from lat/lng coordinates"
@@ -4135,6 +4151,35 @@ func (ec *executionContext) fieldContext_Apiary_name(_ context.Context, field gr
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Apiary_type(ctx context.Context, field graphql.CollectedField, obj *model.Apiary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Apiary_type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNApiaryType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Apiary_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Apiary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ApiaryType does not have child fields")
 		},
 	}
 	return fc, nil
@@ -7964,6 +8009,8 @@ func (ec *executionContext) fieldContext_Mutation_addApiary(ctx context.Context,
 				return ec.fieldContext_Apiary_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Apiary_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Apiary_type(ctx, field)
 			case "hives":
 				return ec.fieldContext_Apiary_hives(ctx, field)
 			case "location":
@@ -8019,6 +8066,8 @@ func (ec *executionContext) fieldContext_Mutation_updateApiary(ctx context.Conte
 				return ec.fieldContext_Apiary_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Apiary_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Apiary_type(ctx, field)
 			case "hives":
 				return ec.fieldContext_Apiary_hives(ctx, field)
 			case "location":
@@ -10543,6 +10592,8 @@ func (ec *executionContext) fieldContext_Query_apiary(ctx context.Context, field
 				return ec.fieldContext_Apiary_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Apiary_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Apiary_type(ctx, field)
 			case "hives":
 				return ec.fieldContext_Apiary_hives(ctx, field)
 			case "location":
@@ -10697,6 +10748,8 @@ func (ec *executionContext) fieldContext_Query_apiaries(_ context.Context, field
 				return ec.fieldContext_Apiary_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Apiary_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Apiary_type(ctx, field)
 			case "hives":
 				return ec.fieldContext_Apiary_hives(ctx, field)
 			case "location":
@@ -14185,7 +14238,7 @@ func (ec *executionContext) unmarshalInputApiaryInput(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "lat", "lng"}
+	fieldsInOrder := [...]string{"name", "type", "lat", "lng"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14199,6 +14252,13 @@ func (ec *executionContext) unmarshalInputApiaryInput(ctx context.Context, obj a
 				return it, err
 			}
 			it.Name = data
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalOApiaryType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
 		case "lat":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -15062,6 +15122,11 @@ func (ec *executionContext) _Apiary(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "name":
 			out.Values[i] = ec._Apiary_name(ctx, field, obj)
+		case "type":
+			out.Values[i] = ec._Apiary_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "hives":
 			field := field
 
@@ -18241,6 +18306,23 @@ func (ec *executionContext) unmarshalNApiaryObstacleInput2githubᚗcomᚋGratheo
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNApiaryType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryType(ctx context.Context, v any) (model.ApiaryType, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.ApiaryType(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNApiaryType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryType(ctx context.Context, sel ast.SelectionSet, v model.ApiaryType) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19215,6 +19297,25 @@ func (ec *executionContext) marshalOApiaryObstacle2ᚖgithubᚗcomᚋGratheonᚋ
 		return graphql.Null
 	}
 	return ec._ApiaryObstacle(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOApiaryType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryType(ctx context.Context, v any) (*model.ApiaryType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.ApiaryType(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOApiaryType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiaryType(ctx context.Context, sel ast.SelectionSet, v *model.ApiaryType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(string(*v))
+	return res
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {
