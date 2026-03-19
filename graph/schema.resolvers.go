@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Gratheon/swarm-api/graph/generated"
@@ -143,6 +144,19 @@ func (r *frameResolver) RightSide(ctx context.Context, obj *model.Frame) (*model
 		Db:     r.Resolver.Db,
 		UserID: uid,
 	}).Get(obj.RightID)
+}
+
+// HiveType is the resolver for the hiveType field.
+func (r *hiveResolver) HiveType(ctx context.Context, obj *model.Hive) (model.HiveType, error) {
+	value := strings.ToUpper(strings.TrimSpace(obj.HiveType))
+	if value == "" {
+		return model.HiveTypeVertical, nil
+	}
+	hiveType := model.HiveType(value)
+	if !hiveType.IsValid() {
+		return model.HiveTypeVertical, nil
+	}
+	return hiveType, nil
 }
 
 // Boxes is the resolver for the boxes field.
@@ -333,6 +347,20 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 		UserID: uid,
 	}
 
+	if hive.HiveType == nil {
+		defaultHiveType := model.HiveTypeVertical
+		hive.HiveType = &defaultHiveType
+	}
+	if hive.HiveType != nil && *hive.HiveType == model.HiveTypeHorizontal {
+		horizontalType := model.BoxTypeLargeHorizontalSection
+		hive.InitialBoxType = &horizontalType
+	}
+	if hive.HiveType != nil && *hive.HiveType == model.HiveTypeNucleus {
+		deepType := model.BoxTypeDeep
+		hive.InitialBoxType = &deepType
+		hive.BoxCount = 1
+	}
+
 	if err := enforceHiveCreationLimit(ctx, hiveModel); err != nil {
 		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
@@ -407,22 +435,25 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 		return hiveResult, err
 	}
 
-	_, err = (&model.Box{
-		Db:     r.Db,
-		UserID: uid,
-	}).CreateSingleBox(hiveResult.ID, hive.BoxCount, "#363636", model.BoxTypeRoof)
-	if err != nil {
-		logger.ErrorWithContext(ctx, err.Error())
-		return hiveResult, fmt.Errorf("failed to create hive roof section: %w", err)
-	}
+	isNucleusHive := hive.HiveType != nil && *hive.HiveType == model.HiveTypeNucleus
+	if !isNucleusHive {
+		_, err = (&model.Box{
+			Db:     r.Db,
+			UserID: uid,
+		}).CreateSingleBox(hiveResult.ID, hive.BoxCount, "#363636", model.BoxTypeRoof)
+		if err != nil {
+			logger.ErrorWithContext(ctx, err.Error())
+			return hiveResult, fmt.Errorf("failed to create hive roof section: %w", err)
+		}
 
-	_, err = (&model.Box{
-		Db:     r.Db,
-		UserID: uid,
-	}).CreateSingleBox(hiveResult.ID, -1, "#4a4a4a", model.BoxTypeBottom)
-	if err != nil {
-		logger.ErrorWithContext(ctx, err.Error())
-		return hiveResult, fmt.Errorf("failed to create hive bottom section: %w", err)
+		_, err = (&model.Box{
+			Db:     r.Db,
+			UserID: uid,
+		}).CreateSingleBox(hiveResult.ID, -1, "#4a4a4a", model.BoxTypeBottom)
+		if err != nil {
+			logger.ErrorWithContext(ctx, err.Error())
+			return hiveResult, fmt.Errorf("failed to create hive bottom section: %w", err)
+		}
 	}
 
 	return hiveResult, err
@@ -468,6 +499,19 @@ func (r *mutationResolver) DeactivateHive(ctx context.Context, id string) (*bool
 // AddBox is the resolver for the addBox field.
 func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error) {
 	uid := ctx.Value("userID").(string)
+
+	hiveModel := &model.Hive{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+	hive, err := hiveModel.Get(hiveID)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+	if hive != nil && strings.EqualFold(hive.HiveType, model.HiveTypeNucleus.String()) {
+		return nil, errors.New("nucleus hives are monolithic and do not support adding extra sections")
+	}
 
 	boxModel := &model.Box{
 		Db:     r.Resolver.Db,

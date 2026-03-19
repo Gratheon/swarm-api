@@ -415,6 +415,7 @@ func isLegacyFrameModuleType(moduleType WarehouseModuleType) bool {
 
 func isSystemScopedHivePartModuleType(moduleType WarehouseModuleType) bool {
 	return moduleType == WarehouseModuleTypeDeep ||
+		moduleType == WarehouseModuleTypeNucs ||
 		moduleType == WarehouseModuleTypeSuper ||
 		moduleType == WarehouseModuleTypeRoof ||
 		moduleType == WarehouseModuleTypeHorizontalFeeder ||
@@ -424,7 +425,7 @@ func isSystemScopedHivePartModuleType(moduleType WarehouseModuleType) bool {
 
 func mapBoxModuleGroup(moduleType WarehouseModuleType) string {
 	switch moduleType {
-	case WarehouseModuleTypeDeep, WarehouseModuleTypeSuper, WarehouseModuleTypeLargeHorizontalSection:
+	case WarehouseModuleTypeDeep, WarehouseModuleTypeNucs, WarehouseModuleTypeSuper, WarehouseModuleTypeLargeHorizontalSection:
 		return "HIVE_SECTIONS"
 	default:
 		return "HIVE_PARTS"
@@ -435,6 +436,8 @@ func mapBoxModuleTitle(moduleType WarehouseModuleType) string {
 	switch moduleType {
 	case WarehouseModuleTypeDeep:
 		return "Deep sections"
+	case WarehouseModuleTypeNucs:
+		return "Nucs"
 	case WarehouseModuleTypeSuper:
 		return "Super sections"
 	case WarehouseModuleTypeLargeHorizontalSection:
@@ -456,6 +459,8 @@ func mapBoxModuleDescription(moduleType WarehouseModuleType) string {
 	switch moduleType {
 	case WarehouseModuleTypeDeep:
 		return "Big hive sections used for brood and core colony space."
+	case WarehouseModuleTypeNucs:
+		return "Monolithic 5-frame nucleus hive bodies."
 	case WarehouseModuleTypeSuper:
 		return "Smaller sections usually used for honey storage."
 	case WarehouseModuleTypeLargeHorizontalSection:

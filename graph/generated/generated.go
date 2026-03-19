@@ -164,6 +164,7 @@ type ComplexityRoot struct {
 		Families        func(childComplexity int) int
 		Family          func(childComplexity int) int
 		HiveNumber      func(childComplexity int) int
+		HiveType        func(childComplexity int) int
 		ID              func(childComplexity int) int
 		InspectionCount func(childComplexity int) int
 		IsNew           func(childComplexity int) int
@@ -369,6 +370,8 @@ type FrameResolver interface {
 	RightSide(ctx context.Context, obj *model.Frame) (*model.FrameSide, error)
 }
 type HiveResolver interface {
+	HiveType(ctx context.Context, obj *model.Hive) (model.HiveType, error)
+
 	Boxes(ctx context.Context, obj *model.Hive) ([]*model.Box, error)
 	Family(ctx context.Context, obj *model.Hive) (*model.Family, error)
 	Families(ctx context.Context, obj *model.Hive) ([]*model.Family, error)
@@ -1003,6 +1006,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Hive.HiveNumber(childComplexity), true
+	case "Hive.hiveType":
+		if e.ComplexityRoot.Hive.HiveType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Hive.HiveType(childComplexity), true
 	case "Hive.id":
 		if e.ComplexityRoot.Hive.ID == nil {
 			break
@@ -2493,6 +2502,7 @@ type Mutation {
 
 enum WarehouseModuleType {
   DEEP
+  NUCS
   SUPER
   LARGE_HORIZONTAL_SECTION
   ROOF
@@ -2667,6 +2677,13 @@ enum ApiaryType {
   MOBILE
 }
 
+"High-level hive layout mode used for behavior and UI rendering"
+enum HiveType {
+  VERTICAL
+  HORIZONTAL
+  NUCLEUS
+}
+
 "Represents a beekeeping location containing multiple hives"
 type Apiary {
   id: ID!
@@ -2712,6 +2729,8 @@ input HiveInput {
   frameCount: Int!
   "Initial section type used for first created boxes"
   initialBoxType: BoxType
+  "Hive architecture mode (vertical, horizontal, or monolithic nucleus)"
+  hiveType: HiveType
 
   "Selected box system for this hive (defaults to Langstroth)"
   boxSystemId: ID
@@ -2733,6 +2752,8 @@ input HiveUpdateInput {
 "Hive name is now stored in Family.name"
 type Hive @key(fields: "id") {
   id: ID!
+  "High-level hive layout mode (vertical, horizontal, nucleus)"
+  hiveType: HiveType!
   "Assigned box system (null for horizontal hives that are independent)"
   boxSystemId: ID
   "Hive identifier number for easy reference"
@@ -4212,6 +4233,8 @@ func (ec *executionContext) fieldContext_Apiary_hives(ctx context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -5721,6 +5744,8 @@ func (ec *executionContext) fieldContext_Entity_findHiveByID(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -6053,6 +6078,8 @@ func (ec *executionContext) fieldContext_Family_lastHive(_ context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -6486,6 +6513,35 @@ func (ec *executionContext) fieldContext_Hive_id(_ context.Context, field graphq
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Hive_hiveType(ctx context.Context, field graphql.CollectedField, obj *model.Hive) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Hive_hiveType,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Hive().HiveType(ctx, obj)
+		},
+		nil,
+		ec.marshalNHiveType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Hive_hiveType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Hive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type HiveType does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6975,6 +7031,8 @@ func (ec *executionContext) fieldContext_Hive_parentHive(_ context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -7079,6 +7137,8 @@ func (ec *executionContext) fieldContext_Hive_childHives(_ context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -7154,6 +7214,8 @@ func (ec *executionContext) fieldContext_Hive_mergedIntoHive(_ context.Context, 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -7287,6 +7349,8 @@ func (ec *executionContext) fieldContext_Hive_mergedFromHives(_ context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -8162,6 +8226,8 @@ func (ec *executionContext) fieldContext_Mutation_addHive(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -8249,6 +8315,8 @@ func (ec *executionContext) fieldContext_Mutation_updateHive(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -8996,6 +9064,8 @@ func (ec *executionContext) fieldContext_Mutation_markHiveAsCollapsed(ctx contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -9083,6 +9153,8 @@ func (ec *executionContext) fieldContext_Mutation_splitHive(ctx context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -9170,6 +9242,8 @@ func (ec *executionContext) fieldContext_Mutation_joinHives(ctx context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -10503,6 +10577,8 @@ func (ec *executionContext) fieldContext_Query_hive(ctx context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
 			case "boxSystemId":
 				return ec.fieldContext_Hive_boxSystemId(ctx, field)
 			case "hiveNumber":
@@ -14665,7 +14741,7 @@ func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"apiaryId", "queenName", "queenYear", "queenColor", "hiveNumber", "boxCount", "frameCount", "initialBoxType", "boxSystemId", "colors"}
+	fieldsInOrder := [...]string{"apiaryId", "queenName", "queenYear", "queenColor", "hiveNumber", "boxCount", "frameCount", "initialBoxType", "hiveType", "boxSystemId", "colors"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14728,6 +14804,13 @@ func (ec *executionContext) unmarshalInputHiveInput(ctx context.Context, obj any
 				return it, err
 			}
 			it.InitialBoxType = data
+		case "hiveType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveType"))
+			data, err := ec.unmarshalOHiveType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HiveType = data
 		case "boxSystemId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boxSystemId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -16074,6 +16157,42 @@ func (ec *executionContext) _Hive(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "hiveType":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Hive_hiveType(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "boxSystemId":
 			out.Values[i] = ec._Hive_boxSystemId(ctx, field, obj)
 		case "hiveNumber":
@@ -18719,6 +18838,16 @@ func (ec *executionContext) unmarshalNHiveLogUpdateInput2githubᚗcomᚋGratheon
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNHiveType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveType(ctx context.Context, v any) (model.HiveType, error) {
+	var res model.HiveType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNHiveType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveType(ctx context.Context, sel ast.SelectionSet, v model.HiveType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNHiveUpdateInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveUpdateInput(ctx context.Context, v any) (model.HiveUpdateInput, error) {
 	res, err := ec.unmarshalInputHiveUpdateInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19593,6 +19722,22 @@ func (ec *executionContext) unmarshalOHiveSortBy2ᚖgithubᚗcomᚋGratheonᚋsw
 }
 
 func (ec *executionContext) marshalOHiveSortBy2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveSortBy(ctx context.Context, sel ast.SelectionSet, v *model.HiveSortBy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOHiveType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveType(ctx context.Context, v any) (*model.HiveType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.HiveType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOHiveType2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHiveType(ctx context.Context, sel ast.SelectionSet, v *model.HiveType) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

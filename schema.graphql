@@ -247,6 +247,7 @@ type Mutation {
 
 enum WarehouseModuleType {
   DEEP
+  NUCS
   SUPER
   LARGE_HORIZONTAL_SECTION
   ROOF
@@ -421,6 +422,13 @@ enum ApiaryType {
   MOBILE
 }
 
+"High-level hive layout mode used for behavior and UI rendering"
+enum HiveType {
+  VERTICAL
+  HORIZONTAL
+  NUCLEUS
+}
+
 "Represents a beekeeping location containing multiple hives"
 type Apiary {
   id: ID!
@@ -466,6 +474,8 @@ input HiveInput {
   frameCount: Int!
   "Initial section type used for first created boxes"
   initialBoxType: BoxType
+  "Hive architecture mode (vertical, horizontal, or monolithic nucleus)"
+  hiveType: HiveType
 
   "Selected box system for this hive (defaults to Langstroth)"
   boxSystemId: ID
@@ -487,6 +497,8 @@ input HiveUpdateInput {
 "Hive name is now stored in Family.name"
 type Hive @key(fields: "id") {
   id: ID!
+  "High-level hive layout mode (vertical, horizontal, nucleus)"
+  hiveType: HiveType!
   "Assigned box system (null for horizontal hives that are independent)"
   boxSystemId: ID
   "Hive identifier number for easy reference"

@@ -126,6 +126,8 @@ type HiveInput struct {
 	FrameCount int `json:"frameCount"`
 	// Initial section type used for first created boxes
 	InitialBoxType *BoxType `json:"initialBoxType,omitempty"`
+	// Hive architecture mode (vertical, horizontal, or monolithic nucleus)
+	HiveType *HiveType `json:"hiveType,omitempty"`
 	// Selected box system for this hive (defaults to Langstroth)
 	BoxSystemID *string `json:"boxSystemId,omitempty"`
 	// Color markers for each box
@@ -461,6 +463,64 @@ func (e HiveSortBy) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// High-level hive layout mode used for behavior and UI rendering
+type HiveType string
+
+const (
+	HiveTypeVertical   HiveType = "VERTICAL"
+	HiveTypeHorizontal HiveType = "HORIZONTAL"
+	HiveTypeNucleus    HiveType = "NUCLEUS"
+)
+
+var AllHiveType = []HiveType{
+	HiveTypeVertical,
+	HiveTypeHorizontal,
+	HiveTypeNucleus,
+}
+
+func (e HiveType) IsValid() bool {
+	switch e {
+	case HiveTypeVertical, HiveTypeHorizontal, HiveTypeNucleus:
+		return true
+	}
+	return false
+}
+
+func (e HiveType) String() string {
+	return string(e)
+}
+
+func (e *HiveType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = HiveType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid HiveType", str)
+	}
+	return nil
+}
+
+func (e HiveType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *HiveType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e HiveType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 // Shape types for apiary obstacles
 type ObstacleType string
 
@@ -578,6 +638,7 @@ type WarehouseModuleType string
 
 const (
 	WarehouseModuleTypeDeep                   WarehouseModuleType = "DEEP"
+	WarehouseModuleTypeNucs                   WarehouseModuleType = "NUCS"
 	WarehouseModuleTypeSuper                  WarehouseModuleType = "SUPER"
 	WarehouseModuleTypeLargeHorizontalSection WarehouseModuleType = "LARGE_HORIZONTAL_SECTION"
 	WarehouseModuleTypeRoof                   WarehouseModuleType = "ROOF"
@@ -592,6 +653,7 @@ const (
 
 var AllWarehouseModuleType = []WarehouseModuleType{
 	WarehouseModuleTypeDeep,
+	WarehouseModuleTypeNucs,
 	WarehouseModuleTypeSuper,
 	WarehouseModuleTypeLargeHorizontalSection,
 	WarehouseModuleTypeRoof,
@@ -606,7 +668,7 @@ var AllWarehouseModuleType = []WarehouseModuleType{
 
 func (e WarehouseModuleType) IsValid() bool {
 	switch e {
-	case WarehouseModuleTypeDeep, WarehouseModuleTypeSuper, WarehouseModuleTypeLargeHorizontalSection, WarehouseModuleTypeRoof, WarehouseModuleTypeHorizontalFeeder, WarehouseModuleTypeQueenExcluder, WarehouseModuleTypeBottom, WarehouseModuleTypeFrameFoundation, WarehouseModuleTypeFrameEmptyComb, WarehouseModuleTypeFramePartition, WarehouseModuleTypeFrameFeeder:
+	case WarehouseModuleTypeDeep, WarehouseModuleTypeNucs, WarehouseModuleTypeSuper, WarehouseModuleTypeLargeHorizontalSection, WarehouseModuleTypeRoof, WarehouseModuleTypeHorizontalFeeder, WarehouseModuleTypeQueenExcluder, WarehouseModuleTypeBottom, WarehouseModuleTypeFrameFoundation, WarehouseModuleTypeFrameEmptyComb, WarehouseModuleTypeFramePartition, WarehouseModuleTypeFrameFeeder:
 		return true
 	}
 	return false

@@ -87,6 +87,15 @@ func (r *WarehouseModule) UsageStatsForSystem(moduleType WarehouseModuleType, bo
 		if err != nil {
 			return nil, err
 		}
+	case "nucleus":
+		inUseCount, err = r.countNucleusHivesInUse(boxSystemID)
+		if err != nil {
+			return nil, err
+		}
+		topHives, err = r.topNucleusHives(boxSystemID, 10)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &WarehouseModuleStats{
@@ -102,6 +111,8 @@ func mapModuleTypeToHiveSource(moduleType WarehouseModuleType) (string, string) 
 	switch moduleType {
 	case WarehouseModuleTypeDeep:
 		return "box", BoxTypeDeep.String()
+	case WarehouseModuleTypeNucs:
+		return "nucleus", "NUCLEUS"
 	case WarehouseModuleTypeSuper:
 		return "box", BoxTypeSuper.String()
 	case WarehouseModuleTypeLargeHorizontalSection:
@@ -125,6 +136,59 @@ func mapModuleTypeToHiveSource(moduleType WarehouseModuleType) (string, string) 
 	default:
 		return "", ""
 	}
+}
+
+func (r *WarehouseModule) countNucleusHivesInUse(boxSystemID *int) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) AS cnt
+		FROM hives h
+		LEFT JOIN box_specs bs ON bs.system_id = h.box_system_id AND bs.legacy_box_type = 'DEEP' AND bs.active = 1
+		LEFT JOIN box_spec_frame_sources bfs ON bfs.box_spec_id = bs.id
+		WHERE h.user_id = ?
+		  AND h.active = 1
+		  AND h.hive_type = 'NUCLEUS'
+		  AND h.collapse_date IS NULL
+		  AND h.merged_into_hive_id IS NULL`
+	args := []interface{}{r.UserID}
+	if boxSystemID != nil && *boxSystemID > 0 {
+		query += " AND COALESCE(bfs.frame_source_system_id, h.box_system_id) = ?"
+		args = append(args, *boxSystemID)
+	}
+	err := r.Db.Get(&count, query, args...)
+	return count, err
+}
+
+func (r *WarehouseModule) topNucleusHives(boxSystemID *int, limit int) ([]*WarehouseModuleHiveUsage, error) {
+	rows := []warehouseUsageScanRow{}
+	query := `SELECT
+			h.id AS hive_id,
+			h.hive_number AS hive_number,
+			h.apiary_id AS apiary_id,
+			a.name AS apiary_name,
+			1 AS usage_count
+		FROM hives h
+		LEFT JOIN box_specs bs ON bs.system_id = h.box_system_id AND bs.legacy_box_type = 'DEEP' AND bs.active = 1
+		LEFT JOIN box_spec_frame_sources bfs ON bfs.box_spec_id = bs.id
+		LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = 1
+		WHERE h.user_id = ?
+		  AND h.active = 1
+		  AND h.hive_type = 'NUCLEUS'
+		  AND h.collapse_date IS NULL
+		  AND h.merged_into_hive_id IS NULL`
+	args := []interface{}{r.UserID}
+	if boxSystemID != nil && *boxSystemID > 0 {
+		query += " AND COALESCE(bfs.frame_source_system_id, h.box_system_id) = ?"
+		args = append(args, *boxSystemID)
+	}
+	query += `
+		ORDER BY h.hive_number IS NULL ASC, h.hive_number ASC, h.id ASC
+		LIMIT ?`
+	args = append(args, limit)
+	err := r.Db.Select(&rows, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return mapUsageRows(rows), nil
 }
 
 func (r *WarehouseModule) countBoxesInUse(boxType string, boxSystemID *int) (int, error) {
