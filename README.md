@@ -1,4 +1,6 @@
 # gratheon / swarm-api
+[![codecov](https://codecov.io/gh/Gratheon/swarm-api/graph/badge.svg?token=ZOJQ9HEHU3)](https://codecov.io/gh/Gratheon/swarm-api)
+
 Main monolith service to manage beehive data.
 
 
