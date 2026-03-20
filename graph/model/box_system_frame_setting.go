@@ -124,7 +124,7 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 			INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
 			WHERE c.box_spec_id = ?
 			  AND fs.active = 1
-			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 			ON DUPLICATE KEY UPDATE
 			  display_name = VALUES(display_name),
 			  active = VALUES(active)
@@ -149,7 +149,7 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 			FROM frame_specs fs
 			WHERE fs.system_id = ?
 			  AND fs.active = 1
-			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 			  AND fs.code LIKE ?
 			ORDER BY fs.id ASC
 		`, sourceSystemID, likeSuffix)
@@ -160,7 +160,7 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 			INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
 			WHERE c.box_spec_id = ?
 			  AND fs.active = 1
-			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 			ORDER BY fs.id ASC
 		`, sourceBoxSpecID)
 	}
@@ -178,7 +178,7 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 		FROM frame_spec_compatibility c
 		INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
 		WHERE c.box_spec_id = ?
-		  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+		  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 	`, targetBoxSpecID)
 	if err != nil {
 		tx.Rollback()

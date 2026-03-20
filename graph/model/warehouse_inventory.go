@@ -132,7 +132,7 @@ func (r *WarehouseInventory) List() ([]*WarehouseInventoryItem, error) {
 		INNER JOIN box_systems bs ON bs.id = fs.system_id AND bs.active = 1
 		LEFT JOIN warehouse_frame_inventory wfi ON wfi.frame_spec_id = fs.id AND wfi.user_id = ?
 		WHERE fs.active = 1
-		  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+		  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 		  AND (bs.user_id = ? OR bs.user_id IS NULL)
 		ORDER BY bs.name ASC, fs.display_name ASC, fs.id ASC
 	`, r.UserID, r.UserID)

@@ -568,13 +568,26 @@ func (r *mutationResolver) SwapBoxPositions(ctx context.Context, id string, id2 
 func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error) {
 	uid := ctx.Value("userID").(string)
 	frameType := model.FrameType(typeArg)
-	if frameType == model.FrameTypePartition || frameType == model.FrameTypeFeeder {
-		return nil, errors.New("partition and frame feeder types are not available")
-	}
 
 	frameModel := &model.Frame{
 		Db:     r.Resolver.Db,
 		UserID: uid,
+	}
+	existingFrames, err := frameModel.ListByBox(&boxID)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+	occupiedPositions := map[int]bool{}
+	for _, frame := range existingFrames {
+		if frame == nil || frame.Position <= 0 {
+			continue
+		}
+		occupiedPositions[frame.Position] = true
+	}
+	position = 1
+	for occupiedPositions[position] {
+		position++
 	}
 
 	if frameModel.IsFrameWithSides(frameType) {
@@ -613,6 +626,7 @@ func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg s
 
 		if err != nil {
 			logger.ErrorWithContext(ctx, err.Error())
+			return nil, err
 		}
 
 		return frameModel.Get(*frameId)

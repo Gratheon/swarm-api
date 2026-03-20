@@ -36,7 +36,7 @@ func (r *FrameSpec) ListVisible(systemID *string) ([]*FrameSpec, error) {
 			INNER JOIN box_systems source_sys ON source_sys.id = fs.system_id AND source_sys.active = 1
 			WHERE target_bs.active = 1
 			  AND target_bs.system_id = ?
-			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 			  AND (target_sys.user_id = ? OR target_sys.user_id IS NULL)
 			  AND (source_sys.user_id = ? OR source_sys.user_id IS NULL)
 			ORDER BY fs.display_name ASC, fs.id ASC
@@ -54,7 +54,7 @@ func (r *FrameSpec) ListVisible(systemID *string) ([]*FrameSpec, error) {
 			FROM frame_specs fs
 			INNER JOIN box_systems bs ON bs.id = fs.system_id AND bs.active = 1
 			WHERE fs.active = 1
-			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID')
+			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 			  AND (bs.user_id = ? OR bs.user_id IS NULL)
 			ORDER BY bs.name ASC, fs.display_name ASC, fs.id ASC
 		`
