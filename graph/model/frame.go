@@ -61,7 +61,7 @@ func (r *Frame) CreateFramesForBox(boxID *string, frameCount int) error {
 
 		_, err = r.Create(
 			boxID,
-			frameNr,
+			frameNr+1,
 			FrameTypeEmptyComb,
 			leftID,
 			rightID,
@@ -259,7 +259,7 @@ func (r *Frame) MoveFramesToBox(frameIDs []string, targetBoxID string) error {
 			map[string]interface{}{
 				"id":          frameID,
 				"boxID":       targetBoxID,
-				"position":    i,
+				"position":    i + 1,
 				"frameSpecID": frameSpecID,
 				"userID":      r.UserID,
 			},
