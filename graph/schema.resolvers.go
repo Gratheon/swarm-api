@@ -497,7 +497,7 @@ func (r *mutationResolver) DeactivateHive(ctx context.Context, id string) (*bool
 }
 
 // AddBox is the resolver for the addBox field.
-func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error) {
+func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType, holeCount *int) (*model.Box, error) {
 	uid := ctx.Value("userID").(string)
 
 	hiveModel := &model.Hive{
@@ -518,7 +518,7 @@ func (r *mutationResolver) AddBox(ctx context.Context, hiveID string, position i
 		UserID: uid,
 	}
 
-	boxID, err := boxModel.Create(hiveID, position, color, typeArg)
+	boxID, err := boxModel.Create(hiveID, position, color, typeArg, holeCount)
 
 	if err != nil {
 		logger.ErrorWithContext(ctx, err.Error())
@@ -544,6 +544,29 @@ func (r *mutationResolver) UpdateBoxColor(ctx context.Context, id string, color 
 	box.Color = color
 
 	return boxModel.Update(box.ID, *box.Position, box.Color)
+}
+
+// UpdateBoxHoleCount is the resolver for the updateBoxHoleCount field.
+func (r *mutationResolver) UpdateBoxHoleCount(ctx context.Context, id string, holeCount int) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	boxModel := &model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	box, err := boxModel.Get(id)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return false, err
+	}
+	if box == nil {
+		return false, errors.New("box not found")
+	}
+	if box.Type != model.BoxTypeGate {
+		return false, errors.New("hole count can only be updated for gate boxes")
+	}
+
+	return boxModel.UpdateHoleCount(id, holeCount)
 }
 
 // DeactivateBox is the resolver for the deactivateBox field.

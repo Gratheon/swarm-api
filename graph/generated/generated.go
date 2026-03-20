@@ -67,11 +67,12 @@ type ComplexityRoot struct {
 	}
 
 	Box struct {
-		Color    func(childComplexity int) int
-		Frames   func(childComplexity int) int
-		ID       func(childComplexity int) int
-		Position func(childComplexity int) int
-		Type     func(childComplexity int) int
+		Color     func(childComplexity int) int
+		Frames    func(childComplexity int) int
+		HoleCount func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Position  func(childComplexity int) int
+		Type      func(childComplexity int) int
 	}
 
 	BoxSpec struct {
@@ -216,7 +217,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AddApiary                            func(childComplexity int, apiary model.ApiaryInput) int
 		AddApiaryObstacle                    func(childComplexity int, apiaryID string, obstacle model.ApiaryObstacleInput) int
-		AddBox                               func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType) int
+		AddBox                               func(childComplexity int, hiveID string, position int, color *string, typeArg model.BoxType, holeCount *int) int
 		AddDevice                            func(childComplexity int, device model.DeviceInput) int
 		AddFrame                             func(childComplexity int, boxID string, typeArg string, position int) int
 		AddHive                              func(childComplexity int, hive model.HiveInput) int
@@ -255,6 +256,7 @@ type ComplexityRoot struct {
 		UpdateApiary                         func(childComplexity int, id string, apiary model.ApiaryInput) int
 		UpdateApiaryObstacle                 func(childComplexity int, id string, obstacle model.ApiaryObstacleInput) int
 		UpdateBoxColor                       func(childComplexity int, id string, color *string) int
+		UpdateBoxHoleCount                   func(childComplexity int, id string, holeCount int) int
 		UpdateDevice                         func(childComplexity int, id string, device model.DeviceUpdateInput) int
 		UpdateFrames                         func(childComplexity int, frames []*model.FrameInput) int
 		UpdateHive                           func(childComplexity int, hive model.HiveUpdateInput) int
@@ -395,8 +397,9 @@ type MutationResolver interface {
 	AddHive(ctx context.Context, hive model.HiveInput) (*model.Hive, error)
 	UpdateHive(ctx context.Context, hive model.HiveUpdateInput) (*model.Hive, error)
 	DeactivateHive(ctx context.Context, id string) (*bool, error)
-	AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType) (*model.Box, error)
+	AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType, holeCount *int) (*model.Box, error)
 	UpdateBoxColor(ctx context.Context, id string, color *string) (bool, error)
+	UpdateBoxHoleCount(ctx context.Context, id string, holeCount int) (bool, error)
 	DeactivateBox(ctx context.Context, id string) (*bool, error)
 	SwapBoxPositions(ctx context.Context, id string, id2 string) (*bool, error)
 	AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error)
@@ -596,6 +599,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Box.Frames(childComplexity), true
+	case "Box.holeCount":
+		if e.ComplexityRoot.Box.HoleCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Box.HoleCount(childComplexity), true
 	case "Box.id":
 		if e.ComplexityRoot.Box.ID == nil {
 			break
@@ -1253,7 +1262,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.AddBox(childComplexity, args["hiveId"].(string), args["position"].(int), args["color"].(*string), args["type"].(model.BoxType)), true
+		return e.ComplexityRoot.Mutation.AddBox(childComplexity, args["hiveId"].(string), args["position"].(int), args["color"].(*string), args["type"].(model.BoxType), args["holeCount"].(*int)), true
 	case "Mutation.addDevice":
 		if e.ComplexityRoot.Mutation.AddDevice == nil {
 			break
@@ -1672,6 +1681,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateBoxColor(childComplexity, args["id"].(string), args["color"].(*string)), true
+	case "Mutation.updateBoxHoleCount":
+		if e.ComplexityRoot.Mutation.UpdateBoxHoleCount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateBoxHoleCount_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateBoxHoleCount(childComplexity, args["id"].(string), args["holeCount"].(int)), true
 	case "Mutation.updateDevice":
 		if e.ComplexityRoot.Mutation.UpdateDevice == nil {
 			break
@@ -2352,10 +2372,13 @@ type Mutation {
   deactivateHive(id: ID!): Boolean
 
   "Add a new box (super, deep, feeder) to a hive at specified position"
-  addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
+  addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!, holeCount: Int): Box!
 
   "Update the visual color marker of a box"
   updateBoxColor(id: ID!, color: String): Boolean!
+
+  "Update gate entrance hole count (0 means fully sealed)"
+  updateBoxHoleCount(id: ID!, holeCount: Int!): Boolean!
 
   "Soft-delete a box from a hive"
   deactivateBox(id: ID!): Boolean
@@ -2936,6 +2959,8 @@ type Box{
   position: Int
   "Visual color marker on box exterior"
   color: String
+  "Gate opening capacity (number of entrance holes, 0-16)"
+  holeCount: Int
   "Box type determining height and purpose"
   type: BoxType!
   "Frames contained in this box"
@@ -3200,6 +3225,11 @@ func (ec *executionContext) field_Mutation_addBox_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["type"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "holeCount", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["holeCount"] = arg4
 	return args, nil
 }
 
@@ -3793,6 +3823,22 @@ func (ec *executionContext) field_Mutation_updateBoxColor_args(ctx context.Conte
 		return nil, err
 	}
 	args["color"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateBoxHoleCount_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "holeCount", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["holeCount"] = arg1
 	return args, nil
 }
 
@@ -4754,6 +4800,35 @@ func (ec *executionContext) fieldContext_Box_color(_ context.Context, field grap
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Box_holeCount(ctx context.Context, field graphql.CollectedField, obj *model.Box) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Box_holeCount,
+		func(ctx context.Context) (any, error) {
+			return obj.HoleCount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Box_holeCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Box",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6664,6 +6739,8 @@ func (ec *executionContext) fieldContext_Hive_boxes(_ context.Context, field gra
 				return ec.fieldContext_Box_position(ctx, field)
 			case "color":
 				return ec.fieldContext_Box_color(ctx, field)
+			case "holeCount":
+				return ec.fieldContext_Box_holeCount(ctx, field)
 			case "type":
 				return ec.fieldContext_Box_type(ctx, field)
 			case "frames":
@@ -8426,7 +8503,7 @@ func (ec *executionContext) _Mutation_addBox(ctx context.Context, field graphql.
 		ec.fieldContext_Mutation_addBox,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AddBox(ctx, fc.Args["hiveId"].(string), fc.Args["position"].(int), fc.Args["color"].(*string), fc.Args["type"].(model.BoxType))
+			return ec.Resolvers.Mutation().AddBox(ctx, fc.Args["hiveId"].(string), fc.Args["position"].(int), fc.Args["color"].(*string), fc.Args["type"].(model.BoxType), fc.Args["holeCount"].(*int))
 		},
 		nil,
 		ec.marshalNBox2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐBox,
@@ -8449,6 +8526,8 @@ func (ec *executionContext) fieldContext_Mutation_addBox(ctx context.Context, fi
 				return ec.fieldContext_Box_position(ctx, field)
 			case "color":
 				return ec.fieldContext_Box_color(ctx, field)
+			case "holeCount":
+				return ec.fieldContext_Box_holeCount(ctx, field)
 			case "type":
 				return ec.fieldContext_Box_type(ctx, field)
 			case "frames":
@@ -8506,6 +8585,47 @@ func (ec *executionContext) fieldContext_Mutation_updateBoxColor(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateBoxColor_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateBoxHoleCount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateBoxHoleCount,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateBoxHoleCount(ctx, fc.Args["id"].(string), fc.Args["holeCount"].(int))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateBoxHoleCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateBoxHoleCount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -15392,6 +15512,8 @@ func (ec *executionContext) _Box(ctx context.Context, sel ast.SelectionSet, obj 
 			out.Values[i] = ec._Box_position(ctx, field, obj)
 		case "color":
 			out.Values[i] = ec._Box_color(ctx, field, obj)
+		case "holeCount":
+			out.Values[i] = ec._Box_holeCount(ctx, field, obj)
 		case "type":
 			out.Values[i] = ec._Box_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -16898,6 +17020,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateBoxColor":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateBoxColor(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateBoxHoleCount":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateBoxHoleCount(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

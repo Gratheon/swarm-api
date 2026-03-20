@@ -97,10 +97,13 @@ type Mutation {
   deactivateHive(id: ID!): Boolean
 
   "Add a new box (super, deep, feeder) to a hive at specified position"
-  addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!): Box!
+  addBox(hiveId: ID!, position: Int!, color: String, type: BoxType!, holeCount: Int): Box!
 
   "Update the visual color marker of a box"
   updateBoxColor(id: ID!, color: String): Boolean!
+
+  "Update gate entrance hole count (0 means fully sealed)"
+  updateBoxHoleCount(id: ID!, holeCount: Int!): Boolean!
 
   "Soft-delete a box from a hive"
   deactivateBox(id: ID!): Boolean
@@ -681,6 +684,8 @@ type Box{
   position: Int
   "Visual color marker on box exterior"
   color: String
+  "Gate opening capacity (number of entrance holes, 0-16)"
+  holeCount: Int
   "Box type determining height and purpose"
   type: BoxType!
   "Frames contained in this box"

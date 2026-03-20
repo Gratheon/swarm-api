@@ -45,10 +45,33 @@ type Box struct {
 	HiveId      int     `json:"hive_id" db:"hive_id"`
 	Position    *int    `json:"position"`
 	Color       *string `json:"color"`
+	HoleCount   *int    `json:"holeCount" db:"hole_count"`
 	Type        BoxType `json:"type" db:"type"`
 	BoxSystemID *int    `json:"box_system_id" db:"box_system_id"`
 	BoxSpecID   *int    `json:"box_spec_id" db:"box_spec_id"`
 	Active      int     `db:"active"`
+}
+
+const (
+	gateHoleCountMin     = 0
+	gateHoleCountMax     = 16
+	gateHoleCountDefault = 8
+)
+
+func normalizeGateHoleCount(holeCount *int) int {
+	value := gateHoleCountDefault
+	if holeCount != nil {
+		value = *holeCount
+	}
+
+	if value < gateHoleCountMin {
+		value = gateHoleCountMin
+	}
+	if value > gateHoleCountMax {
+		value = gateHoleCountMax
+	}
+
+	return value
 }
 
 func (r *Box) getHiveBoxSystemID(tx *sqlx.Tx, hiveID string) (*int, error) {
@@ -133,7 +156,7 @@ func (r *Box) CreateByHiveId(hiveId string, boxCount int, colors []*string, boxT
 	return tx.Commit()
 }
 
-func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType) (*string, error) {
+func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType, holeCount *int) (*string, error) {
 	tx := r.Db.MustBegin()
 	spec, err := r.resolveSpecForHive(tx, hiveId, boxType)
 	if err != nil {
@@ -154,13 +177,19 @@ func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType
 		hiveBoxSystemValue = *hiveBoxSystemID
 	}
 
+	var normalizedHoleCount interface{} = nil
+	if boxType == BoxTypeGate {
+		normalizedHoleCount = normalizeGateHoleCount(holeCount)
+	}
+
 	result, err := tx.NamedExec(
-		`INSERT INTO boxes (hive_id, position, color, user_id, type, box_system_id, box_spec_id)
-			VALUES (:hiveId, :position, :color, :userID, :boxType, :boxSystemID, :boxSpecID)`,
+		`INSERT INTO boxes (hive_id, position, color, hole_count, user_id, type, box_system_id, box_spec_id)
+			VALUES (:hiveId, :position, :color, :holeCount, :userID, :boxType, :boxSystemID, :boxSpecID)`,
 		map[string]interface{}{
 			"hiveId":      hiveId,
 			"position":    position,
 			"color":       color,
+			"holeCount":   normalizedHoleCount,
 			"userID":      r.UserID,
 			"boxType":     boxType,
 			"boxSystemID": hiveBoxSystemValue,
@@ -318,6 +347,32 @@ func (r *Box) Update(id *string, position int, color *string) (bool, error) {
 
 	err = tx.Commit()
 
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *Box) UpdateHoleCount(id string, holeCount int) (bool, error) {
+	tx := r.Db.MustBegin()
+
+	normalizedHoleCount := normalizeGateHoleCount(&holeCount)
+
+	_, err := tx.NamedExec(
+		"UPDATE boxes SET hole_count = :holeCount WHERE id=:id AND user_id=:userID",
+		map[string]interface{}{
+			"id":        id,
+			"holeCount": normalizedHoleCount,
+			"userID":    r.UserID,
+		},
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return false, err
 	}
