@@ -40,16 +40,17 @@ func (r *Box) resolveSpecForHive(tx *sqlx.Tx, hiveID string, boxType BoxType) (*
 
 type Box struct {
 	Db          *sqlx.DB
-	ID          *string `json:"id"`
-	UserID      string  `db:"user_id"`
-	HiveId      int     `json:"hive_id" db:"hive_id"`
-	Position    *int    `json:"position"`
-	Color       *string `json:"color"`
-	HoleCount   *int    `json:"holeCount" db:"hole_count"`
-	Type        BoxType `json:"type" db:"type"`
-	BoxSystemID *int    `json:"box_system_id" db:"box_system_id"`
-	BoxSpecID   *int    `json:"box_spec_id" db:"box_spec_id"`
-	Active      int     `db:"active"`
+	ID          *string    `json:"id"`
+	UserID      string     `db:"user_id"`
+	HiveId      int        `json:"hive_id" db:"hive_id"`
+	Position    *int       `json:"position"`
+	Color       *string    `json:"color"`
+	HoleCount   *int       `json:"holeCount" db:"hole_count"`
+	RoofStyle   *RoofStyle `json:"roofStyle" db:"roof_style"`
+	Type        BoxType    `json:"type" db:"type"`
+	BoxSystemID *int       `json:"box_system_id" db:"box_system_id"`
+	BoxSpecID   *int       `json:"box_spec_id" db:"box_spec_id"`
+	Active      int        `db:"active"`
 }
 
 const (
@@ -72,6 +73,16 @@ func normalizeGateHoleCount(holeCount *int) int {
 	}
 
 	return value
+}
+
+func normalizeRoofStyleForType(boxType BoxType, roofStyle *RoofStyle) interface{} {
+	if boxType != BoxTypeRoof {
+		return nil
+	}
+	if roofStyle != nil && (*roofStyle == RoofStyleAngular || *roofStyle == RoofStyleFlat) {
+		return *roofStyle
+	}
+	return RoofStyleFlat
 }
 
 func (r *Box) getHiveBoxSystemID(tx *sqlx.Tx, hiveID string) (*int, error) {
@@ -181,15 +192,17 @@ func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType
 	if boxType == BoxTypeGate {
 		normalizedHoleCount = normalizeGateHoleCount(holeCount)
 	}
+	normalizedRoofStyle := normalizeRoofStyleForType(boxType, nil)
 
 	result, err := tx.NamedExec(
-		`INSERT INTO boxes (hive_id, position, color, hole_count, user_id, type, box_system_id, box_spec_id)
-			VALUES (:hiveId, :position, :color, :holeCount, :userID, :boxType, :boxSystemID, :boxSpecID)`,
+		`INSERT INTO boxes (hive_id, position, color, hole_count, roof_style, user_id, type, box_system_id, box_spec_id)
+			VALUES (:hiveId, :position, :color, :holeCount, :roofStyle, :userID, :boxType, :boxSystemID, :boxSpecID)`,
 		map[string]interface{}{
 			"hiveId":      hiveId,
 			"position":    position,
 			"color":       color,
 			"holeCount":   normalizedHoleCount,
+			"roofStyle":   normalizedRoofStyle,
 			"userID":      r.UserID,
 			"boxType":     boxType,
 			"boxSystemID": hiveBoxSystemValue,
@@ -233,13 +246,16 @@ func (r *Box) CreateSingleBox(hiveId string, position int, color string, boxType
 		hiveBoxSystemValue = *hiveBoxSystemID
 	}
 
+	normalizedRoofStyle := normalizeRoofStyleForType(boxType, nil)
+
 	result, err := tx.NamedExec(
-		`INSERT INTO boxes (hive_id, position, color, user_id, type, box_system_id, box_spec_id)
-			VALUES (:hiveId, :position, :color, :userID, :boxType, :boxSystemID, :boxSpecID)`,
+		`INSERT INTO boxes (hive_id, position, color, roof_style, user_id, type, box_system_id, box_spec_id)
+			VALUES (:hiveId, :position, :color, :roofStyle, :userID, :boxType, :boxSystemID, :boxSpecID)`,
 		map[string]interface{}{
 			"hiveId":      hiveId,
 			"position":    position,
 			"color":       color,
+			"roofStyle":   normalizedRoofStyle,
 			"userID":      r.UserID,
 			"boxType":     boxType,
 			"boxSystemID": hiveBoxSystemValue,
@@ -377,6 +393,29 @@ func (r *Box) UpdateHoleCount(id string, holeCount int) (bool, error) {
 		return false, err
 	}
 
+	return true, nil
+}
+
+func (r *Box) UpdateRoofStyle(id string, roofStyle RoofStyle) (bool, error) {
+	tx := r.Db.MustBegin()
+	normalized := normalizeRoofStyleForType(BoxTypeRoof, &roofStyle)
+
+	_, err := tx.NamedExec(
+		"UPDATE boxes SET roof_style = :roofStyle WHERE id=:id AND user_id=:userID",
+		map[string]interface{}{
+			"id":        id,
+			"roofStyle": normalized,
+			"userID":    r.UserID,
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

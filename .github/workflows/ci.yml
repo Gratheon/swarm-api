@@ -53,11 +53,20 @@ jobs:
       - name: Run integration tests with coverage
         run: go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.out ./graph
 
-      - name: Upload coverage report to Codecov
+      - name: Upload unit coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage-unit.out,./graph/coverage-integration.out
-          flags: unittests,integration
+          files: ./coverage-unit.out
+          flags: unittests
+          fail_ci_if_error: false
+
+      - name: Upload integration coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./graph/coverage-integration.out
+          flags: integration
           fail_ci_if_error: false

@@ -72,6 +72,7 @@ type ComplexityRoot struct {
 		HoleCount func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Position  func(childComplexity int) int
+		RoofStyle func(childComplexity int) int
 		Type      func(childComplexity int) int
 	}
 
@@ -257,6 +258,7 @@ type ComplexityRoot struct {
 		UpdateApiaryObstacle                 func(childComplexity int, id string, obstacle model.ApiaryObstacleInput) int
 		UpdateBoxColor                       func(childComplexity int, id string, color *string) int
 		UpdateBoxHoleCount                   func(childComplexity int, id string, holeCount int) int
+		UpdateBoxRoofStyle                   func(childComplexity int, id string, roofStyle model.RoofStyle) int
 		UpdateDevice                         func(childComplexity int, id string, device model.DeviceUpdateInput) int
 		UpdateFrames                         func(childComplexity int, frames []*model.FrameInput) int
 		UpdateHive                           func(childComplexity int, hive model.HiveUpdateInput) int
@@ -400,6 +402,7 @@ type MutationResolver interface {
 	AddBox(ctx context.Context, hiveID string, position int, color *string, typeArg model.BoxType, holeCount *int) (*model.Box, error)
 	UpdateBoxColor(ctx context.Context, id string, color *string) (bool, error)
 	UpdateBoxHoleCount(ctx context.Context, id string, holeCount int) (bool, error)
+	UpdateBoxRoofStyle(ctx context.Context, id string, roofStyle model.RoofStyle) (bool, error)
 	DeactivateBox(ctx context.Context, id string) (*bool, error)
 	SwapBoxPositions(ctx context.Context, id string, id2 string) (*bool, error)
 	AddFrame(ctx context.Context, boxID string, typeArg string, position int) (*model.Frame, error)
@@ -617,6 +620,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Box.Position(childComplexity), true
+	case "Box.roofStyle":
+		if e.ComplexityRoot.Box.RoofStyle == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Box.RoofStyle(childComplexity), true
 	case "Box.type":
 		if e.ComplexityRoot.Box.Type == nil {
 			break
@@ -1692,6 +1701,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateBoxHoleCount(childComplexity, args["id"].(string), args["holeCount"].(int)), true
+	case "Mutation.updateBoxRoofStyle":
+		if e.ComplexityRoot.Mutation.UpdateBoxRoofStyle == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateBoxRoofStyle_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateBoxRoofStyle(childComplexity, args["id"].(string), args["roofStyle"].(model.RoofStyle)), true
 	case "Mutation.updateDevice":
 		if e.ComplexityRoot.Mutation.UpdateDevice == nil {
 			break
@@ -2380,6 +2400,9 @@ type Mutation {
   "Update gate entrance hole count (0 means fully sealed)"
   updateBoxHoleCount(id: ID!, holeCount: Int!): Boolean!
 
+  "Update roof profile style (flat or angular) for roof sections"
+  updateBoxRoofStyle(id: ID!, roofStyle: RoofStyle!): Boolean!
+
   "Soft-delete a box from a hive"
   deactivateBox(id: ID!): Boolean
 
@@ -2961,10 +2984,17 @@ type Box{
   color: String
   "Gate opening capacity (number of entrance holes, 0-16)"
   holeCount: Int
+  "Roof profile style used for icon and visualization"
+  roofStyle: RoofStyle
   "Box type determining height and purpose"
   type: BoxType!
   "Frames contained in this box"
   frames: [Frame]
+}
+
+enum RoofStyle {
+  FLAT
+  ANGULAR
 }
 
 "Input for updating frame properties"
@@ -3839,6 +3869,22 @@ func (ec *executionContext) field_Mutation_updateBoxHoleCount_args(ctx context.C
 		return nil, err
 	}
 	args["holeCount"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateBoxRoofStyle_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "roofStyle", ec.unmarshalNRoofStyle2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐRoofStyle)
+	if err != nil {
+		return nil, err
+	}
+	args["roofStyle"] = arg1
 	return args, nil
 }
 
@@ -4829,6 +4875,35 @@ func (ec *executionContext) fieldContext_Box_holeCount(_ context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Box_roofStyle(ctx context.Context, field graphql.CollectedField, obj *model.Box) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Box_roofStyle,
+		func(ctx context.Context) (any, error) {
+			return obj.RoofStyle, nil
+		},
+		nil,
+		ec.marshalORoofStyle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐRoofStyle,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Box_roofStyle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Box",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RoofStyle does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6741,6 +6816,8 @@ func (ec *executionContext) fieldContext_Hive_boxes(_ context.Context, field gra
 				return ec.fieldContext_Box_color(ctx, field)
 			case "holeCount":
 				return ec.fieldContext_Box_holeCount(ctx, field)
+			case "roofStyle":
+				return ec.fieldContext_Box_roofStyle(ctx, field)
 			case "type":
 				return ec.fieldContext_Box_type(ctx, field)
 			case "frames":
@@ -8528,6 +8605,8 @@ func (ec *executionContext) fieldContext_Mutation_addBox(ctx context.Context, fi
 				return ec.fieldContext_Box_color(ctx, field)
 			case "holeCount":
 				return ec.fieldContext_Box_holeCount(ctx, field)
+			case "roofStyle":
+				return ec.fieldContext_Box_roofStyle(ctx, field)
 			case "type":
 				return ec.fieldContext_Box_type(ctx, field)
 			case "frames":
@@ -8626,6 +8705,47 @@ func (ec *executionContext) fieldContext_Mutation_updateBoxHoleCount(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateBoxHoleCount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateBoxRoofStyle(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateBoxRoofStyle,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateBoxRoofStyle(ctx, fc.Args["id"].(string), fc.Args["roofStyle"].(model.RoofStyle))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateBoxRoofStyle(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateBoxRoofStyle_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -15514,6 +15634,8 @@ func (ec *executionContext) _Box(ctx context.Context, sel ast.SelectionSet, obj 
 			out.Values[i] = ec._Box_color(ctx, field, obj)
 		case "holeCount":
 			out.Values[i] = ec._Box_holeCount(ctx, field, obj)
+		case "roofStyle":
+			out.Values[i] = ec._Box_roofStyle(ctx, field, obj)
 		case "type":
 			out.Values[i] = ec._Box_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -17027,6 +17149,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateBoxHoleCount":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateBoxHoleCount(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateBoxRoofStyle":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateBoxRoofStyle(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -19113,6 +19242,16 @@ func (ec *executionContext) marshalNObstacleType2githubᚗcomᚋGratheonᚋswarm
 	return v
 }
 
+func (ec *executionContext) unmarshalNRoofStyle2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐRoofStyle(ctx context.Context, v any) (model.RoofStyle, error) {
+	var res model.RoofStyle
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRoofStyle2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐRoofStyle(ctx context.Context, sel ast.SelectionSet, v model.RoofStyle) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19957,6 +20096,22 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalORoofStyle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐRoofStyle(ctx context.Context, v any) (*model.RoofStyle, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.RoofStyle)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORoofStyle2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐRoofStyle(ctx context.Context, sel ast.SelectionSet, v *model.RoofStyle) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOSortOrder2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐSortOrder(ctx context.Context, v any) (*model.SortOrder, error) {

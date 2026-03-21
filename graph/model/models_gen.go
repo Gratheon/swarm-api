@@ -579,6 +579,61 @@ func (e ObstacleType) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type RoofStyle string
+
+const (
+	RoofStyleFlat    RoofStyle = "FLAT"
+	RoofStyleAngular RoofStyle = "ANGULAR"
+)
+
+var AllRoofStyle = []RoofStyle{
+	RoofStyleFlat,
+	RoofStyleAngular,
+}
+
+func (e RoofStyle) IsValid() bool {
+	switch e {
+	case RoofStyleFlat, RoofStyleAngular:
+		return true
+	}
+	return false
+}
+
+func (e RoofStyle) String() string {
+	return string(e)
+}
+
+func (e *RoofStyle) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RoofStyle(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RoofStyle", str)
+	}
+	return nil
+}
+
+func (e RoofStyle) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RoofStyle) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RoofStyle) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type SortOrder string
 
 const (

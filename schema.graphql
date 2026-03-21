@@ -105,6 +105,9 @@ type Mutation {
   "Update gate entrance hole count (0 means fully sealed)"
   updateBoxHoleCount(id: ID!, holeCount: Int!): Boolean!
 
+  "Update roof profile style (flat or angular) for roof sections"
+  updateBoxRoofStyle(id: ID!, roofStyle: RoofStyle!): Boolean!
+
   "Soft-delete a box from a hive"
   deactivateBox(id: ID!): Boolean
 
@@ -686,10 +689,17 @@ type Box{
   color: String
   "Gate opening capacity (number of entrance holes, 0-16)"
   holeCount: Int
+  "Roof profile style used for icon and visualization"
+  roofStyle: RoofStyle
   "Box type determining height and purpose"
   type: BoxType!
   "Frames contained in this box"
   frames: [Frame]
+}
+
+enum RoofStyle {
+  FLAT
+  ANGULAR
 }
 
 "Input for updating frame properties"
