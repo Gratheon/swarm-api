@@ -10,6 +10,24 @@ jobs:
   test:
     name: Test and Coverage
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: swarm-api
+          MYSQL_ROOT_PASSWORD: test
+        ports:
+          - 5100:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ptest"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      TESTING: "true"
+      TEST_DB_DSN: "root:test@tcp(127.0.0.1:5100)/swarm-api?parseTime=true&timeout=5s&readTimeout=30s&writeTimeout=30s"
+      MIGRATE_DB_DSN: "root:test@tcp(127.0.0.1:5100)/swarm-api"
 
     steps:
       - name: Checkout code
@@ -24,15 +42,22 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Run tests with coverage
-        working-directory: graph
-        run: TESTING=true go test -v -covermode=atomic -coverprofile=coverage.out .
+      - name: Run unit tests with coverage
+        run: go test -v -covermode=atomic -coverprofile=coverage-unit.out ./...
+
+      - name: Run DB migrations for integration tests
+        run: |
+          go install github.com/pressly/goose/v3/cmd/goose@latest
+          "$(go env GOPATH)/bin/goose" -dir migrations mysql "$MIGRATE_DB_DSN" up
+
+      - name: Run integration tests with coverage
+        run: go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.out ./graph
 
       - name: Upload coverage report to Codecov
         if: always()
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./graph/coverage.out
-          flags: unittests
+          files: ./coverage-unit.out,./graph/coverage-integration.out
+          flags: unittests,integration
           fail_ci_if_error: false

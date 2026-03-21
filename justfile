@@ -58,20 +58,27 @@ setup-git-hooks:
     chmod +x .githooks/pre-commit scripts/update-version.sh
     @echo "Git hooks enabled for this repo."
 
-test:
-    @echo "Running all tests..."
-    @echo "Make sure mysql is running: cd ../mysql && just start"
+test: test-unit
+
+test-unit:
+    @echo "Running unit tests..."
     TESTING=true go test -v ./...
 
 test-integration:
     @echo "Running integration tests..."
     @echo "Make sure mysql is running: cd ../mysql && just start"
-    cd graph && TESTING=true go test -v -run Integration
+    TESTING=true go test -v -tags=integration ./graph
 
 test-dataloader:
     @echo "Running dataloader integration tests..."
-    cd graph && TESTING=true go test -v -run TestDataLoader
+    cd graph && TESTING=true go test -v -tags=integration -run TestDataLoader
 
 test-split-hive:
     @echo "Running split hive integration tests..."
-    cd graph && TESTING=true go test -v -run TestSplitHive
+    cd graph && TESTING=true go test -v -tags=integration -run TestSplitHive
+
+test-coverage:
+    @echo "Running unit and integration tests with coverage..."
+    TESTING=true go test -v -covermode=atomic -coverprofile=coverage-unit.out ./...
+    @echo "Make sure mysql is running and migrations are applied before integration coverage"
+    TESTING=true go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.out ./graph

@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package graph
 
 import (
@@ -39,7 +42,7 @@ func TestHiveCreationLimit(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999201"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)
@@ -81,7 +84,7 @@ func TestHiveCreationLimit(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999202"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)
@@ -123,7 +126,7 @@ func TestHiveCreationLimit(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999203"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		activeApiaryID := createTestApiary(t, db, userID)

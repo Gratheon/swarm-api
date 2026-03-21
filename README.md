@@ -50,6 +50,8 @@ Tests are organized by type using file suffixes:
 - `*_integration_test.go` - Integration tests that require database/external services
 - `*_e2e_test.go` - End-to-end tests
 
+Integration tests are additionally guarded by the `integration` build tag.
+
 ### Test Structure Guidelines
 
 - Tests use human-readable names that clearly describe what is being tested
@@ -62,18 +64,18 @@ Tests are organized by type using file suffixes:
 
 Run all tests:
 ```bash
-cd graph && go test -v ./...
+go test -v ./...
 ```
 
 Run specific test type:
 ```bash
-cd graph && go test -v -run TestDataLoader
-cd graph && go test -v -run TestSplitHive
+go test -v ./...
+go test -v -tags=integration ./graph
 ```
 
 Run tests for a specific function:
 ```bash
-cd graph && go test -v -run "TestSplitHiveMutation/split_hive_with_new_queen"
+cd graph && go test -v -tags=integration -run "TestSplitHiveMutation/split_hive_with_new_queen"
 ```
 
 ### Prerequisites

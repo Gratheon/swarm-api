@@ -7,6 +7,8 @@ Tests are organized by type:
 - **Integration Tests** (`*_integration_test.go`) - Require database/services
 - **E2E Tests** (`*_e2e_test.go`) - Full end-to-end scenarios
 
+Integration tests are enabled with the `integration` build tag.
+
 ## Test Structure Standards
 
 All tests follow these guidelines:
@@ -67,24 +69,24 @@ export TEST_DB_DSN="root:test@tcp(localhost:5100)/swarm-api?parseTime=true"
 
 Run all tests:
 ```bash
-cd graph && go test -v ./...
+go test -v ./...
 ```
 
 Run specific test file:
 ```bash
-cd graph && go test -v -run TestSplitHive
-cd graph && go test -v -run TestDataLoader
+cd graph && go test -v -tags=integration -run TestSplitHive
+cd graph && go test -v -tags=integration -run TestDataLoader
 ```
 
 Run specific test case:
 ```bash
-cd graph && go test -v -run "TestSplitHiveMutation/split_hive_with_new_queen"
-cd graph && go test -v -run "TestSplitHiveMutation/split_hive_by_taking_old_queen/moves_existing_queen"
+cd graph && go test -v -tags=integration -run "TestSplitHiveMutation/split_hive_with_new_queen"
+cd graph && go test -v -tags=integration -run "TestSplitHiveMutation/split_hive_by_taking_old_queen/moves_existing_queen"
 ```
 
 Run tests with short timeout (skip slow integration tests):
 ```bash
-cd graph && go test -v -short
+go test -v -short ./...
 ```
 
 ## Test Coverage
@@ -127,4 +129,3 @@ If you're getting "source hive has no queen to take" errors:
 
 1. Check if the queen has `hive_id` set in the families table
 2. Run the migration if needed: `just migrate-db-dev`
-

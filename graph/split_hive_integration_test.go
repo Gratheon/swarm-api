@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package graph
 
 import (
@@ -6,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSplitHiveMutation(t *testing.T) {
@@ -24,7 +28,7 @@ func TestSplitHiveMutation(t *testing.T) {
 			}
 			defer db.Close()
 
-			userID := "999001"
+			userID := createTestUserID()
 			defer cleanupTestData(t, db, userID)
 
 			apiaryID := createTestApiary(t, db, userID)
@@ -44,8 +48,8 @@ func TestSplitHiveMutation(t *testing.T) {
 			newHive, err := resolver.SplitHive(ctx, strconv.Itoa(sourceHiveID), &newQueenName, "new_queen", frameIDs)
 
 			// ASSERT
-			assert.NoError(t, err, "SplitHive failed")
-			assert.NotNil(t, newHive, "Expected new hive to be created")
+			require.NoError(t, err, "SplitHive failed")
+			require.NotNil(t, newHive, "Expected new hive to be created")
 
 			var sourceQueenCount int
 			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", sourceHiveID)
@@ -83,7 +87,7 @@ func TestSplitHiveMutation(t *testing.T) {
 			}
 			defer db.Close()
 
-			userID := "999002"
+			userID := createTestUserID()
 			defer cleanupTestData(t, db, userID)
 
 			apiaryID := createTestApiary(t, db, userID)
@@ -102,8 +106,8 @@ func TestSplitHiveMutation(t *testing.T) {
 			newHive, err := resolver.SplitHive(ctx, strconv.Itoa(sourceHiveID), nil, "take_old_queen", frameIDs)
 
 			// ASSERT
-			assert.NoError(t, err, "SplitHive failed")
-			assert.NotNil(t, newHive, "Expected new hive to be created")
+			require.NoError(t, err, "SplitHive failed")
+			require.NotNil(t, newHive, "Expected new hive to be created")
 
 			var sourceQueenCount int
 			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", sourceHiveID)
@@ -129,7 +133,7 @@ func TestSplitHiveMutation(t *testing.T) {
 			}
 			defer db.Close()
 
-			userID := "999004"
+			userID := createTestUserID()
 			defer cleanupTestData(t, db, userID)
 
 			apiaryID := createTestApiary(t, db, userID)
@@ -165,7 +169,7 @@ func TestSplitHiveMutation(t *testing.T) {
 			}
 			defer db.Close()
 
-			userID := "999003"
+			userID := createTestUserID()
 			defer cleanupTestData(t, db, userID)
 
 			apiaryID := createTestApiary(t, db, userID)
@@ -184,8 +188,8 @@ func TestSplitHiveMutation(t *testing.T) {
 			newHive, err := resolver.SplitHive(ctx, strconv.Itoa(sourceHiveID), nil, "no_queen", frameIDs)
 
 			// ASSERT
-			assert.NoError(t, err, "SplitHive failed")
-			assert.NotNil(t, newHive, "Expected new hive to be created")
+			require.NoError(t, err, "SplitHive failed")
+			require.NotNil(t, newHive, "Expected new hive to be created")
 
 			var sourceQueenCount int
 			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", sourceHiveID)

@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package graph
 
 import (
@@ -18,7 +21,7 @@ func TestAddHorizontalHiveCreatesOneBasedFramePositions(t *testing.T) {
 	}
 	defer db.Close()
 
-	userID := "999301"
+	userID := createTestUserID()
 	defer cleanupTestData(t, db, userID)
 
 	apiaryID := createTestApiary(t, db, userID)
@@ -61,4 +64,3 @@ func TestAddHorizontalHiveCreatesOneBasedFramePositions(t *testing.T) {
 		require.Equal(t, i+1, row.Position)
 	}
 }
-
