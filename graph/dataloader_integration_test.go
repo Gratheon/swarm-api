@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package graph
 
 import (
@@ -23,7 +26,7 @@ func TestDataLoader(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999100"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiary1ID := createTestApiary(t, db, userID)
@@ -88,7 +91,7 @@ func TestDataLoader(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999101"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)
@@ -140,7 +143,7 @@ func TestDataLoader(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999102"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)
@@ -203,7 +206,7 @@ func TestDataLoader(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999103"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)
@@ -255,7 +258,7 @@ func TestDataLoader(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999105"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)
@@ -323,7 +326,7 @@ func TestDataLoaderIntegrationWithResolvers(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999104"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)
@@ -387,7 +390,7 @@ func TestDataLoaderIntegrationWithResolvers(t *testing.T) {
 		}
 		defer db.Close()
 
-		userID := "999106"
+		userID := createTestUserID()
 		defer cleanupTestData(t, db, userID)
 
 		apiaryID := createTestApiary(t, db, userID)

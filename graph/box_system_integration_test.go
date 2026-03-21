@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package graph
 
 import (
@@ -54,7 +57,7 @@ func TestBoxSystemCreateLimit(t *testing.T) {
 	}
 	defer dbConn.Close()
 
-	userID := "999301"
+	userID := createTestUserID()
 
 	systemModel := &model.BoxSystem{
 		Db:     dbConn,
@@ -86,7 +89,7 @@ func TestSetBoxProfileSourceDetectsCycle(t *testing.T) {
 	}
 	defer dbConn.Close()
 
-	userID := "999302"
+	userID := createTestUserID()
 
 	systemModel := &model.BoxSystem{
 		Db:     dbConn,
@@ -120,7 +123,7 @@ func TestRenameGlobalDefaultCreatesOwnedDefault(t *testing.T) {
 	}
 	defer dbConn.Close()
 
-	userID := "999303"
+	userID := createTestUserID()
 	systemModel := &model.BoxSystem{
 		Db:     dbConn,
 		UserID: userID,

@@ -1,13 +1,23 @@
+//go:build integration
+// +build integration
+
 package graph
 
 import (
 	"os"
 	"strconv"
+	"sync/atomic"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
+
+var integrationTestUserIDCounter uint64 = 900000000
+
+func createTestUserID() string {
+	return strconv.FormatUint(atomic.AddUint64(&integrationTestUserIDCounter, 1), 10)
+}
 
 func setupTestDB(t *testing.T) *sqlx.DB {
 	dsn := os.Getenv("TEST_DB_DSN")
@@ -41,13 +51,27 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 		return nil
 	}
 
-	_, err = db.Exec(`
-		ALTER TABLE families
-		ADD COLUMN IF NOT EXISTS active tinyint(1) NOT NULL DEFAULT 1
+	var hasFamiliesActiveColumn int
+	err = db.Get(&hasFamiliesActiveColumn, `
+		SELECT COUNT(*)
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = 'families'
+		  AND COLUMN_NAME = 'active'
 	`)
 	if err != nil {
-		t.Skipf("Skipping test - cannot ensure families.active column: %v", err)
+		t.Skipf("Skipping test - cannot inspect families.active column: %v", err)
 		return nil
+	}
+	if hasFamiliesActiveColumn == 0 {
+		_, err = db.Exec(`
+			ALTER TABLE families
+			ADD COLUMN active tinyint(1) NOT NULL DEFAULT 1
+		`)
+		if err != nil {
+			t.Skipf("Skipping test - cannot ensure families.active column: %v", err)
+			return nil
+		}
 	}
 
 	return db
