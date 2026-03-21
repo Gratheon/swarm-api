@@ -37,6 +37,7 @@ func main() {
 
 	// Add request ID middleware first so all logs include it
 	router.Use(middleware.RequestID)
+	router.Use(httpMetricsMiddleware)
 
 	if os.Getenv("TESTING") != "true" {
 		err := RegisterGraphQLSchema(graphqlSchema)
@@ -60,6 +61,7 @@ func main() {
 	//router.Use(logToBugsnag)
 	router.Use(logger.NewStructuredLogger(logrusInstance))
 
+	router.Handle("/metrics", metricsHandler())
 	router.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
 
 	serveStaticFiles(router)
@@ -70,6 +72,7 @@ func main() {
 
 	gqlGenConfig := generated.Config{Resolvers: rootResolver}
 	gqlGenServer := handler.NewDefaultServer(generated.NewExecutableSchema(gqlGenConfig))
+	gqlGenServer.AroundFields(graphqlResolverMetricsMiddleware)
 
 	dataLoaderMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
