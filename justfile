@@ -79,6 +79,10 @@ test-split-hive:
 
 test-coverage:
     @echo "Running unit and integration tests with coverage..."
-    TESTING=true go test -v -covermode=atomic -coverprofile=coverage-unit.out ./...
+    TESTING=true go test -v -covermode=atomic -coverprofile=coverage-unit.raw.out ./...
+    grep -v "^github.com/Gratheon/swarm-api/graph/generated/generated.go:" coverage-unit.raw.out > coverage-unit.out
+    rm -f coverage-unit.raw.out
     @echo "Make sure mysql is running and migrations are applied before integration coverage"
-    TESTING=true go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.out ./graph
+    TESTING=true go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.raw.out ./graph
+    grep -v "^github.com/Gratheon/swarm-api/graph/generated/generated.go:" graph/coverage-integration.raw.out > graph/coverage-integration.out
+    rm -f graph/coverage-integration.raw.out
