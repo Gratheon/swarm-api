@@ -7,7 +7,7 @@ SET @has_roof_style := (
     AND COLUMN_NAME = 'roof_style'
 );
 SET @sql := IF(@has_roof_style = 0,
-  "ALTER TABLE `boxes` ADD COLUMN `roof_style` enum('FLAT','ANGULAR') NULL DEFAULT NULL AFTER `hole_count`",
+  'ALTER TABLE `boxes` ADD COLUMN `roof_style` enum(''FLAT'',''ANGULAR'') NULL DEFAULT NULL AFTER `hole_count`',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql;
