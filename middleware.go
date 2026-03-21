@@ -24,6 +24,11 @@ func authMiddleware(next http.Handler) http.Handler {
 	jwtSecret := viper.GetString("jwt_key")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/metrics" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		uid := r.Header.Get("internal-userId")
 
 		if uid == "" {
