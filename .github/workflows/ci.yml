@@ -43,7 +43,10 @@ jobs:
         run: go mod download
 
       - name: Run unit tests with coverage
-        run: go test -v -covermode=atomic -coverprofile=coverage-unit.out ./...
+        run: |
+          go test -v -covermode=atomic -coverprofile=coverage-unit.raw.out ./...
+          grep -v "^github.com/Gratheon/swarm-api/graph/generated/generated.go:" coverage-unit.raw.out > coverage-unit.out
+          rm -f coverage-unit.raw.out
 
       - name: Run DB migrations for integration tests
         run: |
@@ -51,7 +54,10 @@ jobs:
           "$(go env GOPATH)/bin/goose" -dir migrations mysql "$MIGRATE_DB_DSN" up
 
       - name: Run integration tests with coverage
-        run: go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.out ./graph
+        run: |
+          go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.raw.out ./graph
+          grep -v "^github.com/Gratheon/swarm-api/graph/generated/generated.go:" graph/coverage-integration.raw.out > graph/coverage-integration.out
+          rm -f graph/coverage-integration.raw.out
 
       - name: Upload unit coverage to Codecov
         if: always()
