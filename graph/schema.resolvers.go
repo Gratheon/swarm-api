@@ -569,6 +569,29 @@ func (r *mutationResolver) UpdateBoxHoleCount(ctx context.Context, id string, ho
 	return boxModel.UpdateHoleCount(id, holeCount)
 }
 
+// UpdateBoxRoofStyle is the resolver for the updateBoxRoofStyle field.
+func (r *mutationResolver) UpdateBoxRoofStyle(ctx context.Context, id string, roofStyle model.RoofStyle) (bool, error) {
+	uid := ctx.Value("userID").(string)
+	boxModel := &model.Box{
+		Db:     r.Resolver.Db,
+		UserID: uid,
+	}
+
+	box, err := boxModel.Get(id)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return false, err
+	}
+	if box == nil {
+		return false, errors.New("box not found")
+	}
+	if box.Type != model.BoxTypeRoof {
+		return false, errors.New("roof style can only be updated for roof boxes")
+	}
+
+	return boxModel.UpdateRoofStyle(id, roofStyle)
+}
+
 // DeactivateBox is the resolver for the deactivateBox field.
 func (r *mutationResolver) DeactivateBox(ctx context.Context, id string) (*bool, error) {
 	uid := ctx.Value("userID").(string)
