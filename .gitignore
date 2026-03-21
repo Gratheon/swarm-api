@@ -4,3 +4,4 @@ server.bin
 config/config.dev.json
 config/config.native.json
 config/config.prod.json
+swarm-api
