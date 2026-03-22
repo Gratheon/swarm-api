@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
 )
