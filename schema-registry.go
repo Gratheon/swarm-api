@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 	"github.com/spf13/viper"
 )
 

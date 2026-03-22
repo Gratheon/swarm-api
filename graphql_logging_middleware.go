@@ -8,12 +8,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 )
 
 type gqlRequestBody struct {
-	OperationName string `json:"operationName"`
-	Query         string `json:"query"`
+	OperationName string                 `json:"operationName"`
+	Query         string                 `json:"query"`
 	Variables     map[string]interface{} `json:"variables"`
 }
 

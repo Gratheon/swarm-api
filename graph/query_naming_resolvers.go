@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/rand"
 
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 )
 
 // RandomHiveName is the resolver for the randomHiveName field.

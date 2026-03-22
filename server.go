@@ -8,9 +8,9 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/Gratheon/log-lib-go"
 	"github.com/Gratheon/swarm-api/graph"
 	"github.com/Gratheon/swarm-api/graph/generated"
-	"github.com/Gratheon/swarm-api/logger"
 	"github.com/Gratheon/swarm-api/redisPubSub"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"

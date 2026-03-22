@@ -6,7 +6,7 @@ import (
 	"math/rand"     // Import math/rand
 	"time"          // Import time
 
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 )

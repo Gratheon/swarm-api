@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

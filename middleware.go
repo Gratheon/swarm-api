@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 	"net/http"

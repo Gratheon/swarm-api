@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/Gratheon/log-lib-go"
 	"github.com/Gratheon/swarm-api/graph/model"
-	"github.com/Gratheon/swarm-api/logger"
 )
 
 // AddQueenToHive is the resolver for the addQueenToHive field.

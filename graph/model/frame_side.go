@@ -3,16 +3,16 @@ package model
 import (
 	"database/sql"
 
-	"github.com/Gratheon/swarm-api/logger"
+	"github.com/Gratheon/log-lib-go"
 	"github.com/jmoiron/sqlx"
 )
 
 type FrameSide struct {
-	Db                 *sqlx.DB
-	ID                 *string `json:"id" db:"id"`
-	UserID             string  `db:"user_id"`
+	Db     *sqlx.DB
+	ID     *string `json:"id" db:"id"`
+	UserID string  `db:"user_id"`
 
-	FrameID            *int    `json:"frameId" db:"frame_id"` // Add FrameID field back for optimized query
+	FrameID *int `json:"frameId" db:"frame_id"` // Add FrameID field back for optimized query
 }
 
 func (FrameSide) IsEntity() {}
@@ -42,7 +42,7 @@ func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 		// FrameSide exists but no parent frame found, FrameID will be nil
 		return &frameSide, nil
 	}
-	
+
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil
@@ -59,7 +59,7 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 		    :userID
 		)`,
 		map[string]interface{}{
-			"userID":         frame.UserID,
+			"userID": frame.UserID,
 		},
 	)
 
@@ -72,4 +72,3 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 
 	return &id, err
 }
-
