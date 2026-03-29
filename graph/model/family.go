@@ -19,6 +19,7 @@ type Family struct {
 	Age         *int          `json:"age"`
 	Added       *string       `json:"added" db:"added"`
 	Color       *string       `json:"color" db:"color"`
+	PreviewImageUrl *string   `json:"previewImageUrl" db:"preview_image_url"`
 	Inspections []*Inspection `json:"inspections"`
 }
 
