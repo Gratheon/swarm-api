@@ -37,6 +37,7 @@ func main() {
 
 	// Add request ID middleware first so all logs include it
 	router.Use(middleware.RequestID)
+	router.Use(logger.NewTraceMiddleware("swarm-api"))
 	router.Use(httpMetricsMiddleware)
 
 	if os.Getenv("TESTING") != "true" {
