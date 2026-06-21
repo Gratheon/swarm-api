@@ -78,6 +78,9 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 }
 
 func cleanupTestData(t *testing.T, db *sqlx.DB, userID string) {
+	db.Exec("DELETE FROM hive_logs WHERE user_id=?", userID)
+	db.Exec("DELETE FROM inspections WHERE user_id=?", userID)
+	db.Exec("DELETE FROM treatments WHERE user_id=?", userID)
 	db.Exec("DELETE FROM family_moves WHERE user_id=?", userID)
 	db.Exec("DELETE FROM frames WHERE user_id=?", userID)
 	db.Exec("DELETE FROM frames_sides WHERE user_id=?", userID)

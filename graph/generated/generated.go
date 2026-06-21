@@ -106,6 +106,56 @@ type ComplexityRoot struct {
 		SystemID            func(childComplexity int) int
 	}
 
+	CalendarInspectionRecency struct {
+		Hive                  func(childComplexity int) int
+		IsInsideSelectedRange func(childComplexity int) int
+		LatestAt              func(childComplexity int) int
+		LatestInspection      func(childComplexity int) int
+	}
+
+	CalendarItem struct {
+		Apiary             func(childComplexity int) int
+		Date               func(childComplexity int) int
+		Details            func(childComplexity int) int
+		Hive               func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		Kind               func(childComplexity int) int
+		Label              func(childComplexity int) int
+		LegalDisclaimerKey func(childComplexity int) int
+		ReminderStateID    func(childComplexity int) int
+		ReminderStatus     func(childComplexity int) int
+		Source             func(childComplexity int) int
+		SourceType         func(childComplexity int) int
+		TemplateKey        func(childComplexity int) int
+	}
+
+	CalendarItemLabel struct {
+		Args           func(childComplexity int) int
+		Fallback       func(childComplexity int) int
+		TranslationKey func(childComplexity int) int
+	}
+
+	CalendarPayload struct {
+		InspectionRecency func(childComplexity int) int
+		Items             func(childComplexity int) int
+		Range             func(childComplexity int) int
+	}
+
+	CalendarRange struct {
+		Capped func(childComplexity int) int
+		From   func(childComplexity int) int
+		To     func(childComplexity int) int
+	}
+
+	CalendarSourceContext struct {
+		ApiaryID    func(childComplexity int) int
+		FamilyID    func(childComplexity int) int
+		HiveID      func(childComplexity int) int
+		SourceID    func(childComplexity int) int
+		SourceType  func(childComplexity int) int
+		TemplateKey func(childComplexity int) int
+	}
+
 	Device struct {
 		APIToken  func(childComplexity int) int
 		BoxID     func(childComplexity int) int
@@ -273,6 +323,7 @@ type ComplexityRoot struct {
 		BoxSpecs                func(childComplexity int, systemID string) int
 		BoxSystemFrameSettings  func(childComplexity int) int
 		BoxSystems              func(childComplexity int) int
+		Calendar                func(childComplexity int, input model.CalendarInput) int
 		Devices                 func(childComplexity int) int
 		FrameSpecs              func(childComplexity int, systemID *string) int
 		Hive                    func(childComplexity int, id string) int
@@ -465,6 +516,7 @@ type QueryResolver interface {
 	BoxSystemFrameSettings(ctx context.Context) ([]*model.BoxSystemFrameSetting, error)
 	WarehouseQueens(ctx context.Context) ([]*model.Family, error)
 	HiveLogs(ctx context.Context, hiveID string, limit *int) ([]*model.HiveLog, error)
+	Calendar(ctx context.Context, input model.CalendarInput) (*model.CalendarPayload, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -761,6 +813,204 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BoxSystemFrameSetting.SystemID(childComplexity), true
+
+	case "CalendarInspectionRecency.hive":
+		if e.ComplexityRoot.CalendarInspectionRecency.Hive == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarInspectionRecency.Hive(childComplexity), true
+	case "CalendarInspectionRecency.isInsideSelectedRange":
+		if e.ComplexityRoot.CalendarInspectionRecency.IsInsideSelectedRange == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarInspectionRecency.IsInsideSelectedRange(childComplexity), true
+	case "CalendarInspectionRecency.latestAt":
+		if e.ComplexityRoot.CalendarInspectionRecency.LatestAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarInspectionRecency.LatestAt(childComplexity), true
+	case "CalendarInspectionRecency.latestInspection":
+		if e.ComplexityRoot.CalendarInspectionRecency.LatestInspection == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarInspectionRecency.LatestInspection(childComplexity), true
+
+	case "CalendarItem.apiary":
+		if e.ComplexityRoot.CalendarItem.Apiary == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.Apiary(childComplexity), true
+	case "CalendarItem.date":
+		if e.ComplexityRoot.CalendarItem.Date == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.Date(childComplexity), true
+	case "CalendarItem.details":
+		if e.ComplexityRoot.CalendarItem.Details == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.Details(childComplexity), true
+	case "CalendarItem.hive":
+		if e.ComplexityRoot.CalendarItem.Hive == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.Hive(childComplexity), true
+	case "CalendarItem.id":
+		if e.ComplexityRoot.CalendarItem.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.ID(childComplexity), true
+	case "CalendarItem.kind":
+		if e.ComplexityRoot.CalendarItem.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.Kind(childComplexity), true
+	case "CalendarItem.label":
+		if e.ComplexityRoot.CalendarItem.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.Label(childComplexity), true
+	case "CalendarItem.legalDisclaimerKey":
+		if e.ComplexityRoot.CalendarItem.LegalDisclaimerKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.LegalDisclaimerKey(childComplexity), true
+	case "CalendarItem.reminderStateId":
+		if e.ComplexityRoot.CalendarItem.ReminderStateID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.ReminderStateID(childComplexity), true
+	case "CalendarItem.reminderStatus":
+		if e.ComplexityRoot.CalendarItem.ReminderStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.ReminderStatus(childComplexity), true
+	case "CalendarItem.source":
+		if e.ComplexityRoot.CalendarItem.Source == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.Source(childComplexity), true
+	case "CalendarItem.sourceType":
+		if e.ComplexityRoot.CalendarItem.SourceType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.SourceType(childComplexity), true
+	case "CalendarItem.templateKey":
+		if e.ComplexityRoot.CalendarItem.TemplateKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItem.TemplateKey(childComplexity), true
+
+	case "CalendarItemLabel.args":
+		if e.ComplexityRoot.CalendarItemLabel.Args == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItemLabel.Args(childComplexity), true
+	case "CalendarItemLabel.fallback":
+		if e.ComplexityRoot.CalendarItemLabel.Fallback == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItemLabel.Fallback(childComplexity), true
+	case "CalendarItemLabel.translationKey":
+		if e.ComplexityRoot.CalendarItemLabel.TranslationKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarItemLabel.TranslationKey(childComplexity), true
+
+	case "CalendarPayload.inspectionRecency":
+		if e.ComplexityRoot.CalendarPayload.InspectionRecency == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarPayload.InspectionRecency(childComplexity), true
+	case "CalendarPayload.items":
+		if e.ComplexityRoot.CalendarPayload.Items == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarPayload.Items(childComplexity), true
+	case "CalendarPayload.range":
+		if e.ComplexityRoot.CalendarPayload.Range == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarPayload.Range(childComplexity), true
+
+	case "CalendarRange.capped":
+		if e.ComplexityRoot.CalendarRange.Capped == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarRange.Capped(childComplexity), true
+	case "CalendarRange.from":
+		if e.ComplexityRoot.CalendarRange.From == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarRange.From(childComplexity), true
+	case "CalendarRange.to":
+		if e.ComplexityRoot.CalendarRange.To == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarRange.To(childComplexity), true
+
+	case "CalendarSourceContext.apiaryId":
+		if e.ComplexityRoot.CalendarSourceContext.ApiaryID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarSourceContext.ApiaryID(childComplexity), true
+	case "CalendarSourceContext.familyId":
+		if e.ComplexityRoot.CalendarSourceContext.FamilyID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarSourceContext.FamilyID(childComplexity), true
+	case "CalendarSourceContext.hiveId":
+		if e.ComplexityRoot.CalendarSourceContext.HiveID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarSourceContext.HiveID(childComplexity), true
+	case "CalendarSourceContext.sourceId":
+		if e.ComplexityRoot.CalendarSourceContext.SourceID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarSourceContext.SourceID(childComplexity), true
+	case "CalendarSourceContext.sourceType":
+		if e.ComplexityRoot.CalendarSourceContext.SourceType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarSourceContext.SourceType(childComplexity), true
+	case "CalendarSourceContext.templateKey":
+		if e.ComplexityRoot.CalendarSourceContext.TemplateKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalendarSourceContext.TemplateKey(childComplexity), true
 
 	case "Device.apiToken":
 		if e.ComplexityRoot.Device.APIToken == nil {
@@ -1819,6 +2069,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.BoxSystems(childComplexity), true
+	case "Query.calendar":
+		if e.ComplexityRoot.Query.Calendar == nil {
+			break
+		}
+
+		args, err := ec.field_Query_calendar_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Calendar(childComplexity, args["input"].(model.CalendarInput)), true
 	case "Query.devices":
 		if e.ComplexityRoot.Query.Devices == nil {
 			break
@@ -2206,6 +2467,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApiaryInput,
 		ec.unmarshalInputApiaryObstacleInput,
 		ec.unmarshalInputBoxInput,
+		ec.unmarshalInputCalendarInput,
 		ec.unmarshalInputDeviceInput,
 		ec.unmarshalInputDeviceUpdateInput,
 		ec.unmarshalInputFamilyInput,
@@ -2369,6 +2631,9 @@ type Query {
 
   "Chronological change history entries for a hive"
   hiveLogs(hiveId: ID!, limit: Int): [HiveLog!]!
+
+  "Aggregated Calendar v1 payload for bounded historical records and approved generated reminder sources"
+  calendar(input: CalendarInput!): CalendarPayload!
 }
 
 "The mutation type, represents all updates we can make to our data"
@@ -2973,6 +3238,83 @@ type Inspection {
 input InspectionInput{
   hiveId: Int!
   data: JSON!
+}
+
+enum CalendarItemKind {
+  HISTORICAL_RECORD
+  GENERATED_REMINDER
+}
+
+enum CalendarItemSourceType {
+  INSPECTION
+  HIVE_LOG
+  TREATMENT_REMINDER
+  QUEEN_MILESTONE
+}
+
+enum CalendarReminderStatus {
+  SCHEDULED
+  DONE
+  DISMISSED
+  SNOOZED
+}
+
+input CalendarInput {
+  from: DateTime!
+  to: DateTime!
+  apiaryId: ID
+  hiveId: ID
+  sourceTypes: [CalendarItemSourceType!]
+}
+
+type CalendarRange {
+  from: DateTime!
+  to: DateTime!
+  capped: Boolean!
+}
+
+type CalendarSourceContext {
+  sourceType: CalendarItemSourceType!
+  sourceId: ID
+  hiveId: ID
+  apiaryId: ID
+  familyId: ID
+  templateKey: String
+}
+
+type CalendarItemLabel {
+  translationKey: String!
+  fallback: String!
+  args: JSON
+}
+
+type CalendarItem {
+  id: ID!
+  kind: CalendarItemKind!
+  sourceType: CalendarItemSourceType!
+  date: DateTime!
+  label: CalendarItemLabel!
+  details: CalendarItemLabel
+  hive: Hive
+  apiary: Apiary
+  source: CalendarSourceContext!
+  templateKey: String
+  reminderStateId: ID
+  reminderStatus: CalendarReminderStatus
+  legalDisclaimerKey: String
+}
+
+type CalendarInspectionRecency {
+  hive: Hive!
+  latestInspection: Inspection
+  latestAt: DateTime
+  isInsideSelectedRange: Boolean!
+}
+
+type CalendarPayload {
+  range: CalendarRange!
+  items: [CalendarItem!]!
+  inspectionRecency: [CalendarInspectionRecency!]!
 }
 
 "Box (super/deep/feeder) container holding frames"
@@ -4025,6 +4367,17 @@ func (ec *executionContext) field_Query_boxSpecs_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["systemId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_calendar_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCalendarInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -5583,6 +5936,1132 @@ func (ec *executionContext) fieldContext_BoxSystemFrameSetting_frameSourceSystem
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarInspectionRecency_hive(ctx context.Context, field graphql.CollectedField, obj *model.CalendarInspectionRecency) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarInspectionRecency_hive,
+		func(ctx context.Context) (any, error) {
+			return obj.Hive, nil
+		},
+		nil,
+		ec.marshalNHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarInspectionRecency_hive(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarInspectionRecency",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
+			case "boxSystemId":
+				return ec.fieldContext_Hive_boxSystemId(ctx, field)
+			case "hiveNumber":
+				return ec.fieldContext_Hive_hiveNumber(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "families":
+				return ec.fieldContext_Hive_families(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarInspectionRecency_latestInspection(ctx context.Context, field graphql.CollectedField, obj *model.CalendarInspectionRecency) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarInspectionRecency_latestInspection,
+		func(ctx context.Context) (any, error) {
+			return obj.LatestInspection, nil
+		},
+		nil,
+		ec.marshalOInspection2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐInspection,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarInspectionRecency_latestInspection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarInspectionRecency",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Inspection_id(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_Inspection_hiveId(ctx, field)
+			case "data":
+				return ec.fieldContext_Inspection_data(ctx, field)
+			case "added":
+				return ec.fieldContext_Inspection_added(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Inspection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarInspectionRecency_latestAt(ctx context.Context, field graphql.CollectedField, obj *model.CalendarInspectionRecency) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarInspectionRecency_latestAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LatestAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarInspectionRecency_latestAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarInspectionRecency",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarInspectionRecency_isInsideSelectedRange(ctx context.Context, field graphql.CollectedField, obj *model.CalendarInspectionRecency) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarInspectionRecency_isInsideSelectedRange,
+		func(ctx context.Context) (any, error) {
+			return obj.IsInsideSelectedRange, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarInspectionRecency_isInsideSelectedRange(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarInspectionRecency",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_id(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_kind(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_kind,
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		ec.marshalNCalendarItemKind2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemKind,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CalendarItemKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_sourceType(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_sourceType,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceType, nil
+		},
+		nil,
+		ec.marshalNCalendarItemSourceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_sourceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CalendarItemSourceType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_date(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_date,
+		func(ctx context.Context) (any, error) {
+			return obj.Date, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_label(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalNCalendarItemLabel2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemLabel,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "translationKey":
+				return ec.fieldContext_CalendarItemLabel_translationKey(ctx, field)
+			case "fallback":
+				return ec.fieldContext_CalendarItemLabel_fallback(ctx, field)
+			case "args":
+				return ec.fieldContext_CalendarItemLabel_args(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalendarItemLabel", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_details(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_details,
+		func(ctx context.Context) (any, error) {
+			return obj.Details, nil
+		},
+		nil,
+		ec.marshalOCalendarItemLabel2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemLabel,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_details(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "translationKey":
+				return ec.fieldContext_CalendarItemLabel_translationKey(ctx, field)
+			case "fallback":
+				return ec.fieldContext_CalendarItemLabel_fallback(ctx, field)
+			case "args":
+				return ec.fieldContext_CalendarItemLabel_args(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalendarItemLabel", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_hive(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_hive,
+		func(ctx context.Context) (any, error) {
+			return obj.Hive, nil
+		},
+		nil,
+		ec.marshalOHive2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐHive,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_hive(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Hive_id(ctx, field)
+			case "hiveType":
+				return ec.fieldContext_Hive_hiveType(ctx, field)
+			case "boxSystemId":
+				return ec.fieldContext_Hive_boxSystemId(ctx, field)
+			case "hiveNumber":
+				return ec.fieldContext_Hive_hiveNumber(ctx, field)
+			case "notes":
+				return ec.fieldContext_Hive_notes(ctx, field)
+			case "boxes":
+				return ec.fieldContext_Hive_boxes(ctx, field)
+			case "family":
+				return ec.fieldContext_Hive_family(ctx, field)
+			case "families":
+				return ec.fieldContext_Hive_families(ctx, field)
+			case "boxCount":
+				return ec.fieldContext_Hive_boxCount(ctx, field)
+			case "inspectionCount":
+				return ec.fieldContext_Hive_inspectionCount(ctx, field)
+			case "status":
+				return ec.fieldContext_Hive_status(ctx, field)
+			case "added":
+				return ec.fieldContext_Hive_added(ctx, field)
+			case "isNew":
+				return ec.fieldContext_Hive_isNew(ctx, field)
+			case "lastInspection":
+				return ec.fieldContext_Hive_lastInspection(ctx, field)
+			case "collapse_date":
+				return ec.fieldContext_Hive_collapse_date(ctx, field)
+			case "collapse_cause":
+				return ec.fieldContext_Hive_collapse_cause(ctx, field)
+			case "parentHive":
+				return ec.fieldContext_Hive_parentHive(ctx, field)
+			case "splitDate":
+				return ec.fieldContext_Hive_splitDate(ctx, field)
+			case "childHives":
+				return ec.fieldContext_Hive_childHives(ctx, field)
+			case "mergedIntoHive":
+				return ec.fieldContext_Hive_mergedIntoHive(ctx, field)
+			case "mergeDate":
+				return ec.fieldContext_Hive_mergeDate(ctx, field)
+			case "mergeType":
+				return ec.fieldContext_Hive_mergeType(ctx, field)
+			case "mergedFromHives":
+				return ec.fieldContext_Hive_mergedFromHives(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Hive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_apiary(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_apiary,
+		func(ctx context.Context) (any, error) {
+			return obj.Apiary, nil
+		},
+		nil,
+		ec.marshalOApiary2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐApiary,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_apiary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Apiary_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Apiary_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Apiary_type(ctx, field)
+			case "hives":
+				return ec.fieldContext_Apiary_hives(ctx, field)
+			case "location":
+				return ec.fieldContext_Apiary_location(ctx, field)
+			case "lat":
+				return ec.fieldContext_Apiary_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Apiary_lng(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Apiary", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_source(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_source,
+		func(ctx context.Context) (any, error) {
+			return obj.Source, nil
+		},
+		nil,
+		ec.marshalNCalendarSourceContext2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarSourceContext,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sourceType":
+				return ec.fieldContext_CalendarSourceContext_sourceType(ctx, field)
+			case "sourceId":
+				return ec.fieldContext_CalendarSourceContext_sourceId(ctx, field)
+			case "hiveId":
+				return ec.fieldContext_CalendarSourceContext_hiveId(ctx, field)
+			case "apiaryId":
+				return ec.fieldContext_CalendarSourceContext_apiaryId(ctx, field)
+			case "familyId":
+				return ec.fieldContext_CalendarSourceContext_familyId(ctx, field)
+			case "templateKey":
+				return ec.fieldContext_CalendarSourceContext_templateKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalendarSourceContext", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_templateKey(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_templateKey,
+		func(ctx context.Context) (any, error) {
+			return obj.TemplateKey, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_templateKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_reminderStateId(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_reminderStateId,
+		func(ctx context.Context) (any, error) {
+			return obj.ReminderStateID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_reminderStateId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_reminderStatus(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_reminderStatus,
+		func(ctx context.Context) (any, error) {
+			return obj.ReminderStatus, nil
+		},
+		nil,
+		ec.marshalOCalendarReminderStatus2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarReminderStatus,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_reminderStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CalendarReminderStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItem_legalDisclaimerKey(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItem_legalDisclaimerKey,
+		func(ctx context.Context) (any, error) {
+			return obj.LegalDisclaimerKey, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItem_legalDisclaimerKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItemLabel_translationKey(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItemLabel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItemLabel_translationKey,
+		func(ctx context.Context) (any, error) {
+			return obj.TranslationKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItemLabel_translationKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItemLabel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItemLabel_fallback(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItemLabel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItemLabel_fallback,
+		func(ctx context.Context) (any, error) {
+			return obj.Fallback, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItemLabel_fallback(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItemLabel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarItemLabel_args(ctx context.Context, field graphql.CollectedField, obj *model.CalendarItemLabel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarItemLabel_args,
+		func(ctx context.Context) (any, error) {
+			return obj.Args, nil
+		},
+		nil,
+		ec.marshalOJSON2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarItemLabel_args(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarItemLabel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarPayload_range(ctx context.Context, field graphql.CollectedField, obj *model.CalendarPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarPayload_range,
+		func(ctx context.Context) (any, error) {
+			return obj.Range, nil
+		},
+		nil,
+		ec.marshalNCalendarRange2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarRange,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarPayload_range(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "from":
+				return ec.fieldContext_CalendarRange_from(ctx, field)
+			case "to":
+				return ec.fieldContext_CalendarRange_to(ctx, field)
+			case "capped":
+				return ec.fieldContext_CalendarRange_capped(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalendarRange", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarPayload_items(ctx context.Context, field graphql.CollectedField, obj *model.CalendarPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarPayload_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNCalendarItem2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarPayload_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CalendarItem_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_CalendarItem_kind(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_CalendarItem_sourceType(ctx, field)
+			case "date":
+				return ec.fieldContext_CalendarItem_date(ctx, field)
+			case "label":
+				return ec.fieldContext_CalendarItem_label(ctx, field)
+			case "details":
+				return ec.fieldContext_CalendarItem_details(ctx, field)
+			case "hive":
+				return ec.fieldContext_CalendarItem_hive(ctx, field)
+			case "apiary":
+				return ec.fieldContext_CalendarItem_apiary(ctx, field)
+			case "source":
+				return ec.fieldContext_CalendarItem_source(ctx, field)
+			case "templateKey":
+				return ec.fieldContext_CalendarItem_templateKey(ctx, field)
+			case "reminderStateId":
+				return ec.fieldContext_CalendarItem_reminderStateId(ctx, field)
+			case "reminderStatus":
+				return ec.fieldContext_CalendarItem_reminderStatus(ctx, field)
+			case "legalDisclaimerKey":
+				return ec.fieldContext_CalendarItem_legalDisclaimerKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalendarItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarPayload_inspectionRecency(ctx context.Context, field graphql.CollectedField, obj *model.CalendarPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarPayload_inspectionRecency,
+		func(ctx context.Context) (any, error) {
+			return obj.InspectionRecency, nil
+		},
+		nil,
+		ec.marshalNCalendarInspectionRecency2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarInspectionRecencyᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarPayload_inspectionRecency(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hive":
+				return ec.fieldContext_CalendarInspectionRecency_hive(ctx, field)
+			case "latestInspection":
+				return ec.fieldContext_CalendarInspectionRecency_latestInspection(ctx, field)
+			case "latestAt":
+				return ec.fieldContext_CalendarInspectionRecency_latestAt(ctx, field)
+			case "isInsideSelectedRange":
+				return ec.fieldContext_CalendarInspectionRecency_isInsideSelectedRange(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalendarInspectionRecency", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarRange_from(ctx context.Context, field graphql.CollectedField, obj *model.CalendarRange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarRange_from,
+		func(ctx context.Context) (any, error) {
+			return obj.From, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarRange_from(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarRange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarRange_to(ctx context.Context, field graphql.CollectedField, obj *model.CalendarRange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarRange_to,
+		func(ctx context.Context) (any, error) {
+			return obj.To, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarRange_to(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarRange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarRange_capped(ctx context.Context, field graphql.CollectedField, obj *model.CalendarRange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarRange_capped,
+		func(ctx context.Context) (any, error) {
+			return obj.Capped, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarRange_capped(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarRange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarSourceContext_sourceType(ctx context.Context, field graphql.CollectedField, obj *model.CalendarSourceContext) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarSourceContext_sourceType,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceType, nil
+		},
+		nil,
+		ec.marshalNCalendarItemSourceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarSourceContext_sourceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarSourceContext",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CalendarItemSourceType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarSourceContext_sourceId(ctx context.Context, field graphql.CollectedField, obj *model.CalendarSourceContext) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarSourceContext_sourceId,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarSourceContext_sourceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarSourceContext",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarSourceContext_hiveId(ctx context.Context, field graphql.CollectedField, obj *model.CalendarSourceContext) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarSourceContext_hiveId,
+		func(ctx context.Context) (any, error) {
+			return obj.HiveID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarSourceContext_hiveId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarSourceContext",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarSourceContext_apiaryId(ctx context.Context, field graphql.CollectedField, obj *model.CalendarSourceContext) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarSourceContext_apiaryId,
+		func(ctx context.Context) (any, error) {
+			return obj.ApiaryID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarSourceContext_apiaryId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarSourceContext",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarSourceContext_familyId(ctx context.Context, field graphql.CollectedField, obj *model.CalendarSourceContext) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarSourceContext_familyId,
+		func(ctx context.Context) (any, error) {
+			return obj.FamilyID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarSourceContext_familyId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarSourceContext",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalendarSourceContext_templateKey(ctx context.Context, field graphql.CollectedField, obj *model.CalendarSourceContext) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalendarSourceContext_templateKey,
+		func(ctx context.Context) (any, error) {
+			return obj.TemplateKey, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalendarSourceContext_templateKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalendarSourceContext",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11922,6 +13401,55 @@ func (ec *executionContext) fieldContext_Query_hiveLogs(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_calendar(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_calendar,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Calendar(ctx, fc.Args["input"].(model.CalendarInput))
+		},
+		nil,
+		ec.marshalNCalendarPayload2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_calendar(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "range":
+				return ec.fieldContext_CalendarPayload_range(ctx, field)
+			case "items":
+				return ec.fieldContext_CalendarPayload_items(ctx, field)
+			case "inspectionRecency":
+				return ec.fieldContext_CalendarPayload_inspectionRecency(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalendarPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_calendar_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query__entities(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14738,6 +16266,64 @@ func (ec *executionContext) unmarshalInputBoxInput(ctx context.Context, obj any)
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCalendarInput(ctx context.Context, obj any) (model.CalendarInput, error) {
+	var it model.CalendarInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"from", "to", "apiaryId", "hiveId", "sourceTypes"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "from":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from"))
+			data, err := ec.unmarshalNDateTime2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.From = data
+		case "to":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("to"))
+			data, err := ec.unmarshalNDateTime2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.To = data
+		case "apiaryId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiaryId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ApiaryID = data
+		case "hiveId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hiveId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HiveID = data
+		case "sourceTypes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourceTypes"))
+			data, err := ec.unmarshalOCalendarItemSourceType2ᚕgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceTypeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SourceTypes = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDeviceInput(ctx context.Context, obj any) (model.DeviceInput, error) {
 	var it model.DeviceInput
 	if obj == nil {
@@ -15854,6 +17440,325 @@ func (ec *executionContext) _BoxSystemFrameSetting(ctx context.Context, sel ast.
 			}
 		case "frameSourceSystemId":
 			out.Values[i] = ec._BoxSystemFrameSetting_frameSourceSystemId(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var calendarInspectionRecencyImplementors = []string{"CalendarInspectionRecency"}
+
+func (ec *executionContext) _CalendarInspectionRecency(ctx context.Context, sel ast.SelectionSet, obj *model.CalendarInspectionRecency) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calendarInspectionRecencyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalendarInspectionRecency")
+		case "hive":
+			out.Values[i] = ec._CalendarInspectionRecency_hive(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "latestInspection":
+			out.Values[i] = ec._CalendarInspectionRecency_latestInspection(ctx, field, obj)
+		case "latestAt":
+			out.Values[i] = ec._CalendarInspectionRecency_latestAt(ctx, field, obj)
+		case "isInsideSelectedRange":
+			out.Values[i] = ec._CalendarInspectionRecency_isInsideSelectedRange(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var calendarItemImplementors = []string{"CalendarItem"}
+
+func (ec *executionContext) _CalendarItem(ctx context.Context, sel ast.SelectionSet, obj *model.CalendarItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calendarItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalendarItem")
+		case "id":
+			out.Values[i] = ec._CalendarItem_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._CalendarItem_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sourceType":
+			out.Values[i] = ec._CalendarItem_sourceType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "date":
+			out.Values[i] = ec._CalendarItem_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._CalendarItem_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "details":
+			out.Values[i] = ec._CalendarItem_details(ctx, field, obj)
+		case "hive":
+			out.Values[i] = ec._CalendarItem_hive(ctx, field, obj)
+		case "apiary":
+			out.Values[i] = ec._CalendarItem_apiary(ctx, field, obj)
+		case "source":
+			out.Values[i] = ec._CalendarItem_source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "templateKey":
+			out.Values[i] = ec._CalendarItem_templateKey(ctx, field, obj)
+		case "reminderStateId":
+			out.Values[i] = ec._CalendarItem_reminderStateId(ctx, field, obj)
+		case "reminderStatus":
+			out.Values[i] = ec._CalendarItem_reminderStatus(ctx, field, obj)
+		case "legalDisclaimerKey":
+			out.Values[i] = ec._CalendarItem_legalDisclaimerKey(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var calendarItemLabelImplementors = []string{"CalendarItemLabel"}
+
+func (ec *executionContext) _CalendarItemLabel(ctx context.Context, sel ast.SelectionSet, obj *model.CalendarItemLabel) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calendarItemLabelImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalendarItemLabel")
+		case "translationKey":
+			out.Values[i] = ec._CalendarItemLabel_translationKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fallback":
+			out.Values[i] = ec._CalendarItemLabel_fallback(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "args":
+			out.Values[i] = ec._CalendarItemLabel_args(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var calendarPayloadImplementors = []string{"CalendarPayload"}
+
+func (ec *executionContext) _CalendarPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CalendarPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calendarPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalendarPayload")
+		case "range":
+			out.Values[i] = ec._CalendarPayload_range(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._CalendarPayload_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inspectionRecency":
+			out.Values[i] = ec._CalendarPayload_inspectionRecency(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var calendarRangeImplementors = []string{"CalendarRange"}
+
+func (ec *executionContext) _CalendarRange(ctx context.Context, sel ast.SelectionSet, obj *model.CalendarRange) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calendarRangeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalendarRange")
+		case "from":
+			out.Values[i] = ec._CalendarRange_from(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "to":
+			out.Values[i] = ec._CalendarRange_to(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "capped":
+			out.Values[i] = ec._CalendarRange_capped(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var calendarSourceContextImplementors = []string{"CalendarSourceContext"}
+
+func (ec *executionContext) _CalendarSourceContext(ctx context.Context, sel ast.SelectionSet, obj *model.CalendarSourceContext) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calendarSourceContextImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalendarSourceContext")
+		case "sourceType":
+			out.Values[i] = ec._CalendarSourceContext_sourceType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sourceId":
+			out.Values[i] = ec._CalendarSourceContext_sourceId(ctx, field, obj)
+		case "hiveId":
+			out.Values[i] = ec._CalendarSourceContext_hiveId(ctx, field, obj)
+		case "apiaryId":
+			out.Values[i] = ec._CalendarSourceContext_apiaryId(ctx, field, obj)
+		case "familyId":
+			out.Values[i] = ec._CalendarSourceContext_familyId(ctx, field, obj)
+		case "templateKey":
+			out.Values[i] = ec._CalendarSourceContext_templateKey(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17844,6 +19749,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "calendar":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_calendar(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "_entities":
 			field := field
 
@@ -18822,6 +20749,141 @@ func (ec *executionContext) marshalNBoxType2githubᚗcomᚋGratheonᚋswarmᚑap
 	return v
 }
 
+func (ec *executionContext) unmarshalNCalendarInput2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarInput(ctx context.Context, v any) (model.CalendarInput, error) {
+	res, err := ec.unmarshalInputCalendarInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCalendarInspectionRecency2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarInspectionRecencyᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CalendarInspectionRecency) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNCalendarInspectionRecency2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarInspectionRecency(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCalendarInspectionRecency2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarInspectionRecency(ctx context.Context, sel ast.SelectionSet, v *model.CalendarInspectionRecency) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CalendarInspectionRecency(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCalendarItem2ᚕᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CalendarItem) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNCalendarItem2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItem(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCalendarItem2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItem(ctx context.Context, sel ast.SelectionSet, v *model.CalendarItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CalendarItem(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCalendarItemKind2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemKind(ctx context.Context, v any) (model.CalendarItemKind, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.CalendarItemKind(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCalendarItemKind2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemKind(ctx context.Context, sel ast.SelectionSet, v model.CalendarItemKind) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNCalendarItemLabel2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemLabel(ctx context.Context, sel ast.SelectionSet, v *model.CalendarItemLabel) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CalendarItemLabel(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCalendarItemSourceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceType(ctx context.Context, v any) (model.CalendarItemSourceType, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.CalendarItemSourceType(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCalendarItemSourceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceType(ctx context.Context, sel ast.SelectionSet, v model.CalendarItemSourceType) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNCalendarPayload2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarPayload(ctx context.Context, sel ast.SelectionSet, v model.CalendarPayload) graphql.Marshaler {
+	return ec._CalendarPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCalendarPayload2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarPayload(ctx context.Context, sel ast.SelectionSet, v *model.CalendarPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CalendarPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCalendarRange2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarRange(ctx context.Context, sel ast.SelectionSet, v *model.CalendarRange) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CalendarRange(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCalendarSourceContext2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarSourceContext(ctx context.Context, sel ast.SelectionSet, v *model.CalendarSourceContext) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CalendarSourceContext(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNDateTime2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19781,6 +21843,69 @@ func (ec *executionContext) marshalOBoxType2ᚖgithubᚗcomᚋGratheonᚋswarm�
 	return v
 }
 
+func (ec *executionContext) marshalOCalendarItemLabel2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemLabel(ctx context.Context, sel ast.SelectionSet, v *model.CalendarItemLabel) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CalendarItemLabel(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOCalendarItemSourceType2ᚕgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceTypeᚄ(ctx context.Context, v any) ([]model.CalendarItemSourceType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.CalendarItemSourceType, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNCalendarItemSourceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceType(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOCalendarItemSourceType2ᚕgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.CalendarItemSourceType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNCalendarItemSourceType2githubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarItemSourceType(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOCalendarReminderStatus2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarReminderStatus(ctx context.Context, v any) (*model.CalendarReminderStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.CalendarReminderStatus(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOCalendarReminderStatus2ᚖgithubᚗcomᚋGratheonᚋswarmᚑapiᚋgraphᚋmodelᚐCalendarReminderStatus(ctx context.Context, sel ast.SelectionSet, v *model.CalendarReminderStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(string(*v))
+	return res
+}
+
 func (ec *executionContext) unmarshalODateTime2ᚖstring(ctx context.Context, v any) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -20095,6 +22220,24 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalInt(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOJSON2ᚖstring(ctx context.Context, v any) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOJSON2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(*v)
 	return res
 }
 

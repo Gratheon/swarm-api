@@ -35,9 +35,10 @@ func (r *Inspection) GetLatestByHiveId(hiveID string) (*Inspection, error) {
 	currentInspection := Inspection{}
 	err := r.Db.Get(&currentInspection,
 		`SELECT *
-		FROM inspections
-		WHERE hive_id=? AND user_id=?
-		LIMIT 1`, hiveID, r.UserID)
+			FROM inspections
+			WHERE hive_id=? AND user_id=?
+			ORDER BY added DESC, id DESC
+			LIMIT 1`, hiveID, r.UserID)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
