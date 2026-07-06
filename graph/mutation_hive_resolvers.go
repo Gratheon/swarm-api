@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Gratheon/log-lib-go"
@@ -48,7 +49,11 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 
 	// Hives may intentionally start queenless. Only create the initial queen
 	// when legacy clients explicitly send queen data during hive creation.
-	if hive.QueenName != nil && *hive.QueenName != "" {
+	legacyQueenName := ""
+	if hive.QueenName != nil {
+		legacyQueenName = strings.TrimSpace(*hive.QueenName)
+	}
+	if legacyQueenName != "" {
 		race := "unknown"
 		var added string
 		if hive.QueenYear != nil && *hive.QueenYear != "" {
@@ -57,11 +62,12 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 			year := time.Now().Year()
 			added = strconv.Itoa(year)
 		}
+		queenName := legacyQueenName
 
 		_, err = (&model.Family{
 			Db:     r.Resolver.Db,
 			UserID: uid,
-		}).CreateForHive(hiveResult.ID, hive.QueenName, &race, &added, hive.QueenColor)
+		}).CreateForHive(hiveResult.ID, &queenName, &race, &added, hive.QueenColor)
 
 		if err != nil {
 			logger.ErrorWithContext(ctx, err.Error())
