@@ -39,15 +39,6 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 		return nil, err
 	}
 
-	race := "unknown"
-	var added string
-	if hive.QueenYear != nil && *hive.QueenYear != "" {
-		added = *hive.QueenYear
-	} else {
-		year := time.Now().Year()
-		added = strconv.Itoa(year)
-	}
-
 	hiveResult, err := hiveModel.Create(hive)
 
 	if err != nil {
@@ -55,13 +46,26 @@ func (r *mutationResolver) AddHive(ctx context.Context, hive model.HiveInput) (*
 		return nil, err
 	}
 
-	_, err = (&model.Family{
-		Db:     r.Resolver.Db,
-		UserID: uid,
-	}).CreateForHive(hiveResult.ID, hive.QueenName, &race, &added, hive.QueenColor)
+	// Hives may intentionally start queenless. Only create the initial queen
+	// when legacy clients explicitly send queen data during hive creation.
+	if hive.QueenName != nil && *hive.QueenName != "" {
+		race := "unknown"
+		var added string
+		if hive.QueenYear != nil && *hive.QueenYear != "" {
+			added = *hive.QueenYear
+		} else {
+			year := time.Now().Year()
+			added = strconv.Itoa(year)
+		}
 
-	if err != nil {
-		logger.ErrorWithContext(ctx, err.Error())
+		_, err = (&model.Family{
+			Db:     r.Resolver.Db,
+			UserID: uid,
+		}).CreateForHive(hiveResult.ID, hive.QueenName, &race, &added, hive.QueenColor)
+
+		if err != nil {
+			logger.ErrorWithContext(ctx, err.Error())
+		}
 	}
 
 	err = (&model.Box{
