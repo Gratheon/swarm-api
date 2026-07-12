@@ -5,3 +5,5 @@ config/config.dev.json
 config/config.native.json
 config/config.prod.json
 swarm-api
+tmp/
+.DS_Store

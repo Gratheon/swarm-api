@@ -1,5 +1,11 @@
+.git
 .githooks
 .github
+.idea
+.dccache
+.DS_Store
+tmp/
+coverage/
 
 Dockerfile.dev
 docker-compose*.yml
