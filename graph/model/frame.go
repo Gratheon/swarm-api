@@ -14,10 +14,10 @@ type Frame struct {
 	Position    int        `json:"position"`
 	Type        FrameType  `json:"type" db:"type"`
 	FrameSpecID *int       `json:"frame_spec_id" db:"frame_spec_id"`
-	LeftID      *int       `json:"left" db:"left_id"`
-	RightID     *int       `json:"right" db:"right_id"`
-	LeftSide    *FrameSide `json:"left" `
-	RightSide   *FrameSide `json:"right"`
+	LeftID      *int       `json:"leftId" db:"left_id"`
+	RightID     *int       `json:"rightId" db:"right_id"`
+	LeftSide    *FrameSide `json:"leftSide"`
+	RightSide   *FrameSide `json:"rightSide"`
 	Active      int        `db:"active"`
 }
 
