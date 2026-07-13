@@ -2,14 +2,20 @@
 set -eu
 
 EXPECTED_WORKING_DIR="${EXPECTED_WORKING_DIR:-/www/swarm-api}"
+EXPECTED_PROJECT="${EXPECTED_PROJECT:-swarm-api}"
 EXPECTED_COMMIT="${EXPECTED_COMMIT:-$(git -C "$EXPECTED_WORKING_DIR" rev-parse --short HEAD)}"
-CONTAINER_NAME="${CONTAINER_NAME:-gratheon_swarm-api_1}"
+CONTAINER_NAME="${CONTAINER_NAME:-swarm-api_swarm-api_1}"
 SCHEMA_REGISTRY_URL="${SCHEMA_REGISTRY_URL:-http://127.0.0.1:3000/schema/latest}"
 
 VERIFY_ATTEMPTS="${VERIFY_ATTEMPTS:-30}"
 VERIFY_INTERVAL_SECONDS="${VERIFY_INTERVAL_SECONDS:-2}"
 
+actual_project=$(docker inspect "$CONTAINER_NAME" --format '{{ index .Config.Labels "com.docker.compose.project" }}')
 actual_working_dir=$(docker inspect "$CONTAINER_NAME" --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}')
+if [ "$actual_project" != "$EXPECTED_PROJECT" ]; then
+  echo "Expected $CONTAINER_NAME to use Compose project $EXPECTED_PROJECT, got $actual_project" >&2
+  exit 1
+fi
 if [ "$actual_working_dir" != "$EXPECTED_WORKING_DIR" ]; then
   echo "Expected $CONTAINER_NAME to be deployed from $EXPECTED_WORKING_DIR, got $actual_working_dir" >&2
   exit 1
