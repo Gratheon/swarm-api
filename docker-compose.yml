@@ -1,7 +1,10 @@
 version: '3.9'
 services:
   swarm-api:
-    build: .
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
     environment:
       ENV_ID: prod
       SERVICE_NAME: swarm-api

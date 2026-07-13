@@ -13,8 +13,9 @@ RUN go mod download
 # Copy the rest of the source code
 COPY . .
 
-# Refresh .version from current git commit before compilation.
-RUN ./scripts/update-version.sh
+# The build context excludes .git, so deployment passes the source revision explicitly.
+ARG VERSION=dev
+RUN test -n "$VERSION" && printf '%s\n' "$VERSION" > .version
 
 # Build the swarm-api application
 ARG TARGETOS

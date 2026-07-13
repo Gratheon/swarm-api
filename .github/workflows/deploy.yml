@@ -18,3 +18,7 @@ jobs:
       - name: restart
         working-directory: /www/swarm-api/
         run: chmod +x restart.sh && ./restart.sh
+
+      - name: Verify production deployment
+        working-directory: /www/swarm-api/
+        run: ./scripts/verify-production-deployment.sh
