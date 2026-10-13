@@ -1,5 +1,5 @@
 # ---- Build Stage ----
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /build
 
@@ -30,7 +30,7 @@ RUN GOBIN=/build/bin CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     github.com/pressly/goose/v3/cmd/goose@v3.27.0
 
 # ---- Final Stage ----
-FROM alpine:3.20
+FROM alpine:3.24
 
 WORKDIR /app
 
