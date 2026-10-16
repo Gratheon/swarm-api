@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/Gratheon/log-lib-go"
+	// Must match the chi major version used by log-lib-go (v4 until it is bumped).
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
