@@ -23,15 +23,15 @@ func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 	query := `
 		SELECT fs.*, f.id as frame_id
 		FROM frames_sides fs
-		LEFT JOIN frames f ON (fs.id = f.left_id OR fs.id = f.right_id) AND f.user_id = fs.user_id AND f.active = 1
+		LEFT JOIN frames f ON (fs.id = f.left_id OR fs.id = f.right_id) AND f.user_id = fs.user_id AND f.active = TRUE
 		WHERE fs.id = ? AND fs.user_id = ?
 		LIMIT 1`
-	err := r.Db.Get(&frameSide, query, id, r.UserID)
+	err := r.Db.Get(&frameSide, sqlx.Rebind(sqlx.DOLLAR, query), id, r.UserID)
 
 	if err == sql.ErrNoRows {
 		// It's possible the FrameSide exists but has no parent Frame (orphan)
 		// Try fetching just the FrameSide data in that case
-		errFallback := r.Db.Get(&frameSide, "SELECT * FROM `frames_sides` WHERE id=? AND user_id=? LIMIT 1", id, r.UserID)
+		errFallback := r.Db.Get(&frameSide, "SELECT * FROM frames_sides WHERE id=$1 AND user_id=$2 LIMIT 1", id, r.UserID)
 		if errFallback == sql.ErrNoRows {
 			return nil, nil // Truly doesn't exist
 		}
@@ -52,12 +52,12 @@ func (r *FrameSide) Get(id *int) (*FrameSide, error) {
 }
 
 func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
-	result, err := r.Db.NamedExec(
+	id, err := namedInsertReturningID(r.Db,
 		`INSERT INTO frames_sides (
 		  user_id
 		) VALUES (
 		    :userID
-		)`,
+		) RETURNING id`,
 		map[string]interface{}{
 			"userID": frame.UserID,
 		},
@@ -68,7 +68,5 @@ func (r *FrameSide) CreateSide(frame *FrameSide) (*int64, error) {
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-
-	return &id, err
+	return &id, nil
 }

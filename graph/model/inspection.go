@@ -21,7 +21,7 @@ func (r *Inspection) Get(ID string) (*Inspection, error) {
 	err := r.Db.Get(&currentInspection,
 		`SELECT *
 		FROM inspections
-		WHERE id=? AND user_id=?
+		WHERE id=$1 AND user_id=$2
 		LIMIT 1`, ID, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -36,7 +36,7 @@ func (r *Inspection) GetLatestByHiveId(hiveID string) (*Inspection, error) {
 	err := r.Db.Get(&currentInspection,
 		`SELECT *
 			FROM inspections
-			WHERE hive_id=? AND user_id=?
+			WHERE hive_id=$1 AND user_id=$2
 			ORDER BY added DESC, id DESC
 			LIMIT 1`, hiveID, r.UserID)
 
@@ -52,7 +52,7 @@ func (r *Inspection) ListByHiveId(hiveID string) ([]*Inspection, error) {
 	err := r.Db.Select(&list,
 		`SELECT *
 		FROM inspections
-		WHERE user_id=? AND hive_id=?
+		WHERE user_id=$1 AND hive_id=$2
 		ORDER BY added DESC`, r.UserID, hiveID)
 
 	return list, err
@@ -67,7 +67,7 @@ func (r *Inspection) CountByHiveId(hiveID string) (int, error) {
 	err := r.Db.Select(&result,
 		`SELECT COUNT(*) as count
 		FROM inspections
-		WHERE user_id=? AND hive_id=?
+		WHERE user_id=$1 AND hive_id=$2
 		LIMIT 1`, r.UserID, hiveID)
 
 	if len(result) == 0 {
@@ -78,9 +78,10 @@ func (r *Inspection) CountByHiveId(hiveID string) (int, error) {
 }
 
 func (r *Inspection) Create(data string, hiveID int) (*string, error) {
-	result, err := r.Db.NamedExec(
+	id, err := namedInsertReturningID(r.Db,
 		`INSERT INTO inspections (user_id, hive_id, data, added)
-		VALUES (:userID, :hiveID, :data, NOW())`,
+		VALUES (:userID, :hiveID, :data, NOW())
+		RETURNING id`,
 		map[string]interface{}{
 			"userID": r.UserID,
 			"data":   data,
@@ -92,8 +93,6 @@ func (r *Inspection) Create(data string, hiveID int) (*string, error) {
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-
 	strId := strconv.Itoa(int(id))
-	return &strId, err
+	return &strId, nil
 }

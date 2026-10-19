@@ -21,7 +21,7 @@ func requireLangstrothSeeded(t *testing.T, dbModel *model.BoxSystem) {
 		FROM box_systems
 		WHERE user_id IS NULL
 		  AND name = 'Langstroth'
-		  AND active = 1
+		  AND active = TRUE
 	`)
 	require.NoError(t, err)
 	if seededCount == 0 {
@@ -32,18 +32,18 @@ func requireLangstrothSeeded(t *testing.T, dbModel *model.BoxSystem) {
 func cleanupBoxSystemsByUser(t *testing.T, dbModel *model.BoxSystem) {
 	t.Helper()
 	cleanupTestData(t, dbModel.Db, dbModel.UserID)
-	_, _ = dbModel.Db.Exec("DELETE FROM box_systems WHERE user_id=?", dbModel.UserID)
+	_, _ = dbModel.Db.Exec("DELETE FROM box_systems WHERE user_id=$1", dbModel.UserID)
 }
 
 func insertOwnedBoxSystem(t *testing.T, dbModel *model.BoxSystem, name string) string {
 	t.Helper()
 
-	result := dbModel.Db.MustExec(
-		"INSERT INTO box_systems (user_id, name, is_default, active) VALUES (?, ?, 0, 1)",
+	var id int64
+	err := dbModel.Db.QueryRowx(
+		"INSERT INTO box_systems (user_id, name, is_default, active) VALUES ($1, $2, FALSE, TRUE) RETURNING id",
 		dbModel.UserID,
 		name,
-	)
-	id, err := result.LastInsertId()
+	).Scan(&id)
 	require.NoError(t, err)
 	return strconv.FormatInt(id, 10)
 }
@@ -133,11 +133,11 @@ func TestRenameGlobalDefaultCreatesOwnedDefault(t *testing.T) {
 
 	var globalDefaultID string
 	err := dbConn.Get(&globalDefaultID, `
-		SELECT CAST(id AS CHAR)
+		SELECT CAST(id AS TEXT)
 		FROM box_systems
 		WHERE user_id IS NULL
-		  AND is_default = 1
-		  AND active = 1
+		  AND is_default = TRUE
+		  AND active = TRUE
 		ORDER BY id ASC
 		LIMIT 1
 	`)
@@ -155,9 +155,9 @@ func TestRenameGlobalDefaultCreatesOwnedDefault(t *testing.T) {
 	err = dbConn.Get(&globalName, `
 		SELECT name
 		FROM box_systems
-		WHERE id = ?
+		WHERE id = $1
 		  AND user_id IS NULL
-		  AND active = 1
+		  AND active = TRUE
 		LIMIT 1
 	`, globalDefaultID)
 	require.NoError(t, err)

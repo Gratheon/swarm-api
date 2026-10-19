@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"strconv"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -27,7 +26,7 @@ func (r *Treatment) Get(id string) (*Treatment, error) {
 	err2 := r.Db.Get(&result,
 		`SELECT * 
 		FROM treatments 
-		WHERE id=? AND user_id=?
+		WHERE id=$1 AND user_id=$2
 		LIMIT 1`, id, r.UserID)
 
 	if err2 == sql.ErrNoRows {
@@ -42,7 +41,7 @@ func (r *Treatment) ListFamilyTreatments(familyId string) ([]*Treatment, error) 
 	err2 := r.Db.Select(&results,
 		`SELECT * 
 		FROM treatments
-		WHERE user_id=? AND family_id=?
+		WHERE user_id=$1 AND family_id=$2
 		ORDER BY added DESC
 		LIMIT 30`, r.UserID, familyId)
 
@@ -54,7 +53,7 @@ func (r *Treatment) GetLastFamilyTreatment(familyId string) (*Treatment, error) 
 	err2 := r.Db.Get(&result,
 		`SELECT * 
 		FROM treatments
-		WHERE user_id=? AND family_id=?
+		WHERE user_id=$1 AND family_id=$2
 		ORDER BY added DESC
 		LIMIT 1`, r.UserID, familyId)
 
@@ -68,8 +67,8 @@ func (r *Treatment) GetLastFamilyTreatment(familyId string) (*Treatment, error) 
 func (r *Treatment) TreatHive(input TreatmentOfHiveInput, familyId *int) (*Treatment, error) {
 	tx := r.Db.MustBegin()
 
-	result, err := tx.NamedExec(
-		"INSERT INTO treatments (type, hive_id, user_id, family_id) VALUES (:type, :hiveId, :userID, :familyId)",
+	id, err := namedInsertReturningID(tx,
+		"INSERT INTO treatments (type, hive_id, user_id, family_id) VALUES (:type, :hiveId, :userID, :familyId) RETURNING id",
 		map[string]interface{}{
 			"userID":   r.UserID,
 			"type":     input.Type,
@@ -78,13 +77,11 @@ func (r *Treatment) TreatHive(input TreatmentOfHiveInput, familyId *int) (*Treat
 		})
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-	tx.Commit()
-
-	if err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -94,8 +91,8 @@ func (r *Treatment) TreatHive(input TreatmentOfHiveInput, familyId *int) (*Treat
 func (r *Treatment) TreatHiveBox(input TreatmentOfBoxInput, familyId *int) (*Treatment, error) {
 	tx := r.Db.MustBegin()
 
-	result, err := tx.NamedExec(
-		"INSERT INTO treatments (type, hive_id, box_id, user_id, family_id) VALUES (:type, :hiveId, :boxId, :userID, familyId)",
+	id, err := namedInsertReturningID(tx,
+		"INSERT INTO treatments (type, hive_id, box_id, user_id, family_id) VALUES (:type, :hiveId, :boxId, :userID, :familyId) RETURNING id",
 		map[string]interface{}{
 			"userID":   r.UserID,
 			"type":     input.Type,
@@ -105,13 +102,11 @@ func (r *Treatment) TreatHiveBox(input TreatmentOfBoxInput, familyId *int) (*Tre
 		})
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-	tx.Commit()
-
-	if err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

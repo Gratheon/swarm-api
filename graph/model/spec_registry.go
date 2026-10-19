@@ -26,10 +26,10 @@ func getDefaultBoxSpecForType(db sqlx.QueryerContext, userID string, boxType Box
 			spec.id AS box_spec_id
 		FROM box_systems sys
 		INNER JOIN box_specs spec ON spec.system_id = sys.id
-		WHERE spec.legacy_box_type = ?
-		  AND spec.active = 1
-		  AND sys.active = 1
-		  AND (sys.user_id = ? OR sys.user_id IS NULL)
+		WHERE spec.legacy_box_type = $1
+		  AND spec.active = TRUE
+		  AND sys.active = TRUE
+		  AND (sys.user_id = $2 OR sys.user_id IS NULL)
 		ORDER BY (sys.user_id IS NULL) ASC, sys.is_default DESC, sys.id ASC
 		LIMIT 1`,
 		boxType.String(),
@@ -55,11 +55,11 @@ func getBoxSpecForTypeInSystem(db sqlx.QueryerContext, userID string, systemID i
 			spec.id AS box_spec_id
 		FROM box_systems sys
 		INNER JOIN box_specs spec ON spec.system_id = sys.id
-		WHERE sys.id = ?
-		  AND spec.legacy_box_type = ?
-		  AND spec.active = 1
-		  AND sys.active = 1
-		  AND (sys.user_id = ? OR sys.user_id IS NULL)
+		WHERE sys.id = $1
+		  AND spec.legacy_box_type = $2
+		  AND spec.active = TRUE
+		  AND sys.active = TRUE
+		  AND (sys.user_id = $3 OR sys.user_id IS NULL)
 		LIMIT 1`,
 		systemID,
 		boxType.String(),
@@ -84,12 +84,12 @@ func resolveFrameSpecForTargetBox(db sqlx.QueryerContext, userID string, boxID s
 		FROM boxes b
 		INNER JOIN frame_spec_compatibility c ON c.box_spec_id = b.box_spec_id
 		INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
-		WHERE b.id = ?
-		  AND b.user_id = ?
-		  AND b.active = 1
+		WHERE b.id = $1
+		  AND b.user_id = $2
+		  AND b.active = TRUE
 		  AND b.box_spec_id IS NOT NULL
-		  AND fs.frame_type = ?
-		  AND fs.active = 1
+		  AND fs.frame_type = $3
+		  AND fs.active = TRUE
 		ORDER BY fs.id ASC
 		LIMIT 1`,
 		boxID, userID, frameType.String(),
@@ -117,9 +117,9 @@ func resolveEffectiveBoxProfileSystemID(db sqlx.QueryerContext, userID string, s
 			&next,
 			`SELECT box_profile_source_system_id
 			FROM box_systems
-			WHERE id = ?
-			  AND active = 1
-			  AND (user_id = ? OR user_id IS NULL)
+			WHERE id = $1
+			  AND active = TRUE
+			  AND (user_id = $2 OR user_id IS NULL)
 			LIMIT 1`,
 			current,
 			userID,

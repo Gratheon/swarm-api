@@ -55,14 +55,14 @@ func TestMutationHiveResolvers(t *testing.T) {
 				var mergedInto sql.NullInt64
 				statusErr := fx.resolver.Db.Get(
 					&mergedStatus,
-					"SELECT status FROM hives WHERE id=? AND user_id=? LIMIT 1",
+					"SELECT status FROM hives WHERE id=$1 AND user_id=$2 LIMIT 1",
 					sourceHiveID,
 					fx.userID,
 				)
 				require.NoError(t, statusErr)
 				mergedIntoErr := fx.resolver.Db.Get(
 					&mergedInto,
-					"SELECT merged_into_hive_id FROM hives WHERE id=? AND user_id=? LIMIT 1",
+					"SELECT merged_into_hive_id FROM hives WHERE id=$1 AND user_id=$2 LIMIT 1",
 					sourceHiveID,
 					fx.userID,
 				)
@@ -73,7 +73,7 @@ func TestMutationHiveResolvers(t *testing.T) {
 				var movedBoxCount int
 				movedErr := fx.resolver.Db.Get(
 					&movedBoxCount,
-					"SELECT COUNT(*) FROM boxes WHERE id=? AND hive_id=? AND user_id=? AND active=1",
+					"SELECT COUNT(*) FROM boxes WHERE id=$1 AND hive_id=$2 AND user_id=$3 AND active=TRUE",
 					sourceBoxID,
 					targetHiveID,
 					fx.userID,
@@ -83,7 +83,7 @@ func TestMutationHiveResolvers(t *testing.T) {
 				var sourcePlacementCount int
 				placementErr := fx.resolver.Db.Get(
 					&sourcePlacementCount,
-					"SELECT COUNT(*) FROM hive_placements WHERE hive_id=? AND user_id=?",
+					"SELECT COUNT(*) FROM hive_placements WHERE hive_id=$1 AND user_id=$2",
 					sourceHiveID,
 					fx.userID,
 				)

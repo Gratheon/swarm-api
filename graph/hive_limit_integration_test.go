@@ -15,18 +15,16 @@ import (
 )
 
 func createTestApiaryWithActiveFlag(t *testing.T, db *sqlx.DB, userID string, active bool) int {
-	activeValue := 0
-	if active {
-		activeValue = 1
-	}
-
-	result := db.MustExec(
-		"INSERT INTO apiaries (user_id, name, active) VALUES (?, 'Test Apiary', ?)",
+	var id int
+	err := db.QueryRowx(
+		"INSERT INTO apiaries (user_id, name, active) VALUES ($1, 'Test Apiary', $2) RETURNING id",
 		userID,
-		activeValue,
-	)
-	id, _ := result.LastInsertId()
-	return int(id)
+		active,
+	).Scan(&id)
+	if err != nil {
+		t.Fatalf("insert apiary failed: %v", err)
+	}
+	return id
 }
 
 func TestHiveCreationLimit(t *testing.T) {

@@ -92,7 +92,7 @@ func (l *HiveLoader) processBatch(apiaryID int, wait time.Duration) {
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
-		WHERE apiary_id=? AND user_id=? AND active=1 AND collapse_date IS NULL AND merged_into_hive_id IS NULL`,
+		WHERE apiary_id=$1 AND user_id=$2 AND active=TRUE AND collapse_date IS NULL AND merged_into_hive_id IS NULL`,
 		apiaryID, batch.userID)
 
 	if err != nil {
@@ -162,8 +162,8 @@ func (l *BoxLoader) processBatch(userID string) {
 
 	query, args, err := sqlx.In(
 		`SELECT * FROM boxes 
-		WHERE active=1 AND hive_id IN (?) AND user_id=? 
-		ORDER BY hive_id, position DESC`,
+		WHERE active=TRUE AND hive_id IN (?) AND user_id=? 
+		ORDER BY hive_id, position DESC NULLS LAST`,
 		hiveIDs, userID)
 
 	if err != nil {
@@ -176,7 +176,7 @@ func (l *BoxLoader) processBatch(userID string) {
 	query = l.db.Rebind(query)
 
 	var allBoxes []*model.Box
-	err = l.db.Select(&allBoxes, query, args...)
+	err = l.db.Select(&allBoxes, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 
 	if err != nil {
 		for _, ch := range batch {
@@ -268,7 +268,7 @@ func (l *FamilyLoader) processBatch(userID string) {
 	query = l.db.Rebind(query)
 
 	var allFamilies []*model.Family
-	err = l.db.Select(&allFamilies, query, args...)
+	err = l.db.Select(&allFamilies, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 
 	if err != nil {
 		for _, ch := range batch {
@@ -348,8 +348,8 @@ func (l *FrameLoader) processBatch(userID string) {
 
 	query, args, err := sqlx.In(
 		`SELECT * FROM frames 
-		WHERE active=1 AND box_id IN (?) AND user_id=? 
-		ORDER BY box_id, position`,
+		WHERE active=TRUE AND box_id IN (?) AND user_id=? 
+		ORDER BY box_id, position NULLS FIRST`,
 		boxIDs, userID)
 
 	if err != nil {
@@ -362,7 +362,7 @@ func (l *FrameLoader) processBatch(userID string) {
 	query = l.db.Rebind(query)
 
 	var allFrames []*model.Frame
-	err = l.db.Select(&allFrames, query, args...)
+	err = l.db.Select(&allFrames, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 
 	if err != nil {
 		for _, ch := range batch {
@@ -458,7 +458,7 @@ func (l *FrameSideLoader) processBatch(userID string) {
 	query = l.db.Rebind(query)
 
 	var allFrameSides []*model.FrameSide
-	err = l.db.Select(&allFrameSides, query, args...)
+	err = l.db.Select(&allFrameSides, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 
 	if err != nil {
 		for _, ch := range batch {

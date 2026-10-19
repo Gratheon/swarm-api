@@ -2,22 +2,16 @@ package graph
 
 import (
 	"context"
-	"database/sql"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	mysqlDriver "github.com/go-sql-driver/mysql"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/qustavo/sqlhooks/v2"
 )
 
-const (
-	instrumentedMySQLDriverName = "mysql+metrics"
-	maxDBQueryLabelCardinality  = 200
-)
+const maxDBQueryLabelCardinality = 200
 
 var dbMetricsRegisterer = prometheus.WrapRegistererWith(
 	prometheus.Labels{"service": "swarm-api"},
@@ -54,21 +48,14 @@ var (
 	singleQuotedStringRegex = regexp.MustCompile(`'([^'\\]|\\.)*'`)
 	doubleQuotedStringRegex = regexp.MustCompile(`"([^"\\]|\\.)*"`)
 	numberRegex             = regexp.MustCompile(`\b\d+(\.\d+)?\b`)
-	inListRegex             = regexp.MustCompile(`(?i)\bin\s*\((\s*\?\s*,?)+\)`)
+	inListRegex             = regexp.MustCompile(`(?i)\bin\s*\((\s*\$?\?\s*,?)+\)`)
 	whitespaceRegex         = regexp.MustCompile(`\s+`)
 )
 
 var (
-	registerInstrumentedDriverOnce sync.Once
-	queryLabelCardinalityMutex     sync.Mutex
-	knownDBQueryLabels             = map[string]struct{}{}
+	queryLabelCardinalityMutex sync.Mutex
+	knownDBQueryLabels         = map[string]struct{}{}
 )
-
-func ensureInstrumentedMySQLDriverRegistered() {
-	registerInstrumentedDriverOnce.Do(func() {
-		sql.Register(instrumentedMySQLDriverName, sqlhooks.Wrap(&mysqlDriver.MySQLDriver{}, &dbQueryMetricsHooks{}))
-	})
-}
 
 func (h *dbQueryMetricsHooks) Before(ctx context.Context, query string, args ...interface{}) (context.Context, error) {
 	return context.WithValue(ctx, dbQueryStateKey, &dbQueryState{

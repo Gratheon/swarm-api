@@ -22,7 +22,7 @@ if [ -z "$DSN" ] || [ "$DSN" = "null" ]; then
 fi
 
 # Run migrations using the goose binary copied from the build stage
-/app/goose -dir migrations mysql "$DSN" up
+/app/goose -dir migrations postgres "$DSN" up
 echo "Migrations complete."
 
 echo "Starting swarm-api..."

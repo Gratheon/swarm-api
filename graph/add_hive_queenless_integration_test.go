@@ -42,7 +42,7 @@ func TestAddHiveCreatesNoInitialFamilyWithoutLegacyQueenName(t *testing.T) {
 	require.NotNil(t, createdHive)
 
 	var familyCount int
-	err = db.Get(&familyCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", createdHive.ID)
+	err = db.Get(&familyCount, "SELECT COUNT(*) FROM families WHERE hive_id=$1", createdHive.ID)
 	require.NoError(t, err)
 	require.Equal(t, 0, familyCount)
 }
@@ -88,7 +88,7 @@ func TestAddHiveCreatesInitialFamilyForLegacyQueenName(t *testing.T) {
 	}
 
 	rows := make([]familyRow, 0)
-	err = db.Select(&rows, "SELECT name, added, color FROM families WHERE hive_id=?", createdHive.ID)
+	err = db.Select(&rows, "SELECT name, added, color FROM families WHERE hive_id=$1", createdHive.ID)
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
 	require.Equal(t, "Legacy Queen", rows[0].Name.String)

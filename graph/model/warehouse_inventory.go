@@ -72,8 +72,8 @@ func (r *WarehouseInventory) List() ([]*WarehouseInventoryItem, error) {
 	err := r.Db.Select(&systems, `
 		SELECT id, name
 		FROM box_systems
-		WHERE active = 1
-		  AND (user_id = ? OR user_id IS NULL)
+		WHERE active = TRUE
+		  AND (user_id = $1 OR user_id IS NULL)
 		ORDER BY (user_id IS NULL) ASC, is_default DESC, id ASC
 	`, r.UserID)
 	if err != nil {
@@ -129,11 +129,11 @@ func (r *WarehouseInventory) List() ([]*WarehouseInventoryItem, error) {
 			fs.display_name,
 			COALESCE(wfi.count, 0) AS count
 		FROM frame_specs fs
-		INNER JOIN box_systems bs ON bs.id = fs.system_id AND bs.active = 1
-		LEFT JOIN warehouse_frame_inventory wfi ON wfi.frame_spec_id = fs.id AND wfi.user_id = ?
-		WHERE fs.active = 1
+		INNER JOIN box_systems bs ON bs.id = fs.system_id AND bs.active = TRUE
+		LEFT JOIN warehouse_frame_inventory wfi ON wfi.frame_spec_id = fs.id AND wfi.user_id = $1
+		WHERE fs.active = TRUE
 		  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
-		  AND (bs.user_id = ? OR bs.user_id IS NULL)
+		  AND (bs.user_id = $2 OR bs.user_id IS NULL)
 		ORDER BY bs.name ASC, fs.display_name ASC, fs.id ASC
 	`, r.UserID, r.UserID)
 	if err != nil {
@@ -207,7 +207,7 @@ func (r *WarehouseInventory) UpsertByKey(itemKey string, count int) (*WarehouseI
 		_, err = tx.NamedExec(`
 			INSERT INTO warehouse_frame_inventory (user_id, frame_spec_id, count)
 			VALUES (:user_id, :frame_spec_id, :count)
-			ON DUPLICATE KEY UPDATE count=:count
+			ON CONFLICT (user_id, frame_spec_id) DO UPDATE SET count = EXCLUDED.count
 		`, map[string]interface{}{
 			"user_id":       r.UserID,
 			"frame_spec_id": specID,
@@ -241,7 +241,7 @@ func (r *WarehouseInventory) UpdateFrameSpecByDelta(frameSpecID int, delta int) 
 	err := r.Db.Get(&current, `
 		SELECT count
 		FROM warehouse_frame_inventory
-		WHERE user_id=? AND frame_spec_id=?
+		WHERE user_id=$1 AND frame_spec_id=$2
 		LIMIT 1
 	`, r.UserID, frameSpecID)
 	if err == sql.ErrNoRows {
@@ -266,7 +266,7 @@ func (r *WarehouseInventory) ResolveFrameSpecIDByFrameID(frameID string) (int, e
 	err := r.Db.Get(&frameSpecID, `
 		SELECT frame_spec_id
 		FROM frames
-		WHERE id=? AND user_id=? AND active=1
+		WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1
 	`, frameID, r.UserID)
 	if err != nil {
@@ -308,7 +308,7 @@ func (r *WarehouseInventory) StatsByKey(itemKey string) (*WarehouseInventoryStat
 		err = r.Db.Get(&availableCount, `
 			SELECT count
 			FROM warehouse_frame_inventory
-			WHERE user_id=? AND frame_spec_id=?
+			WHERE user_id=$1 AND frame_spec_id=$2
 			LIMIT 1
 		`, r.UserID, specID)
 		if err == sql.ErrNoRows {
@@ -321,12 +321,12 @@ func (r *WarehouseInventory) StatsByKey(itemKey string) (*WarehouseInventoryStat
 		err = r.Db.Get(&inUseCount, `
 			SELECT COUNT(*)
 			FROM frames f
-			INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = 1
+			INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = TRUE
 			INNER JOIN hives h ON h.id = b.hive_id AND h.user_id = b.user_id
-			WHERE f.user_id = ?
-			  AND f.active = 1
-			  AND f.frame_spec_id = ?
-			  AND h.active = 1
+			WHERE f.user_id = $1
+			  AND f.active = TRUE
+			  AND f.frame_spec_id = $2
+			  AND h.active = TRUE
 			  AND h.collapse_date IS NULL
 			  AND h.merged_into_hive_id IS NULL
 		`, r.UserID, specID)
@@ -343,13 +343,13 @@ func (r *WarehouseInventory) StatsByKey(itemKey string) (*WarehouseInventoryStat
 				a.name AS apiary_name,
 				COUNT(*) AS usage_count
 			FROM frames f
-			INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = 1
+			INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = TRUE
 			INNER JOIN hives h ON h.id = b.hive_id AND h.user_id = b.user_id
-			LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = 1
-			WHERE f.user_id = ?
-			  AND f.active = 1
-			  AND f.frame_spec_id = ?
-			  AND h.active = 1
+			LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = TRUE
+			WHERE f.user_id = $1
+			  AND f.active = TRUE
+			  AND f.frame_spec_id = $2
+			  AND h.active = TRUE
 			  AND h.collapse_date IS NULL
 			  AND h.merged_into_hive_id IS NULL
 			GROUP BY h.id, h.hive_number, h.apiary_id, a.name

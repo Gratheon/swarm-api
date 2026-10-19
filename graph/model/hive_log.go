@@ -43,7 +43,7 @@ type hiveLogRow struct {
 func (r *HiveLog) ensureHiveOwnership(hiveID string) error {
 	var count int
 	err := r.Db.Get(&count,
-		`SELECT COUNT(*) FROM hives WHERE id=? AND user_id=? AND active=1`,
+		`SELECT COUNT(*) FROM hives WHERE id=$1 AND user_id=$2 AND active=TRUE`,
 		hiveID,
 		r.UserID,
 	)
@@ -73,9 +73,9 @@ func (r *HiveLog) ListByHive(hiveID string, limit *int) ([]*HiveLog, error) {
 	err := r.Db.Select(&rows,
 		`SELECT id, user_id, hive_id, action, title, details, source, related_hives, dedupe_key, created_at, updated_at
 		 FROM hive_logs
-		 WHERE user_id=? AND hive_id=? AND active=1
+		 WHERE user_id=$1 AND hive_id=$2 AND active=TRUE
 		 ORDER BY created_at DESC, id DESC
-		 LIMIT ?`,
+		 LIMIT $3`,
 		r.UserID,
 		hiveID,
 		finalLimit,
@@ -116,10 +116,12 @@ func (r *HiveLog) Create(input HiveLogInput) (*HiveLog, error) {
 	relatedBytes, _ := json.Marshal(input.RelatedHives)
 	relatedJSON := string(relatedBytes)
 
-	res, err := r.Db.NamedExec(
+	// A repeated dedupe_key returns the existing row (and bumps updated_at) instead of a duplicate
+	id, err := namedInsertReturningID(r.Db,
 		`INSERT INTO hive_logs (user_id, hive_id, action, title, details, source, related_hives, dedupe_key)
 		 VALUES (:user_id, :hive_id, :action, :title, :details, :source, :related_hives, :dedupe_key)
-		 ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), updated_at = CURRENT_TIMESTAMP`,
+		 ON CONFLICT (user_id, dedupe_key) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+		 RETURNING id`,
 		map[string]interface{}{
 			"user_id":       r.UserID,
 			"hive_id":       input.HiveID,
@@ -135,16 +137,11 @@ func (r *HiveLog) Create(input HiveLogInput) (*HiveLog, error) {
 		return nil, err
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
-
 	row := &hiveLogRow{}
 	err = r.Db.Get(row,
 		`SELECT id, user_id, hive_id, action, title, details, source, related_hives, dedupe_key, created_at, updated_at
 		 FROM hive_logs
-		 WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		 WHERE id=$1 AND user_id=$2 AND active=TRUE LIMIT 1`,
 		id,
 		r.UserID,
 	)
@@ -175,7 +172,7 @@ func (r *HiveLog) Create(input HiveLogInput) (*HiveLog, error) {
 func (r *HiveLog) Update(id string, input HiveLogUpdateInput) (*HiveLog, error) {
 	var ownerHiveID string
 	err := r.Db.Get(&ownerHiveID,
-		`SELECT hive_id FROM hive_logs WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		`SELECT hive_id FROM hive_logs WHERE id=$1 AND user_id=$2 AND active=TRUE LIMIT 1`,
 		id,
 		r.UserID,
 	)
@@ -197,9 +194,9 @@ func (r *HiveLog) Update(id string, input HiveLogUpdateInput) (*HiveLog, error) 
 		`UPDATE hive_logs
 		 SET title = COALESCE(:title, title),
 		     details = COALESCE(:details, details),
-		     related_hives = CASE WHEN :has_related = 1 THEN :related_hives ELSE related_hives END,
+		     related_hives = CASE WHEN :has_related THEN :related_hives ELSE related_hives END,
 		     updated_at = CURRENT_TIMESTAMP
-		 WHERE id=:id AND user_id=:user_id AND active=1`,
+		 WHERE id=:id AND user_id=:user_id AND active=TRUE`,
 		map[string]interface{}{
 			"id":            id,
 			"user_id":       r.UserID,
@@ -217,7 +214,7 @@ func (r *HiveLog) Update(id string, input HiveLogUpdateInput) (*HiveLog, error) 
 	err = r.Db.Get(row,
 		`SELECT id, user_id, hive_id, action, title, details, source, related_hives, dedupe_key, created_at, updated_at
 		 FROM hive_logs
-		 WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		 WHERE id=$1 AND user_id=$2 AND active=TRUE LIMIT 1`,
 		id,
 		r.UserID,
 	)
@@ -247,7 +244,7 @@ func (r *HiveLog) Update(id string, input HiveLogUpdateInput) (*HiveLog, error) 
 
 func (r *HiveLog) Delete(id string) (bool, error) {
 	result, err := r.Db.Exec(
-		`UPDATE hive_logs SET active=0, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND active=1`,
+		`UPDATE hive_logs SET active=FALSE, updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND user_id=$2 AND active=TRUE`,
 		id,
 		r.UserID,
 	)

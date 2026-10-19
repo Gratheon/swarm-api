@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 	"strconv"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type WarehouseModuleHiveUsage struct {
@@ -43,7 +45,7 @@ func (r *WarehouseModule) GetCountByTypeAndSystem(moduleType WarehouseModuleType
 	err := r.Db.Get(&count,
 		`SELECT count
 		FROM warehouse_modules
-		WHERE user_id=? AND module_type=? AND box_system_id=?
+		WHERE user_id=$1 AND module_type=$2 AND box_system_id=$3
 		LIMIT 1`,
 		r.UserID, moduleType, systemID)
 	if err == sql.ErrNoRows {
@@ -142,10 +144,10 @@ func (r *WarehouseModule) countNucleusHivesInUse(boxSystemID *int) (int, error) 
 	var count int
 	query := `SELECT COUNT(*) AS cnt
 		FROM hives h
-		LEFT JOIN box_specs bs ON bs.system_id = h.box_system_id AND bs.legacy_box_type = 'DEEP' AND bs.active = 1
+		LEFT JOIN box_specs bs ON bs.system_id = h.box_system_id AND bs.legacy_box_type = 'DEEP' AND bs.active = TRUE
 		LEFT JOIN box_spec_frame_sources bfs ON bfs.box_spec_id = bs.id
 		WHERE h.user_id = ?
-		  AND h.active = 1
+		  AND h.active = TRUE
 		  AND h.hive_type = 'NUCLEUS'
 		  AND h.collapse_date IS NULL
 		  AND h.merged_into_hive_id IS NULL`
@@ -154,7 +156,7 @@ func (r *WarehouseModule) countNucleusHivesInUse(boxSystemID *int) (int, error) 
 		query += " AND COALESCE(bfs.frame_source_system_id, h.box_system_id) = ?"
 		args = append(args, *boxSystemID)
 	}
-	err := r.Db.Get(&count, query, args...)
+	err := r.Db.Get(&count, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 	return count, err
 }
 
@@ -167,11 +169,11 @@ func (r *WarehouseModule) topNucleusHives(boxSystemID *int, limit int) ([]*Wareh
 			a.name AS apiary_name,
 			1 AS usage_count
 		FROM hives h
-		LEFT JOIN box_specs bs ON bs.system_id = h.box_system_id AND bs.legacy_box_type = 'DEEP' AND bs.active = 1
+		LEFT JOIN box_specs bs ON bs.system_id = h.box_system_id AND bs.legacy_box_type = 'DEEP' AND bs.active = TRUE
 		LEFT JOIN box_spec_frame_sources bfs ON bfs.box_spec_id = bs.id
-		LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = 1
+		LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = TRUE
 		WHERE h.user_id = ?
-		  AND h.active = 1
+		  AND h.active = TRUE
 		  AND h.hive_type = 'NUCLEUS'
 		  AND h.collapse_date IS NULL
 		  AND h.merged_into_hive_id IS NULL`
@@ -184,7 +186,7 @@ func (r *WarehouseModule) topNucleusHives(boxSystemID *int, limit int) ([]*Wareh
 		ORDER BY h.hive_number IS NULL ASC, h.hive_number ASC, h.id ASC
 		LIMIT ?`
 	args = append(args, limit)
-	err := r.Db.Select(&rows, query, args...)
+	err := r.Db.Select(&rows, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -197,9 +199,9 @@ func (r *WarehouseModule) countBoxesInUse(boxType string, boxSystemID *int) (int
 		FROM boxes b
 		INNER JOIN hives h ON h.id = b.hive_id AND h.user_id = b.user_id
 		WHERE b.user_id = ?
-		  AND b.active = 1
+		  AND b.active = TRUE
 		  AND b.type = ?
-		  AND h.active = 1
+		  AND h.active = TRUE
 		  AND h.collapse_date IS NULL
 		  AND h.merged_into_hive_id IS NULL`
 	args := []interface{}{r.UserID, boxType}
@@ -207,7 +209,7 @@ func (r *WarehouseModule) countBoxesInUse(boxType string, boxSystemID *int) (int
 		query += " AND h.box_system_id = ?"
 		args = append(args, *boxSystemID)
 	}
-	err := r.Db.Get(&count, query, args...)
+	err := r.Db.Get(&count, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 	return count, err
 }
 
@@ -216,12 +218,12 @@ func (r *WarehouseModule) countFramesInUse(frameType string) (int, error) {
 	err := r.Db.Get(&count,
 		`SELECT COUNT(*) AS cnt
 		FROM frames f
-		INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = 1
+		INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = TRUE
 		INNER JOIN hives h ON h.id = b.hive_id AND h.user_id = b.user_id
-		WHERE f.user_id = ?
-		  AND f.active = 1
-		  AND f.type = ?
-		  AND h.active = 1
+		WHERE f.user_id = $1
+		  AND f.active = TRUE
+		  AND f.type = $2
+		  AND h.active = TRUE
 		  AND h.collapse_date IS NULL
 		  AND h.merged_into_hive_id IS NULL`,
 		r.UserID, frameType)
@@ -238,11 +240,11 @@ func (r *WarehouseModule) topHivesByBoxType(boxType string, boxSystemID *int, li
 			COUNT(*) AS usage_count
 		FROM boxes b
 		INNER JOIN hives h ON h.id = b.hive_id AND h.user_id = b.user_id
-		LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = 1
+		LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = TRUE
 		WHERE b.user_id = ?
-		  AND b.active = 1
+		  AND b.active = TRUE
 		  AND b.type = ?
-		  AND h.active = 1
+		  AND h.active = TRUE
 		  AND h.collapse_date IS NULL
 		  AND h.merged_into_hive_id IS NULL`
 	args := []interface{}{r.UserID, boxType}
@@ -255,7 +257,7 @@ func (r *WarehouseModule) topHivesByBoxType(boxType string, boxSystemID *int, li
 		ORDER BY usage_count DESC, h.hive_number IS NULL ASC, h.hive_number ASC, h.id ASC
 		LIMIT ?`
 	args = append(args, limit)
-	err := r.Db.Select(&rows, query, args...)
+	err := r.Db.Select(&rows, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -273,18 +275,18 @@ func (r *WarehouseModule) topHivesByFrameType(frameType string, limit int) ([]*W
 			a.name AS apiary_name,
 			COUNT(*) AS usage_count
 		FROM frames f
-		INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = 1
+		INNER JOIN boxes b ON b.id = f.box_id AND b.user_id = f.user_id AND b.active = TRUE
 		INNER JOIN hives h ON h.id = b.hive_id AND h.user_id = b.user_id
-		LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = 1
-		WHERE f.user_id = ?
-		  AND f.active = 1
-		  AND f.type = ?
-		  AND h.active = 1
+		LEFT JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = h.user_id AND a.active = TRUE
+		WHERE f.user_id = $1
+		  AND f.active = TRUE
+		  AND f.type = $2
+		  AND h.active = TRUE
 		  AND h.collapse_date IS NULL
 		  AND h.merged_into_hive_id IS NULL
 		GROUP BY h.id, h.hive_number, h.apiary_id, a.name
 		ORDER BY usage_count DESC, h.hive_number IS NULL ASC, h.hive_number ASC, h.id ASC
-		LIMIT ?`,
+		LIMIT $3`,
 		r.UserID, frameType, limit)
 	if err != nil {
 		return nil, err

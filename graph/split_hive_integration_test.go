@@ -52,24 +52,24 @@ func TestSplitHiveMutation(t *testing.T) {
 			require.NotNil(t, newHive, "Expected new hive to be created")
 
 			var sourceQueenCount int
-			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", sourceHiveID)
+			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=$1", sourceHiveID)
 			assert.Equal(t, 1, sourceQueenCount, "Source hive should still have 1 queen")
 
 			var sourceQueenID int
-			db.Get(&sourceQueenID, "SELECT id FROM families WHERE hive_id=?", sourceHiveID)
+			db.Get(&sourceQueenID, "SELECT id FROM families WHERE hive_id=$1", sourceHiveID)
 			assert.Equal(t, queenID, sourceQueenID, "Source hive should have original queen")
 
 			newHiveIDInt, _ := strconv.Atoi(newHive.ID)
 			var newHiveQueenCount int
-			db.Get(&newHiveQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", newHiveIDInt)
+			db.Get(&newHiveQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=$1", newHiveIDInt)
 			assert.Equal(t, 1, newHiveQueenCount, "New hive should have 1 queen")
 
 			var newHiveQueenName string
-			db.Get(&newHiveQueenName, "SELECT name FROM families WHERE hive_id=?", newHiveIDInt)
+			db.Get(&newHiveQueenName, "SELECT name FROM families WHERE hive_id=$1", newHiveIDInt)
 			assert.Equal(t, newQueenName, newHiveQueenName, "New hive queen should have specified name")
 
 			var movedFrameCount int
-			db.Get(&movedFrameCount, "SELECT COUNT(*) FROM frames f JOIN boxes b ON f.box_id = b.id WHERE b.hive_id=? AND f.user_id=?", newHiveIDInt, userID)
+			db.Get(&movedFrameCount, "SELECT COUNT(*) FROM frames f JOIN boxes b ON f.box_id = b.id WHERE b.hive_id=$1 AND f.user_id=$2", newHiveIDInt, userID)
 			assert.Equal(t, 5, movedFrameCount, "Expected 5 frames to be moved to new hive")
 		})
 	})
@@ -110,16 +110,16 @@ func TestSplitHiveMutation(t *testing.T) {
 			require.NotNil(t, newHive, "Expected new hive to be created")
 
 			var sourceQueenCount int
-			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", sourceHiveID)
+			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=$1", sourceHiveID)
 			assert.Equal(t, 0, sourceQueenCount, "Source hive should have no queens")
 
 			newHiveIDInt, _ := strconv.Atoi(newHive.ID)
 			var newHiveQueenCount int
-			db.Get(&newHiveQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", newHiveIDInt)
+			db.Get(&newHiveQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=$1", newHiveIDInt)
 			assert.Equal(t, 1, newHiveQueenCount, "New hive should have 1 queen")
 
 			var newHiveQueenID int
-			db.Get(&newHiveQueenID, "SELECT id FROM families WHERE hive_id=?", newHiveIDInt)
+			db.Get(&newHiveQueenID, "SELECT id FROM families WHERE hive_id=$1", newHiveIDInt)
 			assert.Equal(t, queenID, newHiveQueenID, "New hive should have the old queen")
 		})
 
@@ -192,16 +192,16 @@ func TestSplitHiveMutation(t *testing.T) {
 			require.NotNil(t, newHive, "Expected new hive to be created")
 
 			var sourceQueenCount int
-			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", sourceHiveID)
+			db.Get(&sourceQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=$1", sourceHiveID)
 			assert.Equal(t, 1, sourceQueenCount, "Source hive should still have 1 queen")
 
 			var sourceQueenID int
-			db.Get(&sourceQueenID, "SELECT id FROM families WHERE hive_id=?", sourceHiveID)
+			db.Get(&sourceQueenID, "SELECT id FROM families WHERE hive_id=$1", sourceHiveID)
 			assert.Equal(t, queenID, sourceQueenID, "Source hive should have original queen")
 
 			newHiveIDInt, _ := strconv.Atoi(newHive.ID)
 			var newHiveQueenCount int
-			db.Get(&newHiveQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=?", newHiveIDInt)
+			db.Get(&newHiveQueenCount, "SELECT COUNT(*) FROM families WHERE hive_id=$1", newHiveIDInt)
 			assert.Equal(t, 0, newHiveQueenCount, "New hive should have no queens")
 		})
 	})

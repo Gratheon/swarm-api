@@ -22,25 +22,25 @@ func (r *BoxSystemFrameSetting) ListAllVisible() ([]*BoxSystemFrameSetting, erro
 	rows := []*BoxSystemFrameSetting{}
 	err := r.Db.Select(&rows, `
 		SELECT
-			CAST(target_sys.id AS CHAR) AS system_id,
-			CAST(bs.id AS CHAR) AS box_spec_id,
+			CAST(target_sys.id AS TEXT) AS system_id,
+			CAST(bs.id AS TEXT) AS box_spec_id,
 			bs.legacy_box_type AS box_type,
 			bs.display_name AS box_display_name,
-			CAST(COALESCE(cfg.frame_source_system_id, src.frame_source_system_id) AS CHAR) AS frame_source_system_id
+			CAST(COALESCE(cfg.frame_source_system_id, src.frame_source_system_id) AS TEXT) AS frame_source_system_id
 		FROM box_specs bs
-		INNER JOIN box_systems target_sys ON target_sys.id = bs.system_id AND target_sys.active = 1
+		INNER JOIN box_systems target_sys ON target_sys.id = bs.system_id AND target_sys.active = TRUE
 		LEFT JOIN box_spec_frame_sources cfg ON cfg.box_spec_id = bs.id
 		LEFT JOIN (
 			SELECT c.box_spec_id, MIN(fs.system_id) AS frame_source_system_id
 			FROM frame_spec_compatibility c
 			INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
-			WHERE fs.active = 1
+			WHERE fs.active = TRUE
 			  AND fs.frame_type = 'FOUNDATION'
 			GROUP BY c.box_spec_id
 		) src ON src.box_spec_id = bs.id
-		WHERE bs.active = 1
+		WHERE bs.active = TRUE
 		  AND bs.legacy_box_type IN ('DEEP', 'SUPER', 'LARGE_HORIZONTAL_SECTION')
-		  AND (target_sys.user_id = ? OR target_sys.user_id IS NULL)
+		  AND (target_sys.user_id = $1 OR target_sys.user_id IS NULL)
 		ORDER BY target_sys.name ASC, bs.id ASC
 	`, r.UserID)
 	return rows, err
@@ -60,9 +60,9 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 	err := r.Db.Get(&targetOwned, `
 		SELECT COUNT(*)
 		FROM box_systems
-		WHERE id = ?
-		  AND user_id = ?
-		  AND active = 1
+		WHERE id = $1
+		  AND user_id = $2
+		  AND active = TRUE
 	`, targetSystemID, r.UserID)
 	if err != nil {
 		return false, err
@@ -75,9 +75,9 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 	err = r.Db.Get(&sourceVisible, `
 		SELECT COUNT(*)
 		FROM box_systems
-		WHERE id = ?
-		  AND active = 1
-		  AND (user_id = ? OR user_id IS NULL)
+		WHERE id = $1
+		  AND active = TRUE
+		  AND (user_id = $2 OR user_id IS NULL)
 	`, sourceSystemID, r.UserID)
 	if err != nil {
 		return false, err
@@ -92,9 +92,9 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 	err = tx.Get(&targetBoxSpecID, `
 		SELECT id
 		FROM box_specs
-		WHERE system_id = ?
-		  AND legacy_box_type = ?
-		  AND active = 1
+		WHERE system_id = $1
+		  AND legacy_box_type = $2
+		  AND active = TRUE
 		LIMIT 1
 	`, targetSystemID, boxType.String())
 	if err != nil {
@@ -106,9 +106,9 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 	err = tx.Get(&sourceBoxSpecID, `
 		SELECT id
 		FROM box_specs
-		WHERE system_id = ?
-		  AND legacy_box_type = ?
-		  AND active = 1
+		WHERE system_id = $1
+		  AND legacy_box_type = $2
+		  AND active = TRUE
 		LIMIT 1
 	`, sourceSystemID, boxType.String())
 	if err != nil {
@@ -119,15 +119,15 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 	if sourceSystemID == targetSystemID {
 		_, err = tx.Exec(`
 			INSERT INTO frame_specs (system_id, code, frame_type, display_name, active)
-			SELECT ?, fs.code, fs.frame_type, fs.display_name, fs.active
+			SELECT $1, fs.code, fs.frame_type, fs.display_name, fs.active
 			FROM frame_spec_compatibility c
 			INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
-			WHERE c.box_spec_id = ?
-			  AND fs.active = 1
+			WHERE c.box_spec_id = $2
+			  AND fs.active = TRUE
 			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
-			ON DUPLICATE KEY UPDATE
-			  display_name = VALUES(display_name),
-			  active = VALUES(active)
+			ON CONFLICT (system_id, code) DO UPDATE SET
+			  display_name = EXCLUDED.display_name,
+			  active = EXCLUDED.active
 		`, sourceSystemID, sourceBoxSpecID)
 		if err != nil {
 			tx.Rollback()
@@ -147,10 +147,10 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 		err = tx.Select(&sourceFrameSpecIDs, `
 			SELECT fs.id
 			FROM frame_specs fs
-			WHERE fs.system_id = ?
-			  AND fs.active = 1
+			WHERE fs.system_id = $1
+			  AND fs.active = TRUE
 			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
-			  AND fs.code LIKE ?
+			  AND fs.code LIKE $2
 			ORDER BY fs.id ASC
 		`, sourceSystemID, likeSuffix)
 	} else {
@@ -158,8 +158,8 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 			SELECT DISTINCT fs.id
 			FROM frame_spec_compatibility c
 			INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
-			WHERE c.box_spec_id = ?
-			  AND fs.active = 1
+			WHERE c.box_spec_id = $1
+			  AND fs.active = TRUE
 			  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 			ORDER BY fs.id ASC
 		`, sourceBoxSpecID)
@@ -174,10 +174,10 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 	}
 
 	_, err = tx.Exec(`
-		DELETE c
-		FROM frame_spec_compatibility c
-		INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id
-		WHERE c.box_spec_id = ?
+		DELETE FROM frame_spec_compatibility c
+		USING frame_specs fs
+		WHERE fs.id = c.frame_spec_id
+		  AND c.box_spec_id = $1
 		  AND fs.frame_type IN ('FOUNDATION', 'EMPTY_COMB', 'VOID', 'PARTITION', 'FEEDER')
 	`, targetBoxSpecID)
 	if err != nil {
@@ -188,7 +188,7 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 	for _, frameSpecID := range sourceFrameSpecIDs {
 		_, err = tx.Exec(`
 			INSERT INTO frame_spec_compatibility (frame_spec_id, box_spec_id)
-			VALUES (?, ?)
+			VALUES ($1, $2)
 		`, frameSpecID, targetBoxSpecID)
 		if err != nil {
 			tx.Rollback()
@@ -198,8 +198,8 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 
 	_, err = tx.Exec(`
 		INSERT INTO box_spec_frame_sources (box_spec_id, frame_source_system_id)
-		VALUES (?, ?)
-		ON DUPLICATE KEY UPDATE frame_source_system_id = VALUES(frame_source_system_id)
+		VALUES ($1, $2)
+		ON CONFLICT (box_spec_id) DO UPDATE SET frame_source_system_id = EXCLUDED.frame_source_system_id
 	`, targetBoxSpecID, sourceSystemID)
 	if err != nil {
 		tx.Rollback()
@@ -215,10 +215,10 @@ func (r *BoxSystemFrameSetting) SetFrameSource(systemID string, boxType BoxType,
 func (r *BoxSystemFrameSetting) ResolveFrameSourceSystemByBoxSpec(boxSpecID int) (*string, error) {
 	var sourceSystemID sql.NullString
 	err := r.Db.Get(&sourceSystemID, `
-		SELECT CAST(fs.system_id AS CHAR)
+		SELECT CAST(fs.system_id AS TEXT)
 		FROM frame_spec_compatibility c
-		INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id AND fs.active = 1 AND fs.frame_type = 'FOUNDATION'
-		WHERE c.box_spec_id = ?
+		INNER JOIN frame_specs fs ON fs.id = c.frame_spec_id AND fs.active = TRUE AND fs.frame_type = 'FOUNDATION'
+		WHERE c.box_spec_id = $1
 		ORDER BY fs.id ASC
 		LIMIT 1
 	`, boxSpecID)

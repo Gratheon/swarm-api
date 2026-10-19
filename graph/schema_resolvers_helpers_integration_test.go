@@ -78,13 +78,13 @@ func newSchemaResolverFixture(t *testing.T, seed bool) *schemaResolverFixture {
 	fx.frameID = createTestFrameWithSides(t, db, userID, fx.boxID, 1, fx.leftSideID, fx.rightSideID)
 
 	_, err := db.Exec(
-		"INSERT INTO family_moves (user_id, family_id, from_hive_id, to_hive_id, move_type) VALUES (?, ?, NULL, ?, 'ASSIGNED')",
+		"INSERT INTO family_moves (user_id, family_id, from_hive_id, to_hive_id, move_type) VALUES ($1, $2, NULL, $3, 'ASSIGNED')",
 		userID, fx.familyID, fx.hiveID,
 	)
 	require.NoError(t, err)
 
 	_, err = db.Exec(
-		"INSERT INTO treatments (type, hive_id, user_id, family_id) VALUES ('oxalic_acid', ?, ?, ?)",
+		"INSERT INTO treatments (type, hive_id, user_id, family_id) VALUES ('oxalic_acid', $1, $2, $3)",
 		fx.hiveID, userID, fx.familyID,
 	)
 	require.NoError(t, err)

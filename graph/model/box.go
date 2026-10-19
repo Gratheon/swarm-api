@@ -13,7 +13,7 @@ func (r *Box) resolveSpecForHive(tx *sqlx.Tx, hiveID string, boxType BoxType) (*
 	err := tx.Get(&systemID, `
 		SELECT box_system_id
 		FROM hives
-		WHERE id=? AND user_id=?
+		WHERE id=$1 AND user_id=$2
 		LIMIT 1
 	`, hiveID, r.UserID)
 	if err != nil {
@@ -50,7 +50,7 @@ type Box struct {
 	Type        BoxType    `json:"type" db:"type"`
 	BoxSystemID *int       `json:"box_system_id" db:"box_system_id"`
 	BoxSpecID   *int       `json:"box_spec_id" db:"box_spec_id"`
-	Active      int        `db:"active"`
+	Active      bool       `db:"active"`
 }
 
 const (
@@ -90,7 +90,7 @@ func (r *Box) getHiveBoxSystemID(tx *sqlx.Tx, hiveID string) (*int, error) {
 	err := tx.Get(&systemID, `
 		SELECT box_system_id
 		FROM hives
-		WHERE id=? AND user_id=?
+		WHERE id=$1 AND user_id=$2
 		LIMIT 1
 	`, hiveID, r.UserID)
 	if err != nil {
@@ -108,7 +108,7 @@ func (r *Box) Get(id string) (*Box, error) {
 	err := r.Db.Get(&box,
 		`SELECT * 
 		FROM boxes
-		WHERE id=? AND user_id=? AND active=1
+		WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1`, id, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -194,9 +194,10 @@ func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType
 	}
 	normalizedRoofStyle := normalizeRoofStyleForType(boxType, nil)
 
-	result, err := tx.NamedExec(
+	id, err := namedInsertReturningID(tx,
 		`INSERT INTO boxes (hive_id, position, color, hole_count, roof_style, user_id, type, box_system_id, box_spec_id)
-			VALUES (:hiveId, :position, :color, :holeCount, :roofStyle, :userID, :boxType, :boxSystemID, :boxSpecID)`,
+			VALUES (:hiveId, :position, :color, :holeCount, :roofStyle, :userID, :boxType, :boxSystemID, :boxSpecID)
+			RETURNING id`,
 		map[string]interface{}{
 			"hiveId":      hiveId,
 			"position":    position,
@@ -211,16 +212,11 @@ func (r *Box) Create(hiveId string, position int, color *string, boxType BoxType
 	)
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
-
-	id, err := result.LastInsertId()
 
 	strId := strconv.Itoa(int(id))
-
-	if err != nil {
-		return nil, err
-	}
 
 	return &strId, tx.Commit()
 }
@@ -248,9 +244,10 @@ func (r *Box) CreateSingleBox(hiveId string, position int, color string, boxType
 
 	normalizedRoofStyle := normalizeRoofStyleForType(boxType, nil)
 
-	result, err := tx.NamedExec(
+	id, err := namedInsertReturningID(tx,
 		`INSERT INTO boxes (hive_id, position, color, roof_style, user_id, type, box_system_id, box_spec_id)
-			VALUES (:hiveId, :position, :color, :roofStyle, :userID, :boxType, :boxSystemID, :boxSpecID)`,
+			VALUES (:hiveId, :position, :color, :roofStyle, :userID, :boxType, :boxSystemID, :boxSpecID)
+			RETURNING id`,
 		map[string]interface{}{
 			"hiveId":      hiveId,
 			"position":    position,
@@ -264,11 +261,7 @@ func (r *Box) CreateSingleBox(hiveId string, position int, color string, boxType
 	)
 
 	if err != nil {
-		return "", err
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
+		tx.Rollback()
 		return "", err
 	}
 
@@ -285,8 +278,8 @@ func (r *Box) ListByHive(hiveId string) ([]*Box, error) {
 	err2 := r.Db.Select(&boxes,
 		`SELECT *
 		FROM boxes
-		WHERE active=1 AND hive_id=? AND user_id=?
-		ORDER BY position DESC`, hiveId, r.UserID)
+		WHERE active=TRUE AND hive_id=$1 AND user_id=$2
+		ORDER BY position DESC NULLS LAST`, hiveId, r.UserID)
 	return boxes, err2
 }
 
@@ -294,7 +287,7 @@ func (r *Box) Count(hiveId string) (int, error) {
 	row := r.Db.QueryRow(
 		`SELECT COUNT(id) as cnt
 		FROM boxes
-		WHERE active=1 AND hive_id=? AND user_id=?`, hiveId, r.UserID)
+		WHERE active=TRUE AND hive_id=$1 AND user_id=$2`, hiveId, r.UserID)
 
 	var count int
 	err := row.Scan(&count)
@@ -424,7 +417,7 @@ func (r *Box) Deactivate(id string) (*bool, error) {
 	tx := r.Db.MustBegin()
 
 	_, err := tx.NamedExec(
-		"UPDATE boxes SET active=0 WHERE id=:id AND user_id=:userID",
+		"UPDATE boxes SET active=FALSE WHERE id=:id AND user_id=:userID",
 		map[string]interface{}{
 			"id":     id,
 			"userID": r.UserID,
@@ -446,7 +439,7 @@ func (r *Box) MoveBoxesToHive(boxIDs []string, targetHiveID string, startPositio
 		_, err := tx.NamedExec(
 			`UPDATE boxes 
 			SET hive_id=:hiveID, position=:position
-			WHERE id=:id AND user_id=:userID AND active=1`,
+			WHERE id=:id AND user_id=:userID AND active=TRUE`,
 			map[string]interface{}{
 				"id":       boxID,
 				"hiveID":   targetHiveID,
@@ -466,7 +459,7 @@ func (r *Box) MoveBoxesToHive(boxIDs []string, targetHiveID string, startPositio
 func (r *Box) GetMaxPosition(hiveID string) (int, error) {
 	var maxPosition sql.NullInt64
 	err := r.Db.QueryRow(
-		`SELECT MAX(position) FROM boxes WHERE hive_id=? AND user_id=? AND active=1`,
+		`SELECT MAX(position) FROM boxes WHERE hive_id=$1 AND user_id=$2 AND active=TRUE`,
 		hiveID, r.UserID,
 	).Scan(&maxPosition)
 
@@ -487,7 +480,7 @@ func (r *Box) GetBoxesByTypeForHive(hiveID string, boxTypes []BoxType) ([]*Box, 
 	}
 
 	query, args, err := sqlx.In(
-		`SELECT * FROM boxes WHERE hive_id=? AND user_id=? AND active=1 AND type IN (?)`,
+		`SELECT * FROM boxes WHERE hive_id=? AND user_id=? AND active=TRUE AND type IN (?)`,
 		hiveID, r.UserID, boxTypes,
 	)
 	if err != nil {
@@ -496,6 +489,6 @@ func (r *Box) GetBoxesByTypeForHive(hiveID string, boxTypes []BoxType) ([]*Box, 
 
 	query = r.Db.Rebind(query)
 	boxes := []*Box{}
-	err = r.Db.Select(&boxes, query, args...)
+	err = r.Db.Select(&boxes, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 	return boxes, err
 }
