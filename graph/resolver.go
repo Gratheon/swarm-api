@@ -41,8 +41,12 @@ func (r *Resolver) ConnectToDB() {
 		logger.Fatal(err.Error())
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	// The managed Postgres cluster is shared by several services and has a small
+	// max_connections, so the pool is sized by config instead of a fixed 25
+	viper.SetDefault("db_max_open_conns", 8)
+	viper.SetDefault("db_max_idle_conns", 2)
+	db.SetMaxOpenConns(viper.GetInt("db_max_open_conns"))
+	db.SetMaxIdleConns(viper.GetInt("db_max_idle_conns"))
 	db.SetConnMaxLifetime(5 * time.Minute)
 	db.SetConnMaxIdleTime(2 * time.Minute)
 
