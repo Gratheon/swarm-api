@@ -33,10 +33,9 @@ func (r *Resolver) ConnectToDB() {
 	rand.Seed(time.Now().UnixNano())
 
 	dsn := viper.GetString("db_dsn")
-	ensureInstrumentedMySQLDriverRegistered()
 
 	logger.Info("Connecting to DB")
-	db, err := sqlx.Connect(instrumentedMySQLDriverName, dsn)
+	db, err := OpenDB(dsn)
 
 	if err != nil {
 		logger.Fatal(err.Error())

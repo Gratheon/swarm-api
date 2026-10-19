@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -32,7 +31,7 @@ func (r *Apiary) Get(id string) (*Apiary, error) {
 	err2 := r.Db.Get(&apiary,
 		`SELECT * 
 		FROM apiaries 
-		WHERE id=? AND user_id=? AND active=1
+		WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1`, id, r.UserID)
 
 	if err2 == sql.ErrNoRows {
@@ -48,7 +47,7 @@ func (r *Apiary) List() ([]*Apiary, error) {
 	err2 := r.Db.Select(&apiaries,
 		`SELECT * 
 		FROM apiaries
-		WHERE user_id=? AND active=1`, r.UserID)
+		WHERE user_id=$1 AND active=TRUE`, r.UserID)
 	for _, apiary := range apiaries {
 		ensureApiaryType(apiary)
 	}
@@ -64,8 +63,8 @@ func (r *Apiary) Create(input ApiaryInput) (*Apiary, error) {
 		apiaryType = &castedType
 	}
 
-	result, err := tx.NamedExec(
-		"INSERT INTO apiaries (name, type, lat, lng, user_id) VALUES (:name, COALESCE(:type, 'STATIC'), :lat, :lng, :userID)",
+	id, err := namedInsertReturningID(tx,
+		"INSERT INTO apiaries (name, type, lat, lng, user_id) VALUES (:name, COALESCE(:type, 'STATIC'), :lat, :lng, :userID) RETURNING id",
 		map[string]interface{}{
 			"userID": r.UserID,
 			"name":   input.Name,
@@ -75,18 +74,17 @@ func (r *Apiary) Create(input ApiaryInput) (*Apiary, error) {
 		})
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-	tx.Commit()
-
+	err = tx.Commit()
 	if err != nil {
 		return nil, err
 	}
 
 	apiary := Apiary{}
-	err = r.Db.Get(&apiary, "SELECT * FROM `apiaries` WHERE id=? AND user_id=? LIMIT 1", id, r.UserID)
+	err = r.Db.Get(&apiary, "SELECT * FROM apiaries WHERE id=$1 AND user_id=$2 LIMIT 1", id, r.UserID)
 	ensureApiaryType(&apiary)
 
 	return &apiary, err
@@ -101,7 +99,7 @@ func (r *Apiary) Update(id string, input ApiaryInput) (*Apiary, error) {
 	}
 
 	_, err2 := tx.NamedExec(
-		"UPDATE `apiaries` SET name = :name, type = COALESCE(:type, type), lat = :lat, lng = :lng WHERE id=:id AND user_id = :userID",
+		"UPDATE apiaries SET name = :name, type = COALESCE(:type, type), lat = :lat, lng = :lng WHERE id=:id AND user_id = :userID",
 		map[string]interface{}{
 			"id":     id,
 			"userID": r.UserID,
@@ -121,7 +119,7 @@ func (r *Apiary) Update(id string, input ApiaryInput) (*Apiary, error) {
 	err3 := r.Db.Get(&apiary,
 		`SELECT * 
 		FROM apiaries 
-		WHERE id=? AND user_id=?
+		WHERE id=$1 AND user_id=$2
 		LIMIT 1`, id, r.UserID)
 	ensureApiaryType(&apiary)
 
@@ -132,7 +130,7 @@ func (r *Apiary) Deactivate(id string) (*bool, error) {
 	success := true
 	tx := r.Db.MustBegin()
 	_, err := tx.NamedExec(
-		"UPDATE apiaries SET active = 0 WHERE id=:id AND user_id=:userID",
+		"UPDATE apiaries SET active = FALSE WHERE id=:id AND user_id=:userID",
 		map[string]interface{}{
 			"id":     id,
 			"userID": r.UserID,

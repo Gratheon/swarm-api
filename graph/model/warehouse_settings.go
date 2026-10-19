@@ -15,7 +15,7 @@ func (r *WarehouseSettings) Get() (*WarehouseSettings, error) {
 	err := r.Db.Get(&settings,
 		`SELECT user_id, auto_update_from_hives
 		FROM warehouse_settings
-		WHERE user_id=?
+		WHERE user_id=$1
 		LIMIT 1`,
 		r.UserID,
 	)
@@ -38,7 +38,7 @@ func (r *WarehouseSettings) UpsertAutoUpdate(enabled bool) (*WarehouseSettings, 
 	_, err := tx.NamedExec(
 		`INSERT INTO warehouse_settings (user_id, auto_update_from_hives)
 		VALUES (:userID, :enabled)
-		ON DUPLICATE KEY UPDATE auto_update_from_hives=:enabled`,
+		ON CONFLICT (user_id) DO UPDATE SET auto_update_from_hives = EXCLUDED.auto_update_from_hives`,
 		map[string]interface{}{
 			"userID":  r.UserID,
 			"enabled": enabled,
@@ -57,7 +57,7 @@ func (r *WarehouseSettings) UpsertAutoUpdate(enabled bool) (*WarehouseSettings, 
 	err = r.Db.Get(&current,
 		`SELECT user_id, auto_update_from_hives
 		FROM warehouse_settings
-		WHERE user_id=?
+		WHERE user_id=$1
 		LIMIT 1`,
 		r.UserID,
 	)

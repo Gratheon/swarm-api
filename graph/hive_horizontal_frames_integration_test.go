@@ -52,7 +52,7 @@ func TestAddHorizontalHiveCreatesOneBasedFramePositions(t *testing.T) {
 		`SELECT f.position
 		FROM frames f
 		INNER JOIN boxes b ON b.id = f.box_id
-		WHERE f.user_id = ? AND b.hive_id = ? AND b.type = 'LARGE_HORIZONTAL_SECTION' AND f.active = 1
+		WHERE f.user_id = $1 AND b.hive_id = $2 AND b.type = 'LARGE_HORIZONTAL_SECTION' AND f.active = TRUE
 		ORDER BY f.position ASC`,
 		userID,
 		createdHive.ID,

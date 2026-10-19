@@ -11,7 +11,7 @@ flowchart LR
     web-app("<a href='https://github.com/Gratheon/web-app'>web-app</a>") --> graphql-router
     web-app --"subscribe to events"--> event-stream-filter("<a href='https://github.com/Gratheon/event-stream-filter'>event-stream-filter</a>") --> redis
     
-    graphql-router --> swarm-api("<a href='https://github.com/Gratheon/swarm-api'>swarm-api</a>") --> mysql[(mysql)]
+    graphql-router --> swarm-api("<a href='https://github.com/Gratheon/swarm-api'>swarm-api</a>") --> postgres[(postgres)]
     graphql-router --> swarm-api --> redis[("<a href='https://github.com/Gratheon/redis'>redis pub-sub</a>")]
     
     graphql-router --> graphql-schema-registry
@@ -80,17 +80,16 @@ cd graph && go test -v -tags=integration -run "TestSplitHiveMutation/split_hive_
 
 ### Prerequisites
 
-Integration tests require a running MySQL database from the [mysql repo](https://github.com/Gratheon/mysql).
-
-Start MySQL and run migrations:
+Integration tests require a running Postgres (18) database `swarm_api` (user/password `test`/`test`),
+for example the shared `postgres` dev service or:
 ```bash
-cd ../mysql && just start
+docker run -d --name swarm-api-postgres -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=swarm_api -p 5432:5432 postgres:18
 cd ../swarm-api && just migrate-db-dev
 ```
 
-Configure database connection (optional):
+Configure database connection (optional, this is the default):
 ```bash
-export TEST_DB_DSN="root:test@tcp(localhost:5100)/swarm-api?parseTime=true"
+export TEST_DB_DSN="postgres://test:test@localhost:5432/swarm_api?sslmode=disable"
 ```
 
 See [graph/TESTING.md](graph/TESTING.md) for detailed testing documentation.

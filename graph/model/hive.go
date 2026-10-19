@@ -45,7 +45,7 @@ func (r *Hive) Get(id string) (*Hive, error) {
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
-		WHERE id=? AND user_id=? AND active=1
+		WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1`, id, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -61,7 +61,7 @@ func (r *Hive) List(userID string) ([]*Hive, error) {
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
-		WHERE user_id=? AND active=1 AND collapse_date IS NULL AND merged_into_hive_id IS NULL`, userID)
+		WHERE user_id=$1 AND active=TRUE AND collapse_date IS NULL AND merged_into_hive_id IS NULL`, userID)
 	return hives, err2
 }
 
@@ -71,7 +71,7 @@ func (r *Hive) ListByApiary(apiaryId int) ([]*Hive, error) {
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
 		FROM hives 
-		WHERE apiary_id=? AND user_id=? AND active=1 AND collapse_date IS NULL AND merged_into_hive_id IS NULL`, apiaryId, r.UserID)
+		WHERE apiary_id=$1 AND user_id=$2 AND active=TRUE AND collapse_date IS NULL AND merged_into_hive_id IS NULL`, apiaryId, r.UserID)
 	return hives, err2
 }
 
@@ -81,12 +81,12 @@ func (r *Hive) CountActive() (int, error) {
 		`SELECT COUNT(*)
 		FROM hives h
 		INNER JOIN apiaries a ON a.id = h.apiary_id
-		WHERE h.user_id=?
-		  AND h.active=1
+		WHERE h.user_id=$1
+		  AND h.active=TRUE
 		  AND h.collapse_date IS NULL
 		  AND h.merged_into_hive_id IS NULL
-		  AND a.user_id=?
-		  AND a.active=1`,
+		  AND a.user_id=$2
+		  AND a.active=TRUE`,
 		r.UserID,
 		r.UserID,
 	)
@@ -95,8 +95,11 @@ func (r *Hive) CountActive() (int, error) {
 
 func (r *Hive) ListByApiarySorted(apiaryID int, sortBy HiveSortBy, sortOrder SortOrder) ([]*Hive, error) {
 	sortExpr := map[HiveSortBy]string{
-		HiveSortByHiveNumber:     "h.hive_number",
-		HiveSortByBeeCount:       "bee_count",
+		HiveSortByHiveNumber: "h.hive_number",
+		// Bee counts live in the image-splitter database, which is not reachable from this
+		// Postgres database (no cross-database queries), so the server falls back to hive number.
+		// web-app sorts by the federated Hive.beeCount field on the client.
+		HiveSortByBeeCount:       "h.hive_number",
 		HiveSortByLastTreatment:  "last_treatment",
 		HiveSortByLastInspection: "last_inspection",
 		HiveSortByStatus:         "h.status",
@@ -130,24 +133,15 @@ func (r *Hive) ListByApiarySorted(apiaryID int, sortBy HiveSortBy, sortOrder Sor
 			WHERE f.user_id = ?
 			GROUP BY f.hive_id
 		) lt ON lt.hive_id = h.id
-		LEFT JOIN (
-			SELECT fhr.hive_id,
-			       COALESCE(SUM(fsr.worker_bee_count), 0) + COALESCE(SUM(fsr.drone_count), 0) + COALESCE(SUM(fsr.queen_count), 0) AS bee_count
-			FROM %s.files_hive_rel fhr
-			INNER JOIN %s.files_frame_side_rel fsr ON fsr.file_id = fhr.file_id
-			WHERE fhr.user_id=? AND fsr.inspection_id IS NULL
-			GROUP BY fhr.hive_id
-		) bc ON bc.hive_id = h.id
-		WHERE h.apiary_id=? AND h.user_id=? AND h.active=1 AND h.collapse_date IS NULL AND h.merged_into_hive_id IS NULL
+		WHERE h.apiary_id=? AND h.user_id=? AND h.active=TRUE AND h.collapse_date IS NULL AND h.merged_into_hive_id IS NULL
 		ORDER BY %s IS NULL ASC, %s %s, h.id ASC`,
-		"`image-splitter`", "`image-splitter`",
 		sortExpr, sortExpr, orderDir,
 	)
 
 	query = strings.TrimSpace(query)
 
 	hives := []*Hive{}
-	err := r.Db.Select(&hives, query, r.UserID, r.UserID, r.UserID, r.UserID, apiaryID, r.UserID)
+	err := r.Db.Select(&hives, sqlx.Rebind(sqlx.DOLLAR, query), r.UserID, r.UserID, r.UserID, apiaryID, r.UserID)
 	return hives, err
 }
 
@@ -177,7 +171,7 @@ func (r *Hive) Create(input HiveInput) (*Hive, error) {
 	if hiveNumber == nil {
 		var maxNumber sql.NullInt64
 		err := tx.Get(&maxNumber,
-			"SELECT MAX(hive_number) FROM hives WHERE user_id=? AND active=1",
+			"SELECT MAX(hive_number) FROM hives WHERE user_id=$1 AND active=TRUE",
 			r.UserID)
 		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
@@ -190,8 +184,8 @@ func (r *Hive) Create(input HiveInput) (*Hive, error) {
 		hiveNumber = &nextNumber
 	}
 
-	result, err := tx.NamedExec(
-		"INSERT INTO hives (apiary_id, user_id, hive_number, box_system_id, hive_type) VALUES (:apiaryID, :userID, :hiveNumber, :boxSystemID, :hiveType)",
+	id, err := namedInsertReturningID(tx,
+		"INSERT INTO hives (apiary_id, user_id, hive_number, box_system_id, hive_type) VALUES (:apiaryID, :userID, :hiveNumber, :boxSystemID, :hiveType) RETURNING id",
 		map[string]interface{}{
 			"apiaryID":    input.ApiaryID,
 			"userID":      r.UserID,
@@ -200,13 +194,6 @@ func (r *Hive) Create(input HiveInput) (*Hive, error) {
 			"hiveType":    hiveType,
 		},
 	)
-
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	id, err := result.LastInsertId()
 
 	if err != nil {
 		tx.Rollback()
@@ -222,7 +209,7 @@ func (r *Hive) Create(input HiveInput) (*Hive, error) {
 	hive := Hive{}
 	err = r.Db.Get(&hive, `SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 	        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
-	        FROM hives WHERE id=? LIMIT 1`, id)
+	        FROM hives WHERE id=$1 LIMIT 1`, id)
 
 	return &hive, err
 }
@@ -233,7 +220,7 @@ func (r *Hive) Update(id string, notes *string, hiveNumber *int, FamilyID *strin
 	if hiveNumber != nil {
 		var existingHiveID sql.NullString
 		err := tx.Get(&existingHiveID,
-			"SELECT id FROM hives WHERE hive_number=? AND user_id=? AND id!=? AND active=1 LIMIT 1",
+			"SELECT id FROM hives WHERE hive_number=$1 AND user_id=$2 AND id!=$3 AND active=TRUE LIMIT 1",
 			hiveNumber, r.UserID, id)
 
 		if err != nil && err != sql.ErrNoRows {
@@ -264,7 +251,7 @@ func (r *Hive) Deactivate(id string) (*bool, error) {
 	success := true
 	tx := r.Db.MustBegin()
 	_, err := tx.NamedExec(
-		"UPDATE hives SET active = 0 WHERE id=:id AND user_id=:userID",
+		"UPDATE hives SET active = FALSE WHERE id=:id AND user_id=:userID",
 		map[string]interface{}{
 			"id":     id,
 			"userID": r.UserID,
@@ -307,7 +294,7 @@ func (r *Hive) MarkAsCollapsed(id string, collapseDate time.Time, collapseCause 
 	}
 
 	_, err = tx.Exec(
-		`DELETE FROM hive_placements WHERE hive_id=? AND user_id=?`,
+		`DELETE FROM hive_placements WHERE hive_id=$1 AND user_id=$2`,
 		id, r.UserID)
 
 	if err != nil {
@@ -329,7 +316,7 @@ func (r *Hive) GetParentHive(parentHiveID *int) (*Hive, error) {
 	err := r.Db.Get(&hive,
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
-		FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		FROM hives WHERE id=$1 AND user_id=$2 AND active=TRUE LIMIT 1`,
 		*parentHiveID, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -344,7 +331,7 @@ func (r *Hive) GetChildHives(hiveID string) ([]*Hive, error) {
 	err := r.Db.Select(&hives,
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
-		FROM hives WHERE parent_hive_id=? AND user_id=? AND active=1`,
+		FROM hives WHERE parent_hive_id=$1 AND user_id=$2 AND active=TRUE`,
 		hiveID, r.UserID)
 	return hives, err
 }
@@ -354,21 +341,22 @@ func (r *Hive) Split(sourceHiveID string, apiaryID int) (*Hive, error) {
 
 	var sourceBoxSystemID sql.NullInt64
 	var sourceHiveType string
-	err := tx.Get(&sourceBoxSystemID, `SELECT box_system_id FROM hives WHERE id=? AND user_id=? LIMIT 1`, sourceHiveID, r.UserID)
+	err := tx.Get(&sourceBoxSystemID, `SELECT box_system_id FROM hives WHERE id=$1 AND user_id=$2 LIMIT 1`, sourceHiveID, r.UserID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
-	err = tx.Get(&sourceHiveType, `SELECT hive_type FROM hives WHERE id=? AND user_id=? LIMIT 1`, sourceHiveID, r.UserID)
+	err = tx.Get(&sourceHiveType, `SELECT hive_type FROM hives WHERE id=$1 AND user_id=$2 LIMIT 1`, sourceHiveID, r.UserID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
 
 	now := time.Now()
-	result, err := tx.NamedExec(
+	id, err := namedInsertReturningID(tx,
 		`INSERT INTO hives (apiary_id, user_id, box_system_id, hive_type, parent_hive_id, split_date, added) 
-		VALUES (:apiaryID, :userID, :boxSystemID, :hiveType, :parentHiveID, :splitDate, :added)`,
+		VALUES (:apiaryID, :userID, :boxSystemID, :hiveType, :parentHiveID, :splitDate, :added)
+		RETURNING id`,
 		map[string]interface{}{
 			"apiaryID":     apiaryID,
 			"userID":       r.UserID,
@@ -381,11 +369,7 @@ func (r *Hive) Split(sourceHiveID string, apiaryID int) (*Hive, error) {
 	)
 
 	if err != nil {
-		return nil, err
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -397,7 +381,7 @@ func (r *Hive) Split(sourceHiveID string, apiaryID int) (*Hive, error) {
 	hive := Hive{}
 	err = r.Db.Get(&hive, `SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 	        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
-	        FROM hives WHERE id=? LIMIT 1`, id)
+	        FROM hives WHERE id=$1 LIMIT 1`, id)
 
 	return &hive, err
 }
@@ -426,7 +410,7 @@ func (r *Hive) MarkAsMerged(sourceHiveID string, targetHiveID string, mergeDate 
 	}
 
 	_, err = tx.Exec(
-		`DELETE FROM hive_placements WHERE hive_id=? AND user_id=?`,
+		`DELETE FROM hive_placements WHERE hive_id=$1 AND user_id=$2`,
 		sourceHiveID, r.UserID)
 
 	if err != nil {
@@ -448,7 +432,7 @@ func (r *Hive) GetMergedIntoHive(mergedIntoHiveID *int) (*Hive, error) {
 	err := r.Db.Get(&hive,
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
-		FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1`,
+		FROM hives WHERE id=$1 AND user_id=$2 AND active=TRUE LIMIT 1`,
 		*mergedIntoHiveID, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -463,7 +447,7 @@ func (r *Hive) GetMergedFromHives(hiveID string) ([]*Hive, error) {
 	err := r.Db.Select(&hives,
 		`SELECT id, user_id, apiary_id, box_system_id, hive_type, active, hive_number, notes, color, status, added,
 		        collapse_date, collapse_cause, parent_hive_id, split_date, merged_into_hive_id, merge_date, merge_type
-		FROM hives WHERE merged_into_hive_id=? AND user_id=? AND active=1`,
+		FROM hives WHERE merged_into_hive_id=$1 AND user_id=$2 AND active=TRUE`,
 		hiveID, r.UserID)
 	return hives, err
 }

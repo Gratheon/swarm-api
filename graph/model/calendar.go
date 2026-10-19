@@ -317,9 +317,9 @@ func calendarSourceSet(sourceTypes []CalendarItemSourceType) (map[CalendarItemSo
 func (r *Calendar) listCalendarHives(apiaryID *string, hiveID *string) ([]*calendarHiveContextRow, error) {
 	conditions := []string{
 		"h.user_id=?",
-		"h.active=1",
+		"h.active=TRUE",
 		"a.user_id=?",
-		"a.active=1",
+		"a.active=TRUE",
 	}
 	args := []interface{}{r.UserID, r.UserID}
 
@@ -341,7 +341,7 @@ func (r *Calendar) listCalendarHives(apiaryID *string, hiveID *string) ([]*calen
 		WHERE %s`, strings.Join(conditions, " AND "))
 
 	rows := []*calendarHiveContextRow{}
-	err := r.Db.Select(&rows, query, args...)
+	err := r.Db.Select(&rows, sqlx.Rebind(sqlx.DOLLAR, query), args...)
 	return rows, err
 }
 
@@ -350,9 +350,9 @@ func (r *Calendar) listCalendarInspectionItems(from time.Time, to time.Time, hiv
 	err := r.Db.Select(&rows,
 		`SELECT i.id, i.user_id, i.hive_id, i.data, i.added
 		 FROM inspections i
-		 INNER JOIN hives h ON h.id = i.hive_id AND h.user_id = i.user_id AND h.active=1
-		 INNER JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = i.user_id AND a.active=1
-		 WHERE i.user_id=? AND i.added >= ? AND i.added <= ?
+		 INNER JOIN hives h ON h.id = i.hive_id AND h.user_id = i.user_id AND h.active=TRUE
+		 INNER JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = i.user_id AND a.active=TRUE
+		 WHERE i.user_id=$1 AND i.added >= $2 AND i.added <= $3
 		 ORDER BY i.added ASC, i.id ASC`,
 		r.UserID,
 		from,
@@ -405,9 +405,9 @@ func (r *Calendar) listCalendarHiveLogItems(from time.Time, to time.Time, hives 
 	err := r.Db.Select(&rows,
 		`SELECT hl.id, hl.user_id, hl.hive_id, hl.action, hl.title, hl.details, hl.source, hl.dedupe_key, hl.created_at, hl.updated_at
 		 FROM hive_logs hl
-		 INNER JOIN hives h ON h.id = hl.hive_id AND h.user_id = hl.user_id AND h.active=1
-		 INNER JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = hl.user_id AND a.active=1
-		 WHERE hl.user_id=? AND hl.active=1 AND hl.created_at >= ? AND hl.created_at <= ?
+		 INNER JOIN hives h ON h.id = hl.hive_id AND h.user_id = hl.user_id AND h.active=TRUE
+		 INNER JOIN apiaries a ON a.id = h.apiary_id AND a.user_id = hl.user_id AND a.active=TRUE
+		 WHERE hl.user_id=$1 AND hl.active=TRUE AND hl.created_at >= $2 AND hl.created_at <= $3
 		 ORDER BY hl.created_at ASC, hl.id ASC`,
 		r.UserID,
 		from,
@@ -454,18 +454,15 @@ func (r *Calendar) listCalendarHiveLogItems(from time.Time, to time.Time, hives 
 func (r *Calendar) listInspectionRecency(from time.Time, to time.Time, hives map[string]*Hive) ([]*CalendarInspectionRecency, error) {
 	rows := []*calendarInspectionRow{}
 	err := r.Db.Select(&rows,
-		`SELECT i.id, i.user_id, i.hive_id, i.data, i.added
-		 FROM inspections i
-		 INNER JOIN (
-		     SELECT hive_id, MAX(CONCAT(DATE_FORMAT(added, '%Y%m%d%H%i%s'), LPAD(id, 10, '0'))) AS latest_key
-		     FROM inspections
-		     WHERE user_id=?
-		     GROUP BY hive_id
-		 ) latest ON latest.hive_id = i.hive_id
-		          AND latest.latest_key = CONCAT(DATE_FORMAT(i.added, '%Y%m%d%H%i%s'), LPAD(i.id, 10, '0'))
-		 WHERE i.user_id=?
-		 ORDER BY i.added DESC, i.id DESC`,
-		r.UserID,
+		// Latest inspection per hive (ties on added broken by the higher id)
+		`SELECT id, user_id, hive_id, data, added
+		 FROM (
+		     SELECT DISTINCT ON (i.hive_id) i.id, i.user_id, i.hive_id, i.data, i.added
+		     FROM inspections i
+		     WHERE i.user_id=$1 AND i.hive_id IS NOT NULL
+		     ORDER BY i.hive_id, i.added DESC, i.id DESC
+		 ) latest
+		 ORDER BY added DESC, id DESC`,
 		r.UserID,
 	)
 	if err != nil {

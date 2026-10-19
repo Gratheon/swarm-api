@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -22,138 +21,110 @@ func createTestUserID() string {
 func setupTestDB(t *testing.T) *sqlx.DB {
 	dsn := os.Getenv("TEST_DB_DSN")
 	if dsn == "" {
-		dsn = "root:test@tcp(localhost:5100)/swarm-api?parseTime=true&timeout=5s&readTimeout=30s&writeTimeout=30s"
+		dsn = "postgres://test:test@localhost:5432/swarm_api?sslmode=disable&connect_timeout=5"
 	}
 
-	db, err := sqlx.Connect("mysql", dsn)
+	// Same driver setup as the service (placeholders, UTC session, legacy date format)
+	db, err := OpenDB(dsn)
 	if err != nil {
-		t.Skipf("Skipping test - cannot connect to test database: %v\nMake sure mysql is running: cd ../mysql && just start", err)
+		t.Skipf("Skipping test - cannot connect to test database: %v\nMake sure postgres is running and migrated: just migrate-db-dev", err)
 		return nil
-	}
-
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS family_moves (
-			id bigint unsigned NOT NULL AUTO_INCREMENT,
-			user_id int unsigned NOT NULL,
-			family_id int unsigned NOT NULL,
-			from_hive_id int unsigned DEFAULT NULL,
-			to_hive_id int unsigned DEFAULT NULL,
-			move_type varchar(32) NOT NULL DEFAULT 'MOVED',
-			moved_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (id),
-			KEY idx_family_moves_user_family_time (user_id, family_id, moved_at),
-			KEY idx_family_moves_from_hive (from_hive_id),
-			KEY idx_family_moves_to_hive (to_hive_id)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-	`)
-	if err != nil {
-		t.Skipf("Skipping test - cannot ensure family_moves table: %v", err)
-		return nil
-	}
-
-	var hasFamiliesActiveColumn int
-	err = db.Get(&hasFamiliesActiveColumn, `
-		SELECT COUNT(*)
-		FROM information_schema.COLUMNS
-		WHERE TABLE_SCHEMA = DATABASE()
-		  AND TABLE_NAME = 'families'
-		  AND COLUMN_NAME = 'active'
-	`)
-	if err != nil {
-		t.Skipf("Skipping test - cannot inspect families.active column: %v", err)
-		return nil
-	}
-	if hasFamiliesActiveColumn == 0 {
-		_, err = db.Exec(`
-			ALTER TABLE families
-			ADD COLUMN active tinyint(1) NOT NULL DEFAULT 1
-		`)
-		if err != nil {
-			t.Skipf("Skipping test - cannot ensure families.active column: %v", err)
-			return nil
-		}
 	}
 
 	return db
 }
 
 func cleanupTestData(t *testing.T, db *sqlx.DB, userID string) {
-	db.Exec("DELETE FROM hive_logs WHERE user_id=?", userID)
-	db.Exec("DELETE FROM inspections WHERE user_id=?", userID)
-	db.Exec("DELETE FROM treatments WHERE user_id=?", userID)
-	db.Exec("DELETE FROM family_moves WHERE user_id=?", userID)
-	db.Exec("DELETE FROM frames WHERE user_id=?", userID)
-	db.Exec("DELETE FROM frames_sides WHERE user_id=?", userID)
-	db.Exec("DELETE FROM boxes WHERE user_id=?", userID)
-	db.Exec("DELETE FROM families WHERE user_id=?", userID)
-	db.Exec("DELETE FROM hives WHERE user_id=?", userID)
-	db.Exec("DELETE FROM apiaries WHERE user_id=?", userID)
+	db.Exec("DELETE FROM hive_logs WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM inspections WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM treatments WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM family_moves WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM frames WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM frames_sides WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM boxes WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM families WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM hives WHERE user_id=$1", userID)
+	db.Exec("DELETE FROM apiaries WHERE user_id=$1", userID)
 }
 
 func createTestApiary(t *testing.T, db *sqlx.DB, userID string) int {
-	result := db.MustExec(
-		"INSERT INTO apiaries (user_id, name, active) VALUES (?, 'Test Apiary', 1)",
+	var id int64
+	if err := db.QueryRowx(
+		"INSERT INTO apiaries (user_id, name, active) VALUES ($1, 'Test Apiary', TRUE) RETURNING id",
 		userID,
-	)
-	id, _ := result.LastInsertId()
+	).Scan(&id); err != nil {
+		t.Fatalf("insert failed: %v", err)
+	}
 	return int(id)
 }
 
 func createTestHive(t *testing.T, db *sqlx.DB, userID string, apiaryID int) int {
-	result := db.MustExec(
-		"INSERT INTO hives (user_id, apiary_id, active, added) VALUES (?, ?, 1, NOW())",
+	var id int64
+	if err := db.QueryRowx(
+		"INSERT INTO hives (user_id, apiary_id, active, added) VALUES ($1, $2, TRUE, NOW()) RETURNING id",
 		userID, apiaryID,
-	)
-	id, _ := result.LastInsertId()
+	).Scan(&id); err != nil {
+		t.Fatalf("insert failed: %v", err)
+	}
 	return int(id)
 }
 
 func createTestQueen(t *testing.T, db *sqlx.DB, userID string, hiveID int) int {
 	queenName := "Test Queen"
-	result := db.MustExec(
-		"INSERT INTO families (user_id, hive_id, name) VALUES (?, ?, ?)",
+	var id int64
+	if err := db.QueryRowx(
+		"INSERT INTO families (user_id, hive_id, name) VALUES ($1, $2, $3) RETURNING id",
 		userID, hiveID, queenName,
-	)
-	id, _ := result.LastInsertId()
+	).Scan(&id); err != nil {
+		t.Fatalf("insert failed: %v", err)
+	}
 	return int(id)
 }
 
 func createTestBox(t *testing.T, db *sqlx.DB, userID string, hiveID int) int {
-	result := db.MustExec(
-		"INSERT INTO boxes (user_id, hive_id, position, type, active) VALUES (?, ?, 0, 'DEEP', 1)",
+	var id int64
+	if err := db.QueryRowx(
+		"INSERT INTO boxes (user_id, hive_id, position, type, active) VALUES ($1, $2, 0, 'DEEP', TRUE) RETURNING id",
 		userID, hiveID,
-	)
-	id, _ := result.LastInsertId()
+	).Scan(&id); err != nil {
+		t.Fatalf("insert failed: %v", err)
+	}
 	return int(id)
 }
 
 func createTestFrames(t *testing.T, db *sqlx.DB, userID string, boxID int, count int) []string {
 	frameIDs := make([]string, count)
 	for i := 0; i < count; i++ {
-		result := db.MustExec(
-			"INSERT INTO frames (user_id, box_id, position, type, active) VALUES (?, ?, ?, 'EMPTY_COMB', 1)",
+		var id int64
+		if err := db.QueryRowx(
+			"INSERT INTO frames (user_id, box_id, position, type, active) VALUES ($1, $2, $3, 'EMPTY_COMB', TRUE) RETURNING id",
 			userID, boxID, i,
-		)
-		id, _ := result.LastInsertId()
+		).Scan(&id); err != nil {
+			t.Fatalf("insert failed: %v", err)
+		}
 		frameIDs[i] = strconv.Itoa(int(id))
 	}
 	return frameIDs
 }
 
 func createTestFrameSide(t *testing.T, db *sqlx.DB, userID string) int {
-	result := db.MustExec(
-		"INSERT INTO frames_sides (user_id) VALUES (?)",
+	var id int64
+	if err := db.QueryRowx(
+		"INSERT INTO frames_sides (user_id) VALUES ($1) RETURNING id",
 		userID,
-	)
-	id, _ := result.LastInsertId()
+	).Scan(&id); err != nil {
+		t.Fatalf("insert failed: %v", err)
+	}
 	return int(id)
 }
 
 func createTestFrameWithSides(t *testing.T, db *sqlx.DB, userID string, boxID int, position int, leftSideID int, rightSideID int) int {
-	result := db.MustExec(
-		"INSERT INTO frames (user_id, box_id, position, type, active, left_id, right_id) VALUES (?, ?, ?, 'EMPTY_COMB', 1, ?, ?)",
+	var id int64
+	if err := db.QueryRowx(
+		"INSERT INTO frames (user_id, box_id, position, type, active, left_id, right_id) VALUES ($1, $2, $3, 'EMPTY_COMB', TRUE, $4, $5) RETURNING id",
 		userID, boxID, position, leftSideID, rightSideID,
-	)
-	id, _ := result.LastInsertId()
+	).Scan(&id); err != nil {
+		t.Fatalf("insert failed: %v", err)
+	}
 	return int(id)
 }

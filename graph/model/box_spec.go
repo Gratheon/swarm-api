@@ -29,8 +29,8 @@ func (r *BoxSpec) ListVisible(systemID string) ([]*BoxSpec, error) {
 	rows := []*BoxSpec{}
 	err := r.Db.Select(&rows, `
 		SELECT
-			CAST(bs.id AS CHAR) AS id,
-			CAST(bs.system_id AS CHAR) AS system_id,
+			CAST(bs.id AS TEXT) AS id,
+			CAST(bs.system_id AS TEXT) AS system_id,
 			bs.code,
 			bs.legacy_box_type,
 			bs.display_name,
@@ -43,10 +43,10 @@ func (r *BoxSpec) ListVisible(systemID string) ([]*BoxSpec, error) {
 			bs.frame_height_mm,
 			bs.active
 		FROM box_specs bs
-		INNER JOIN box_systems sys ON sys.id = bs.system_id AND sys.active = 1
-		WHERE bs.active = 1
-		  AND bs.system_id = ?
-		  AND (sys.user_id = ? OR sys.user_id IS NULL)
+		INNER JOIN box_systems sys ON sys.id = bs.system_id AND sys.active = TRUE
+		WHERE bs.active = TRUE
+		  AND bs.system_id = $1
+		  AND (sys.user_id = $2 OR sys.user_id IS NULL)
 		ORDER BY bs.id ASC
 	`, systemID, r.UserID)
 	return rows, err
@@ -94,19 +94,20 @@ func (r *BoxSpec) SetDimensionsBySystemAndType(
 
 	result, err := r.Db.NamedExec(`
 		UPDATE box_specs bs
-		INNER JOIN box_systems sys ON sys.id = bs.system_id
 			SET
-				bs.internal_width_mm = :internal_width_mm,
-				bs.internal_length_mm = :internal_length_mm,
-				bs.internal_height_mm = :internal_height_mm,
-				bs.external_width_mm = :external_width_mm,
-				bs.external_length_mm = :external_length_mm,
-				bs.frame_width_mm = :frame_width_mm,
-				bs.frame_height_mm = :frame_height_mm
-		WHERE bs.system_id = :system_id
+				internal_width_mm = :internal_width_mm,
+				internal_length_mm = :internal_length_mm,
+				internal_height_mm = :internal_height_mm,
+				external_width_mm = :external_width_mm,
+				external_length_mm = :external_length_mm,
+				frame_width_mm = :frame_width_mm,
+				frame_height_mm = :frame_height_mm
+		FROM box_systems sys
+		WHERE sys.id = bs.system_id
+		  AND bs.system_id = :system_id
 		  AND bs.legacy_box_type = :box_type
-		  AND bs.active = 1
-		  AND sys.active = 1
+		  AND bs.active = TRUE
+		  AND sys.active = TRUE
 		  AND sys.user_id = :user_id
 	`, map[string]interface{}{
 		"system_id":          targetSystemID,

@@ -47,11 +47,12 @@ func TestSplitHiveMutation(t *testing.T) {
 
 ## Prerequisites
 
-Integration tests require a running MySQL database from the [mysql repo](https://github.com/Gratheon/mysql).
+Integration tests require a running Postgres (18) database `swarm_api` (user/password `test`/`test`).
 
-### 1. Start MySQL
+### 1. Start Postgres
+Use the shared `postgres` dev service, or a standalone container:
 ```bash
-cd ../mysql && just start
+docker run -d --name swarm-api-postgres -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=swarm_api -p 5432:5432 postgres:18
 ```
 
 ### 2. Run Migrations
@@ -62,7 +63,7 @@ cd ../swarm-api && just migrate-db-dev
 ### 3. Configure Database Connection (Optional)
 Set environment variable:
 ```bash
-export TEST_DB_DSN="root:test@tcp(localhost:5100)/swarm-api?parseTime=true"
+export TEST_DB_DSN="postgres://test:test@localhost:5432/swarm_api?sslmode=disable"
 ```
 
 ## Running Tests

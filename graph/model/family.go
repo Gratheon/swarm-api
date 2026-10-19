@@ -9,18 +9,18 @@ import (
 )
 
 type Family struct {
-	Db          *sqlx.DB
-	UserID      string        `db:"user_id"`
-	ID          string        `json:"id"  db:"id"`
-	HiveID      *int          `json:"hive_id" db:"hive_id"`
-	Active      *bool         `db:"active"`
-	Name        *string       `json:"name" db:"name"`
-	Race        *string       `json:"race" db:"race"`
-	Age         *int          `json:"age"`
-	Added       *string       `json:"added" db:"added"`
-	Color       *string       `json:"color" db:"color"`
-	PreviewImageUrl *string   `json:"previewImageUrl" db:"preview_image_url"`
-	Inspections []*Inspection `json:"inspections"`
+	Db              *sqlx.DB
+	UserID          string        `db:"user_id"`
+	ID              string        `json:"id"  db:"id"`
+	HiveID          *int          `json:"hive_id" db:"hive_id"`
+	Active          *bool         `db:"active"`
+	Name            *string       `json:"name" db:"name"`
+	Race            *string       `json:"race" db:"race"`
+	Age             *int          `json:"age"`
+	Added           *string       `json:"added" db:"added"`
+	Color           *string       `json:"color" db:"color"`
+	PreviewImageUrl *string       `json:"previewImageUrl" db:"preview_image_url"`
+	Inspections     []*Inspection `json:"inspections"`
 }
 
 const (
@@ -50,7 +50,7 @@ func (r *Family) GetById(id *int) (*Family, error) {
 	err := r.Db.Get(&family,
 		`SELECT * 
 		FROM families
-		WHERE id=? AND user_id=? AND active=1
+		WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1`, id, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -72,9 +72,10 @@ func (r *Family) GetById(id *int) (*Family, error) {
 }
 
 func (r *Family) Create(name *string, race *string, added *string, color *string) (*int, error) {
-	result, err := r.Db.NamedExec(
+	id, err := namedInsertReturningID(r.Db,
 		`INSERT INTO families (user_id, name, race, added, color) 
-		VALUES (:userID, :name, :race, :added, :color)`,
+		VALUES (:userID, :name, :race, :added, :color)
+		RETURNING id`,
 		map[string]interface{}{
 			"userID": r.UserID,
 			"name":   name,
@@ -88,18 +89,16 @@ func (r *Family) Create(name *string, race *string, added *string, color *string
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-
 	id2 := int(id)
 
-	return &id2, err
+	return &id2, nil
 }
 
 func (r *Family) Update(id *string, name *string, race *string, added *string, color *string) (*int64, error) {
 	_, err := r.Db.NamedExec(
 		`UPDATE families 
 		SET name=:name, race=:race, added = :added, color = :color
-		WHERE id=:id AND user_id=:userID AND active=1`,
+		WHERE id=:id AND user_id=:userID AND active=TRUE`,
 		map[string]interface{}{
 			"id":     id,
 			"name":   name,
@@ -145,7 +144,7 @@ func (r *Family) ListByHive(hiveID string) ([]*Family, error) {
 	err := r.Db.Select(&families,
 		`SELECT * 
 		FROM families
-		WHERE hive_id=? AND user_id=? AND active=1`,
+		WHERE hive_id=$1 AND user_id=$2 AND active=TRUE`,
 		hiveID, r.UserID)
 
 	if err != nil {
@@ -174,9 +173,10 @@ func (r *Family) CreateForHive(hiveID string, name *string, race *string, added 
 
 	tx := r.Db.MustBegin()
 
-	result, err := tx.NamedExec(
+	id, err := namedInsertReturningID(tx,
 		`INSERT INTO families (user_id, hive_id, name, race, added, color) 
-		VALUES (:userID, :hiveID, :name, :race, :added, :color)`,
+		VALUES (:userID, :hiveID, :name, :race, :added, :color)
+		RETURNING id`,
 		map[string]interface{}{
 			"userID": r.UserID,
 			"hiveID": hiveIDInt,
@@ -192,11 +192,6 @@ func (r *Family) CreateForHive(hiveID string, name *string, race *string, added 
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
 	id2 := int(id)
 
 	if err = r.createMoveTx(tx, id2, nil, &hiveIDInt, familyMoveTypeAssigned); err != nil {
@@ -226,7 +221,7 @@ func (r *Family) MoveToWarehouse(hiveID string, familyID string) (*Family, error
 	result, err := tx.Exec(
 		`UPDATE families
 		SET hive_id=NULL
-		WHERE id=? AND hive_id=? AND user_id=? AND active=1`,
+		WHERE id=$1 AND hive_id=$2 AND user_id=$3 AND active=TRUE`,
 		familyID, hiveID, r.UserID,
 	)
 	if err != nil {
@@ -274,8 +269,8 @@ func (r *Family) MoveBetweenHives(familyID string, fromHiveID string, toHiveID s
 
 	result, err := tx.Exec(
 		`UPDATE families
-		SET hive_id=?
-		WHERE id=? AND hive_id=? AND user_id=? AND active=1`,
+		SET hive_id=$1
+		WHERE id=$2 AND hive_id=$3 AND user_id=$4 AND active=TRUE`,
 		toHiveIDInt, familyIDInt, fromHiveIDInt, r.UserID,
 	)
 	if err != nil {
@@ -315,8 +310,8 @@ func (r *Family) AssignFromWarehouse(hiveID string, familyID string) (*Family, e
 
 	result, err := tx.Exec(
 		`UPDATE families
-		SET hive_id=?
-		WHERE id=? AND hive_id IS NULL AND user_id=? AND active=1`,
+		SET hive_id=$1
+		WHERE id=$2 AND hive_id IS NULL AND user_id=$3 AND active=TRUE`,
 		hiveIDInt, familyIDInt, r.UserID,
 	)
 	if err != nil {
@@ -360,8 +355,8 @@ func (r *Family) DeleteFromHive(hiveID string, familyID string) (bool, error) {
 
 	result, err := tx.Exec(
 		`UPDATE families
-		SET active=0
-		WHERE id=? AND hive_id=? AND user_id=? AND active=1`,
+		SET active=FALSE
+		WHERE id=$1 AND hive_id=$2 AND user_id=$3 AND active=TRUE`,
 		familyIDInt, hiveIDInt, r.UserID,
 	)
 	if err != nil {
@@ -405,7 +400,7 @@ func (r *Family) DeleteFromWarehouse(familyID string) (bool, error) {
 		`SELECT EXISTS(
 			SELECT 1
 			FROM families
-			WHERE id=? AND hive_id IS NULL AND user_id=? AND active=1
+			WHERE id=$1 AND hive_id IS NULL AND user_id=$2 AND active=TRUE
 		)`,
 		familyIDInt, r.UserID,
 	)
@@ -424,7 +419,7 @@ func (r *Family) DeleteFromWarehouse(familyID string) (bool, error) {
 		&lastKnownHiveID,
 		`SELECT COALESCE(to_hive_id, from_hive_id) AS hive_id
 		FROM family_moves
-		WHERE family_id=? AND user_id=?
+		WHERE family_id=$1 AND user_id=$2
 		  AND (to_hive_id IS NOT NULL OR from_hive_id IS NOT NULL)
 		ORDER BY moved_at DESC, id DESC
 		LIMIT 1`,
@@ -441,8 +436,8 @@ func (r *Family) DeleteFromWarehouse(familyID string) (bool, error) {
 
 	result, err := tx.Exec(
 		`UPDATE families
-		SET active=0
-		WHERE id=? AND hive_id IS NULL AND user_id=? AND active=1`,
+		SET active=FALSE
+		WHERE id=$1 AND hive_id IS NULL AND user_id=$2 AND active=TRUE`,
 		familyIDInt, r.UserID,
 	)
 	if err != nil {
@@ -477,7 +472,7 @@ func (r *Family) ListUnassigned() ([]*Family, error) {
 	err := r.Db.Select(&families,
 		`SELECT *
 		FROM families
-		WHERE hive_id IS NULL AND user_id=? AND active=1
+		WHERE hive_id IS NULL AND user_id=$1 AND active=TRUE
 		ORDER BY id DESC`,
 		r.UserID,
 	)
@@ -504,7 +499,7 @@ func (r *Family) LastHiveID(familyID string) (*int, error) {
 	err := r.Db.Get(&lastHiveID,
 		`SELECT COALESCE(to_hive_id, from_hive_id) AS hive_id
 		FROM family_moves
-		WHERE family_id=? AND user_id=?
+		WHERE family_id=$1 AND user_id=$2
 		  AND (to_hive_id IS NOT NULL OR from_hive_id IS NOT NULL)
 		ORDER BY moved_at DESC, id DESC
 		LIMIT 1`,

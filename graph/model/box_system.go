@@ -23,26 +23,26 @@ func (r *BoxSystem) ListVisible() ([]*BoxSystem, error) {
 	rows := []*BoxSystem{}
 	err := r.Db.Select(&rows, `
 		SELECT
-			CAST(id AS CHAR) AS id,
-			COALESCE(user_id, '') AS user_id,
+			CAST(id AS TEXT) AS id,
+			COALESCE(user_id::text, '') AS user_id,
 			name,
-			CAST(box_profile_source_system_id AS CHAR) AS box_profile_source_system_id,
+			CAST(box_profile_source_system_id AS TEXT) AS box_profile_source_system_id,
 			is_default,
 			active
 		FROM box_systems
-		WHERE active = 1
+		WHERE active = TRUE
 		  AND (
-			user_id = ?
+			user_id = $1
 			OR (
 				user_id IS NULL
 				AND (
-					is_default = 0
+					is_default = FALSE
 					OR NOT EXISTS (
 						SELECT 1
 						FROM box_systems owned_defaults
-						WHERE owned_defaults.user_id = ?
-						  AND owned_defaults.active = 1
-						  AND owned_defaults.is_default = 1
+						WHERE owned_defaults.user_id = $2
+						  AND owned_defaults.active = TRUE
+						  AND owned_defaults.is_default = TRUE
 					)
 				)
 			)
@@ -58,9 +58,9 @@ func (r *BoxSystem) ResolveForCreate(requestedID *string) (int, error) {
 		err := r.Db.Get(&id, `
 			SELECT id
 			FROM box_systems
-			WHERE id = ?
-			  AND active = 1
-			  AND (user_id = ? OR user_id IS NULL)
+			WHERE id = $1
+			  AND active = TRUE
+			  AND (user_id = $2 OR user_id IS NULL)
 			LIMIT 1
 		`, *requestedID, r.UserID)
 		if err == nil {
@@ -75,8 +75,8 @@ func (r *BoxSystem) ResolveForCreate(requestedID *string) (int, error) {
 	err := r.Db.Get(&id, `
 		SELECT id
 		FROM box_systems
-		WHERE active = 1
-		  AND (user_id = ? OR user_id IS NULL)
+		WHERE active = TRUE
+		  AND (user_id = $1 OR user_id IS NULL)
 		ORDER BY (user_id IS NULL) ASC, is_default DESC, id ASC
 		LIMIT 1
 	`, r.UserID)
@@ -93,8 +93,8 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 	err := r.Db.Get(&ownedCount, `
 		SELECT COUNT(*)
 		FROM box_systems
-		WHERE user_id = ?
-		  AND active = 1
+		WHERE user_id = $1
+		  AND active = TRUE
 	`, r.UserID)
 	if err != nil {
 		return nil, err
@@ -104,9 +104,10 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 	}
 
 	tx := r.Db.MustBegin()
-	result, err := tx.NamedExec(`
+	systemID64, err := namedInsertReturningID(tx, `
 		INSERT INTO box_systems (user_id, name, is_default, active)
-		VALUES (:user_id, :name, 0, 1)
+		VALUES (:user_id, :name, FALSE, TRUE)
+		RETURNING id
 	`, map[string]interface{}{
 		"user_id": r.UserID,
 		"name":    trimmed,
@@ -116,11 +117,6 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 		return nil, err
 	}
 
-	systemID64, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
 	systemID := int(systemID64)
 
 	var sourceID int
@@ -129,7 +125,7 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 		FROM box_systems
 		WHERE user_id IS NULL
 		  AND name = 'Langstroth'
-		  AND active = 1
+		  AND active = TRUE
 		ORDER BY is_default DESC, id ASC
 		LIMIT 1
 	`)
@@ -154,7 +150,7 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 			active
 		)
 		SELECT
-			?,
+			$1,
 			code,
 			legacy_box_type,
 				display_name,
@@ -167,7 +163,7 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 				frame_height_mm,
 				active
 		FROM box_specs
-		WHERE system_id = ?
+		WHERE system_id = $2
 	`, systemID, sourceID)
 	if err != nil {
 		tx.Rollback()
@@ -176,10 +172,10 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 
 	_, err = tx.Exec(`
 		INSERT INTO frame_specs (system_id, code, frame_type, display_name, active)
-		SELECT ?, code, frame_type, display_name, active
+		SELECT $1, code, frame_type, display_name, active
 		FROM frame_specs
-		WHERE system_id = ?
-		  AND active = 1
+		WHERE system_id = $2
+		  AND active = TRUE
 	`, systemID, sourceID)
 	if err != nil {
 		tx.Rollback()
@@ -190,10 +186,10 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 		INSERT INTO frame_spec_compatibility (frame_spec_id, box_spec_id)
 		SELECT f2.id, b2.id
 		FROM frame_spec_compatibility c
-		INNER JOIN box_specs b1 ON b1.id = c.box_spec_id AND b1.system_id = ?
-		INNER JOIN frame_specs f1 ON f1.id = c.frame_spec_id AND f1.system_id = ? AND f1.active = 1
-		INNER JOIN frame_specs f2 ON f2.system_id = ? AND f2.code = f1.code AND f2.active = 1
-		INNER JOIN box_specs b2 ON b2.system_id = ? AND b2.code = b1.code
+		INNER JOIN box_specs b1 ON b1.id = c.box_spec_id AND b1.system_id = $1
+		INNER JOIN frame_specs f1 ON f1.id = c.frame_spec_id AND f1.system_id = $2 AND f1.active = TRUE
+		INNER JOIN frame_specs f2 ON f2.system_id = $3 AND f2.code = f1.code AND f2.active = TRUE
+		INNER JOIN box_specs b2 ON b2.system_id = $4 AND b2.code = b1.code
 	`, sourceID, sourceID, systemID, systemID)
 	if err != nil {
 		tx.Rollback()
@@ -202,12 +198,12 @@ func (r *BoxSystem) Create(name string) (*BoxSystem, error) {
 
 	_, err = tx.Exec(`
 		INSERT INTO box_spec_frame_sources (box_spec_id, frame_source_system_id)
-		SELECT b2.id, ?
+		SELECT b2.id, $1
 		FROM box_specs b2
-		WHERE b2.system_id = ?
-		  AND b2.active = 1
+		WHERE b2.system_id = $2
+		  AND b2.active = TRUE
 		  AND b2.legacy_box_type IN ('DEEP', 'SUPER', 'LARGE_HORIZONTAL_SECTION')
-		ON DUPLICATE KEY UPDATE frame_source_system_id = VALUES(frame_source_system_id)
+		ON CONFLICT (box_spec_id) DO UPDATE SET frame_source_system_id = EXCLUDED.frame_source_system_id
 	`, sourceID, systemID)
 	if err != nil {
 		tx.Rollback()
@@ -225,16 +221,16 @@ func (r *BoxSystem) GetOwnedByID(id int) (*BoxSystem, error) {
 	row := BoxSystem{}
 	err := r.Db.Get(&row, `
 		SELECT
-			CAST(id AS CHAR) AS id,
-			COALESCE(user_id, '') AS user_id,
+			CAST(id AS TEXT) AS id,
+			COALESCE(user_id::text, '') AS user_id,
 			name,
-			CAST(box_profile_source_system_id AS CHAR) AS box_profile_source_system_id,
+			CAST(box_profile_source_system_id AS TEXT) AS box_profile_source_system_id,
 			is_default,
 			active
 		FROM box_systems
-		WHERE id = ?
-		  AND user_id = ?
-		  AND active = 1
+		WHERE id = $1
+		  AND user_id = $2
+		  AND active = TRUE
 		LIMIT 1
 	`, id, r.UserID)
 	if err != nil {
@@ -256,9 +252,9 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 	err := r.Db.Get(&row, `
 		SELECT user_id, is_default
 		FROM box_systems
-		WHERE id = ?
-		  AND active = 1
-		  AND (user_id = ? OR user_id IS NULL)
+		WHERE id = $1
+		  AND active = TRUE
+		  AND (user_id = $2 OR user_id IS NULL)
 		LIMIT 1
 	`, id, r.UserID)
 	if err == sql.ErrNoRows {
@@ -277,9 +273,9 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 		existingOwnedDefaultErr := r.Db.Get(&existingOwnedDefaultID, `
 			SELECT id
 			FROM box_systems
-			WHERE user_id = ?
-			  AND is_default = 1
-			  AND active = 1
+			WHERE user_id = $1
+			  AND is_default = TRUE
+			  AND active = TRUE
 			ORDER BY id ASC
 			LIMIT 1
 		`, r.UserID)
@@ -289,7 +285,7 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 				SET name = :name
 				WHERE id = :id
 				  AND user_id = :user_id
-				  AND active = 1
+				  AND active = TRUE
 			`, map[string]interface{}{
 				"id":      existingOwnedDefaultID,
 				"user_id": r.UserID,
@@ -311,10 +307,10 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 
 		_, err = r.Db.NamedExec(`
 			UPDATE box_systems
-			SET is_default = 1
+			SET is_default = TRUE
 			WHERE id = :id
 			  AND user_id = :user_id
-			  AND active = 1
+			  AND active = TRUE
 		`, map[string]interface{}{
 			"id":      created.ID,
 			"user_id": r.UserID,
@@ -335,7 +331,7 @@ func (r *BoxSystem) Rename(id string, name string) (*BoxSystem, error) {
 		SET name = :name
 		WHERE id = :id
 		  AND user_id = :user_id
-		  AND active = 1
+		  AND active = TRUE
 	`, map[string]interface{}{
 		"id":      id,
 		"user_id": r.UserID,
@@ -356,9 +352,9 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 	err := r.Db.Get(&isDefault, `
 		SELECT is_default
 		FROM box_systems
-		WHERE id = ?
-		  AND user_id = ?
-		  AND active = 1
+		WHERE id = $1
+		  AND user_id = $2
+		  AND active = TRUE
 		LIMIT 1
 	`, id, r.UserID)
 	if err == sql.ErrNoRows {
@@ -383,9 +379,9 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 		err = r.Db.Get(&replacementExists, `
 			SELECT COUNT(*)
 			FROM box_systems
-			WHERE id = ?
-			  AND active = 1
-			  AND (user_id = ? OR user_id IS NULL)
+			WHERE id = $1
+			  AND active = TRUE
+			  AND (user_id = $2 OR user_id IS NULL)
 		`, replacementID, r.UserID)
 		if err != nil {
 			return false, err
@@ -403,9 +399,9 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 	err = tx.Get(&hivesUsingSystem, `
 		SELECT COUNT(*)
 		FROM hives
-		WHERE user_id = ?
-		  AND active = 1
-		  AND box_system_id = ?
+		WHERE user_id = $1
+		  AND active = TRUE
+		  AND box_system_id = $2
 	`, r.UserID, id)
 	if err != nil {
 		tx.Rollback()
@@ -418,10 +414,10 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 	if hivesUsingSystem > 0 {
 		_, err = tx.Exec(`
 			UPDATE hives
-			SET box_system_id = ?
-			WHERE user_id = ?
-			  AND active = 1
-			  AND box_system_id = ?
+			SET box_system_id = $1
+			WHERE user_id = $2
+			  AND active = TRUE
+			  AND box_system_id = $3
 		`, replacementID, r.UserID, id)
 		if err != nil {
 			tx.Rollback()
@@ -431,10 +427,10 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 
 	_, err = tx.NamedExec(`
 		UPDATE box_systems
-		SET active = 0
+		SET active = FALSE
 		WHERE id = :id
 		  AND user_id = :user_id
-		  AND active = 1
+		  AND active = TRUE
 	`, map[string]interface{}{
 		"id":      id,
 		"user_id": r.UserID,
@@ -446,7 +442,7 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 
 	_, err = tx.NamedExec(`
 		UPDATE box_specs
-		SET active = 0
+		SET active = FALSE
 		WHERE system_id = :id
 	`, map[string]interface{}{"id": id})
 	if err != nil {
@@ -456,7 +452,7 @@ func (r *BoxSystem) Deactivate(id string, replacementSystemID *string) (bool, er
 
 	_, err = tx.NamedExec(`
 		UPDATE frame_specs
-		SET active = 0
+		SET active = FALSE
 		WHERE system_id = :id
 	`, map[string]interface{}{"id": id})
 	if err != nil {
@@ -480,9 +476,9 @@ func (r *BoxSystem) SetBoxProfileSource(systemID string, boxSourceSystemID *stri
 	err := r.Db.Get(&isDefault, `
 		SELECT is_default
 		FROM box_systems
-		WHERE id = ?
-		  AND user_id = ?
-		  AND active = 1
+		WHERE id = $1
+		  AND user_id = $2
+		  AND active = TRUE
 		LIMIT 1
 	`, targetID, r.UserID)
 	if err == sql.ErrNoRows {
@@ -509,7 +505,7 @@ func (r *BoxSystem) SetBoxProfileSource(systemID string, boxSourceSystemID *stri
 			SET box_profile_source_system_id = NULL
 			WHERE id = :id
 			  AND user_id = :user_id
-			  AND active = 1
+			  AND active = TRUE
 		`, map[string]interface{}{
 			"id":      targetID,
 			"user_id": r.UserID,
@@ -524,9 +520,9 @@ func (r *BoxSystem) SetBoxProfileSource(systemID string, boxSourceSystemID *stri
 	err = r.Db.Get(&sourceVisible, `
 		SELECT COUNT(*)
 		FROM box_systems
-		WHERE id = ?
-		  AND active = 1
-		  AND (user_id = ? OR user_id IS NULL)
+		WHERE id = $1
+		  AND active = TRUE
+		  AND (user_id = $2 OR user_id IS NULL)
 	`, sourceID, r.UserID)
 	if err != nil {
 		return false, err
@@ -545,11 +541,11 @@ func (r *BoxSystem) SetBoxProfileSource(systemID string, boxSourceSystemID *stri
 
 		var next sql.NullString
 		err = r.Db.Get(&next, `
-			SELECT CAST(box_profile_source_system_id AS CHAR)
+			SELECT CAST(box_profile_source_system_id AS TEXT)
 			FROM box_systems
-			WHERE id = ?
-			  AND active = 1
-			  AND (user_id = ? OR user_id IS NULL)
+			WHERE id = $1
+			  AND active = TRUE
+			  AND (user_id = $2 OR user_id IS NULL)
 			LIMIT 1
 		`, current, r.UserID)
 		if err == sql.ErrNoRows {
@@ -569,7 +565,7 @@ func (r *BoxSystem) SetBoxProfileSource(systemID string, boxSourceSystemID *stri
 		SET box_profile_source_system_id = :source_id
 		WHERE id = :id
 		  AND user_id = :user_id
-		  AND active = 1
+		  AND active = TRUE
 	`, map[string]interface{}{
 		"id":        targetID,
 		"user_id":   r.UserID,

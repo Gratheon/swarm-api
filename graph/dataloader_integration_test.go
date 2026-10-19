@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/Gratheon/swarm-api/graph/model"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
 )
 

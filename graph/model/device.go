@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	mysqlDriver "github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -30,12 +30,13 @@ func isDevicesTableMissing(err error) bool {
 		return false
 	}
 
-	mysqlErr, ok := err.(*mysqlDriver.MySQLError)
-	if !ok {
+	// 42P01 undefined_table (MySQL 1146)
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
 		return false
 	}
 
-	return mysqlErr.Number == 1146 && strings.Contains(strings.ToLower(mysqlErr.Message), "devices")
+	return pgErr.Code == "42P01" && strings.Contains(strings.ToLower(pgErr.Message), "devices")
 }
 
 func (r *Device) List() ([]*Device, error) {
@@ -43,7 +44,7 @@ func (r *Device) List() ([]*Device, error) {
 	err := r.Db.Select(&devices,
 		`SELECT id, user_id, name, type, api_token, hive_id, box_id, active, created_at, updated_at
 			FROM devices
-			WHERE user_id=? AND active=1
+			WHERE user_id=$1 AND active=TRUE
 		ORDER BY id DESC`,
 		r.UserID,
 	)
@@ -58,7 +59,7 @@ func (r *Device) Get(id string) (*Device, error) {
 	err := r.Db.Get(&device,
 		`SELECT id, user_id, name, type, api_token, hive_id, box_id, active, created_at, updated_at
 			FROM devices
-			WHERE id=? AND user_id=? AND active=1
+			WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1`,
 		id, r.UserID,
 	)
@@ -99,7 +100,7 @@ func (r *Device) resolveOptionalHiveID(hiveID *string) (*int, error) {
 	}
 
 	var exists int
-	err = r.Db.Get(&exists, "SELECT id FROM hives WHERE id=? AND user_id=? AND active=1 LIMIT 1", hiveIDInt, r.UserID)
+	err = r.Db.Get(&exists, "SELECT id FROM hives WHERE id=$1 AND user_id=$2 AND active=TRUE LIMIT 1", hiveIDInt, r.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("hive not found")
@@ -131,7 +132,7 @@ func (r *Device) resolveOptionalBoxID(boxID *string) (*int, *int, error) {
 	}
 
 	box := boxRow{}
-	err = r.Db.Get(&box, "SELECT id, hive_id FROM boxes WHERE id=? AND user_id=? AND active=1 LIMIT 1", boxIDInt, r.UserID)
+	err = r.Db.Get(&box, "SELECT id, hive_id FROM boxes WHERE id=$1 AND user_id=$2 AND active=TRUE LIMIT 1", boxIDInt, r.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil, errors.New("box not found")
@@ -171,9 +172,10 @@ func (r *Device) Create(input DeviceInput) (*Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	result, err := tx.NamedExec(
+	id, err := namedInsertReturningID(tx,
 		`INSERT INTO devices (user_id, name, type, api_token, hive_id, box_id)
-		VALUES (:userID, :name, :type, :apiToken, :hiveID, :boxID)`,
+		VALUES (:userID, :name, :type, :apiToken, :hiveID, :boxID)
+		RETURNING id`,
 		map[string]interface{}{
 			"userID":   r.UserID,
 			"name":     strings.TrimSpace(input.Name),
@@ -183,12 +185,6 @@ func (r *Device) Create(input DeviceInput) (*Device, error) {
 			"boxID":    boxID,
 		},
 	)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	id, err := result.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -259,7 +255,7 @@ func (r *Device) Update(id string, input DeviceUpdateInput) (*Device, error) {
 	_, err = tx.NamedExec(
 		`UPDATE devices
 		SET name=:name, type=:type, api_token=:apiToken, hive_id=:hiveID, box_id=:boxID
-		WHERE id=:id AND user_id=:userID AND active=1`,
+		WHERE id=:id AND user_id=:userID AND active=TRUE`,
 		map[string]interface{}{
 			"id":       id,
 			"userID":   r.UserID,
@@ -286,7 +282,7 @@ func (r *Device) Deactivate(id string) (*bool, error) {
 	success := true
 	tx := r.Db.MustBegin()
 	_, err := tx.NamedExec(
-		"UPDATE devices SET active=0, api_token=NULL, hive_id=NULL, box_id=NULL WHERE id=:id AND user_id=:userID",
+		"UPDATE devices SET active=FALSE, api_token=NULL, hive_id=NULL, box_id=NULL WHERE id=:id AND user_id=:userID",
 		map[string]interface{}{
 			"id":     id,
 			"userID": r.UserID,

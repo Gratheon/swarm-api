@@ -18,7 +18,7 @@ type Frame struct {
 	RightID     *int       `json:"rightId" db:"right_id"`
 	LeftSide    *FrameSide `json:"leftSide"`
 	RightSide   *FrameSide `json:"rightSide"`
-	Active      int        `db:"active"`
+	Active      bool       `db:"active"`
 }
 
 func (r *Frame) Get(id int64) (*Frame, error) {
@@ -26,7 +26,7 @@ func (r *Frame) Get(id int64) (*Frame, error) {
 	err := r.Db.Get(&frame,
 		`SELECT * 
 		FROM frames
-		WHERE id=? AND user_id=? AND active=1
+		WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1`, id, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -87,9 +87,10 @@ func (r *Frame) Create(boxID *string, position int, frameType FrameType, leftID 
 		return nil, err
 	}
 
-	result, err := tx.NamedExec(
+	id, err := namedInsertReturningID(tx,
 		`INSERT INTO frames (box_id, position, left_id, right_id, user_id, type, frame_spec_id) 
-		VALUES (:boxID, :position, :left_id, :right_id, :userID, :frameType, :frameSpecID)`,
+		VALUES (:boxID, :position, :left_id, :right_id, :userID, :frameType, :frameSpecID)
+		RETURNING id`,
 		map[string]interface{}{
 			"boxID":       boxID,
 			"position":    position,
@@ -106,11 +107,6 @@ func (r *Frame) Create(boxID *string, position int, frameType FrameType, leftID 
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -127,7 +123,7 @@ func (r *Frame) Update(frameID string, boxID string, position int) (*int64, erro
 		&frameType,
 		`SELECT type
 		FROM frames
-		WHERE id=? AND user_id=? AND active=1
+		WHERE id=$1 AND user_id=$2 AND active=TRUE
 		LIMIT 1`,
 		frameID, r.UserID,
 	)
@@ -163,7 +159,7 @@ func (r *Frame) Update(frameID string, boxID string, position int) (*int64, erro
 func (r *Frame) DeactivateFrames(boxId *string) error {
 	_, err := r.Db.NamedExec(
 		`UPDATE frames 
-		SET active = 0
+		SET active = FALSE
 		WHERE box_id=:boxID AND user_id=:userID`,
 		map[string]interface{}{
 			"boxID":  boxId,
@@ -179,8 +175,8 @@ func (r *Frame) ListByBox(boxId *string) ([]*Frame, error) {
 	err := r.Db.Select(&frames,
 		`SELECT id, position, left_id, right_id, type
 	FROM frames
-	WHERE frames.box_id =? AND user_id=? AND active=1
-	ORDER BY position`, boxId, r.UserID)
+	WHERE frames.box_id =$1 AND user_id=$2 AND active=TRUE
+	ORDER BY position NULLS FIRST`, boxId, r.UserID)
 
 	return frames, err
 }
@@ -191,7 +187,7 @@ func (r *Frame) Deactivate(id string) (*bool, error) {
 
 	_, err := tx.NamedExec(
 		`UPDATE frames 
-		SET active = 0
+		SET active = FALSE
 		WHERE id=:id AND user_id=:userID`,
 		map[string]interface{}{
 			"id":     id,
@@ -214,7 +210,7 @@ func (r *Frame) GetFrameBySideID(sideID int) (*int, error) {
 	err := r.Db.Get(&frameId,
 		`SELECT id
 		FROM frames
-		WHERE (left_id = ? OR right_id = ?) AND user_id = ? AND active = 1
+		WHERE (left_id = $1 OR right_id = $2) AND user_id = $3 AND active = TRUE
 		LIMIT 1`, sideID, sideID, r.UserID)
 
 	if err == sql.ErrNoRows {
@@ -237,7 +233,7 @@ func (r *Frame) MoveFramesToBox(frameIDs []string, targetBoxID string) error {
 			&frameType,
 			`SELECT type
 			FROM frames
-			WHERE id=? AND user_id=? AND active=1
+			WHERE id=$1 AND user_id=$2 AND active=TRUE
 			LIMIT 1`,
 			frameID, r.UserID,
 		)
@@ -255,7 +251,7 @@ func (r *Frame) MoveFramesToBox(frameIDs []string, targetBoxID string) error {
 		_, err = tx.NamedExec(
 			`UPDATE frames 
 			SET box_id=:boxID, position=:position, frame_spec_id=:frameSpecID
-			WHERE id=:id AND user_id=:userID AND active=1`,
+			WHERE id=:id AND user_id=:userID AND active=TRUE`,
 			map[string]interface{}{
 				"id":          frameID,
 				"boxID":       targetBoxID,

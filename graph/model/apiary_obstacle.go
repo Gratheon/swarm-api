@@ -25,7 +25,7 @@ func (r *ApiaryObstacle) ListByApiary(apiaryID string) ([]*ApiaryObstacle, error
 	err := r.Db.Select(&obstacles,
 		`SELECT id, user_id, apiary_id, type, x, y, width, height, radius, rotation, label
 		FROM apiary_obstacles 
-		WHERE apiary_id=? AND user_id=?`, apiaryID, r.UserID)
+		WHERE apiary_id=$1 AND user_id=$2`, apiaryID, r.UserID)
 	return obstacles, err
 }
 
@@ -35,15 +35,10 @@ func (r *ApiaryObstacle) Create(apiaryID string, obstacleType string, x float64,
 		rot = *rotation
 	}
 
-	result, err := r.Db.Exec(
+	id, err := insertReturningID(r.Db,
 		`INSERT INTO apiary_obstacles (user_id, apiary_id, type, x, y, width, height, radius, rotation, label) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
 		r.UserID, apiaryID, obstacleType, x, y, width, height, radius, rot, label)
-	if err != nil {
-		return nil, err
-	}
-
-	id, err := result.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +46,7 @@ func (r *ApiaryObstacle) Create(apiaryID string, obstacleType string, x float64,
 	obstacle := &ApiaryObstacle{}
 	err = r.Db.Get(obstacle,
 		`SELECT id, user_id, apiary_id, type, x, y, width, height, radius, rotation, label
-		FROM apiary_obstacles WHERE id=?`, id)
+		FROM apiary_obstacles WHERE id=$1`, id)
 	return obstacle, err
 }
 
@@ -62,8 +57,8 @@ func (r *ApiaryObstacle) Update(id string, obstacleType string, x float64, y flo
 	}
 
 	_, err := r.Db.Exec(
-		`UPDATE apiary_obstacles SET type=?, x=?, y=?, width=?, height=?, radius=?, rotation=?, label=? 
-		WHERE id=? AND user_id=?`,
+		`UPDATE apiary_obstacles SET type=$1, x=$2, y=$3, width=$4, height=$5, radius=$6, rotation=$7, label=$8 
+		WHERE id=$9 AND user_id=$10`,
 		obstacleType, x, y, width, height, radius, rot, label, id, r.UserID)
 	if err != nil {
 		return nil, err
@@ -72,13 +67,13 @@ func (r *ApiaryObstacle) Update(id string, obstacleType string, x float64, y flo
 	obstacle := &ApiaryObstacle{}
 	err = r.Db.Get(obstacle,
 		`SELECT id, user_id, apiary_id, type, x, y, width, height, radius, rotation, label
-		FROM apiary_obstacles WHERE id=?`, id)
+		FROM apiary_obstacles WHERE id=$1`, id)
 	return obstacle, err
 }
 
 func (r *ApiaryObstacle) Delete(id string) (bool, error) {
 	result, err := r.Db.Exec(
-		`DELETE FROM apiary_obstacles WHERE id=? AND user_id=?`,
+		`DELETE FROM apiary_obstacles WHERE id=$1 AND user_id=$2`,
 		id, r.UserID)
 	if err != nil {
 		return false, err
@@ -97,7 +92,7 @@ func (r *ApiaryObstacle) Get(id string) (*ApiaryObstacle, error) {
 	err := r.Db.Get(obstacle,
 		`SELECT id, user_id, apiary_id, type, x, y, width, height, radius, rotation, label
 		FROM apiary_obstacles 
-		WHERE id=? AND user_id=?
+		WHERE id=$1 AND user_id=$2
 		LIMIT 1`, id, r.UserID)
 
 	if err == sql.ErrNoRows {

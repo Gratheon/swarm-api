@@ -34,7 +34,7 @@ func TestQueryCalendarResolvers(t *testing.T) {
 
 		oldInspectionDate := time.Now().UTC().AddDate(0, -3, 0).Format("2006-01-02 15:04:05")
 		_, err = fx.resolver.Db.Exec(
-			"UPDATE inspections SET added=? WHERE id=? AND user_id=?",
+			"UPDATE inspections SET added=$1 WHERE id=$2 AND user_id=$3",
 			oldInspectionDate,
 			fx.inspectionID,
 			fx.userID,
@@ -42,13 +42,13 @@ func TestQueryCalendarResolvers(t *testing.T) {
 		require.NoError(t, err)
 
 		insideDate := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02 15:04:05")
-		inspectionResult := fx.resolver.Db.MustExec(
-			"INSERT INTO inspections (user_id, hive_id, data, added) VALUES (?, ?, '{}', ?)",
+		var insideInspectionID int64
+		err = fx.resolver.Db.QueryRowx(
+			"INSERT INTO inspections (user_id, hive_id, data, added) VALUES ($1, $2, '{}', $3) RETURNING id",
 			fx.userID,
 			fx.hiveID,
 			insideDate,
-		)
-		insideInspectionID, err := inspectionResult.LastInsertId()
+		).Scan(&insideInspectionID)
 		require.NoError(t, err)
 
 		hiveLogDetails := "Moved brood frames"
@@ -60,7 +60,7 @@ func TestQueryCalendarResolvers(t *testing.T) {
 		})
 		require.NoError(t, err)
 		_, err = fx.resolver.Db.Exec(
-			"UPDATE hive_logs SET created_at=? WHERE id=? AND user_id=?",
+			"UPDATE hive_logs SET created_at=$1 WHERE id=$2 AND user_id=$3",
 			insideDate,
 			hiveLog.ID,
 			fx.userID,

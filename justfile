@@ -17,19 +17,19 @@ migrate-db-dev:
     DSN=$(jq -r '.db_dsn_migrate' config/config.dev.json); \
         GOOSE="$(go env GOPATH)/bin/goose"; \
         echo "$DSN"; \
-        if ! "$GOOSE" -dir migrations mysql "$DSN" up; then \
-            ALT_DSN=$(echo "$DSN" | sed 's/@tcp(mysql:3306)/@tcp(127.0.0.1:5100)/'); \
+        if ! "$GOOSE" -dir migrations postgres "$DSN" up; then \
+            ALT_DSN=$(echo "$DSN" | sed 's/@postgres:5432/@127.0.0.1:5432/'); \
             if [ "$ALT_DSN" != "$DSN" ]; then \
                 echo "migration with docker hostname failed, retrying via host port mapping"; \
                 echo "$ALT_DSN"; \
-                "$GOOSE" -dir migrations mysql "$ALT_DSN" up; \
+                "$GOOSE" -dir migrations postgres "$ALT_DSN" up; \
             else \
                 exit 1; \
             fi; \
         fi
 
 migrate-db-dev-container:
-    COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml run --rm swarm-api sh -lc 'go install github.com/pressly/goose/v3/cmd/goose@latest && DSN=$(jq -r ".db_dsn_migrate" config/config.dev.json) && echo "$DSN" && $(go env GOPATH)/bin/goose -dir migrations mysql "$DSN" up'
+    COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml run --rm swarm-api sh -lc 'go install github.com/pressly/goose/v3/cmd/goose@latest && DSN=$(jq -r ".db_dsn_migrate" config/config.dev.json) && echo "$DSN" && $(go env GOPATH)/bin/goose -dir migrations postgres "$DSN" up'
 
 build:
     ./scripts/update-version.sh
@@ -66,7 +66,7 @@ test-unit:
 
 test-integration:
     @echo "Running integration tests..."
-    @echo "Make sure mysql is running: cd ../mysql && just start"
+    @echo "Make sure postgres is running and migrated: just migrate-db-dev"
     TESTING=true go test -v -tags=integration ./graph
 
 test-dataloader:
@@ -82,7 +82,7 @@ test-coverage:
     TESTING=true go test -v -covermode=atomic -coverprofile=coverage-unit.raw.out ./...
     grep -v "^github.com/Gratheon/swarm-api/graph/generated/generated.go:" coverage-unit.raw.out > coverage-unit.out
     rm -f coverage-unit.raw.out
-    @echo "Make sure mysql is running and migrations are applied before integration coverage"
+    @echo "Make sure postgres is running and migrations are applied before integration coverage"
     TESTING=true go test -v -tags=integration -covermode=atomic -coverprofile=graph/coverage-integration.raw.out ./graph
     grep -v "^github.com/Gratheon/swarm-api/graph/generated/generated.go:" graph/coverage-integration.raw.out > graph/coverage-integration.out
     rm -f graph/coverage-integration.raw.out
