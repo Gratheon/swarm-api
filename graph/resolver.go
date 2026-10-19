@@ -43,12 +43,26 @@ func (r *Resolver) ConnectToDB() {
 
 	// The managed Postgres cluster is shared by several services and has a small
 	// max_connections, so the pool is sized by config instead of a fixed 25
-	viper.SetDefault("db_max_open_conns", 8)
+	viper.SetDefault("db_max_open_conns", 6)
 	viper.SetDefault("db_max_idle_conns", 2)
-	db.SetMaxOpenConns(viper.GetInt("db_max_open_conns"))
+	// Release idle slots quickly (was 2m): other services need them during their bursts
+	viper.SetDefault("db_conn_max_idle_time", "30s")
+
+	// database/sql treats MaxOpenConns <= 0 as unlimited, and a bare JSON number becomes nanoseconds:
+	// fall back to safe values instead of silently dropping the cap on the shared cluster
+	maxOpenConns := viper.GetInt("db_max_open_conns")
+	if maxOpenConns < 1 {
+		maxOpenConns = 6
+	}
+	connMaxIdleTime := viper.GetDuration("db_conn_max_idle_time")
+	if connMaxIdleTime < time.Second {
+		connMaxIdleTime = 30 * time.Second
+	}
+
+	db.SetMaxOpenConns(maxOpenConns)
 	db.SetMaxIdleConns(viper.GetInt("db_max_idle_conns"))
 	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetConnMaxIdleTime(2 * time.Minute)
+	db.SetConnMaxIdleTime(connMaxIdleTime)
 
 	r.Db = db
 }
