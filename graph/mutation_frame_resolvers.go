@@ -22,6 +22,18 @@ func (r *mutationResolver) AddFrame(ctx context.Context, boxID string, typeArg s
 		logger.ErrorWithContext(ctx, err.Error())
 		return nil, err
 	}
+
+	box, err := (&model.Box{Db: r.Resolver.Db, UserID: uid}).Get(boxID)
+	if err != nil {
+		logger.ErrorWithContext(ctx, err.Error())
+		return nil, err
+	}
+	if box != nil {
+		if err := validateFrameCapacity(box.Type, len(existingFrames)); err != nil {
+			return nil, err
+		}
+	}
+
 	occupiedPositions := map[int]bool{}
 	for _, frame := range existingFrames {
 		if frame == nil || frame.Position <= 0 {
