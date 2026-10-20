@@ -29,7 +29,7 @@ migrate-db-dev:
         fi
 
 migrate-db-dev-container:
-    COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml run --rm swarm-api sh -lc 'go install github.com/pressly/goose/v3/cmd/goose@latest && DSN=$(jq -r ".db_dsn_migrate" config/config.dev.json) && echo "$DSN" && $(go env GOPATH)/bin/goose -dir migrations postgres "$DSN" up'
+    COMPOSE_PROJECT_NAME=gratheon docker compose -f docker-compose.dev.yml run --rm -e DSN="$(jq -r .db_dsn_migrate config/config.dev.json)" swarm-api sh -c 'go install github.com/pressly/goose/v3/cmd/goose@latest && $(go env GOPATH)/bin/goose -dir migrations postgres "$DSN" up'
 
 build:
     ./scripts/update-version.sh
