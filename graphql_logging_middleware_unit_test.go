@@ -12,7 +12,7 @@ import (
 
 	"github.com/Gratheon/log-lib-go"
 	// Must match the chi major version used by log-lib-go (v4 until it is bumped).
-	chimiddleware "github.com/go-chi/chi/middleware"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

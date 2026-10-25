@@ -1,0 +1,39 @@
+# golangci-lint v2. Same config in swarm-api, telemetry-api, weather, log-lib-go.
+version: "2"
+run:
+  timeout: 5m
+  build-tags: [integration]   # otherwise *_integration_test.go is skipped
+linters:
+  default: standard           # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    # HTTP / DB: leaks and dropped context
+    - bodyclose
+    - noctx
+    - sqlclosecheck
+    - rowserrcheck
+    - contextcheck
+    # error handling
+    - errorlint
+    - nilerr
+    # security and small bugs
+    - gosec
+    - durationcheck
+    - unconvert
+    - usestdlibvars
+    - misspell
+  settings:
+    staticcheck:
+      checks: ["all", "-QF1008", "-ST1000", "-ST1003"]
+    gosec:
+      excludes: [G104]        # duplicates errcheck
+  exclusions:
+    generated: lax            # gqlgen output in graph/generated
+    presets: [comments, std-error-handling, common-false-positives]
+    rules:
+      - path: _test\.go
+        linters: [gosec, errcheck, noctx, bodyclose]
+formatters:
+  enable: [gofmt, goimports]
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
