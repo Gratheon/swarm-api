@@ -15,7 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	// Keep chi v4 middleware for RequestID until log-lib-go is bumped to its chi v5
 	// release: log-lib-go reads the request ID with the v4 context key.
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 )
 
