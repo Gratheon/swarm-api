@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"strconv"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -53,6 +55,12 @@ var graphqlResolverDurationSeconds = promauto.With(metricsRegisterer).NewHistogr
 	},
 	[]string{"operation_type", "resolver_name", "status"},
 )
+
+// registerDBPoolMetrics exposes database/sql pool stats (go_sql_*{db_name="swarm_api"}):
+// in_use/idle connections and wait_count/wait_duration show when requests queue for a connection.
+func registerDBPoolMetrics(db *sql.DB) {
+	metricsRegisterer.MustRegister(collectors.NewDBStatsCollector(db, "swarm_api"))
+}
 
 func metricsHandler() http.Handler {
 	return promhttp.Handler()

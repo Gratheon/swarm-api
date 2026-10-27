@@ -4,11 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/qustavo/sqlhooks/v2"
@@ -41,9 +44,26 @@ func OpenDB(dsn string) (*sqlx.DB, error) {
 	}
 	// Columns are TIMESTAMPTZ and the API exposes zone-less strings, so every session must be UTC
 	// regardless of the server/database default. Also makes string date params parse as UTC.
-	config.RuntimeParams["timezone"] = "UTC"
+	// "TimeZone" is the spelling PgBouncer tracks per client, so this also works through a
+	// DigitalOcean connection pool in transaction mode.
+	delete(config.RuntimeParams, "timezone")
+	config.RuntimeParams["TimeZone"] = "UTC"
+	// Named prepared statements (pgx's default statement cache) break behind PgBouncer in
+	// transaction mode ("prepared statement ... does not exist"). The exec mode sends each
+	// query as an unnamed statement in one round trip, so the same DSN works directly and
+	// through a DigitalOcean connection pool. A default_query_exec_mode DSN param still wins.
+	if !strings.Contains(dsn, "default_query_exec_mode") {
+		config.DefaultQueryExecMode = pgx.QueryExecModeExec
+	}
 
 	return sqlx.Connect(instrumentedDriverName, stdlib.RegisterConnConfig(config))
+}
+
+// isTooManyConnections reports SQLSTATE 53300 ("too many clients" / "remaining connection
+// slots are reserved"), a transient error when the shared cluster is at max_connections.
+func isTooManyConnections(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "53300"
 }
 
 // pgxConn is the set of driver interfaces implemented by the pgx stdlib connection.
@@ -70,8 +90,19 @@ type dateTimeTextDriver struct {
 	parent driver.Driver
 }
 
+// connectRetryDelays are the waits before re-dialing when the server has no free
+// connection slots. Other services sharing the cluster usually release one within a second.
+var connectRetryDelays = []time.Duration{100 * time.Millisecond, 300 * time.Millisecond, 700 * time.Millisecond}
+
 func (d *dateTimeTextDriver) Open(name string) (driver.Conn, error) {
 	conn, err := d.parent.Open(name)
+	for _, delay := range connectRetryDelays {
+		if err == nil || !isTooManyConnections(err) {
+			break
+		}
+		time.Sleep(delay)
+		conn, err = d.parent.Open(name)
+	}
 	if err != nil {
 		return nil, err
 	}

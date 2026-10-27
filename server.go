@@ -76,6 +76,8 @@ func main() {
 	gqlGenConfig := generated.Config{Resolvers: rootResolver}
 	gqlGenServer := handler.NewDefaultServer(generated.NewExecutableSchema(gqlGenConfig))
 	gqlGenServer.AroundFields(graphqlResolverMetricsMiddleware)
+	gqlGenServer.SetErrorPresenter(graphqlErrorPresenter)
+	registerDBPoolMetrics(rootResolver.Db.DB)
 
 	dataLoaderMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

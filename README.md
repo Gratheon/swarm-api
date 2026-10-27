@@ -94,6 +94,26 @@ export TEST_DB_DSN="postgres://test:test@localhost:5432/swarm_api?sslmode=disabl
 
 See [graph/TESTING.md](graph/TESTING.md) for detailed testing documentation.
 
+## Database connections
+
+The production Postgres is a DigitalOcean managed cluster shared by several services, so
+`max_connections` is small (25 on the smallest plan, 3 of them reserved for superusers).
+swarm-api keeps one shared pool for the whole process:
+
+- `db_max_open_conns` (default 14) caps open connections. Parallel GraphQL requests beyond
+  that wait for a free connection instead of opening new ones.
+- `db_max_idle_conns` (default = `db_max_open_conns`) keeps connections warm between requests.
+- Opening a connection is retried for ~1s on `SQLSTATE 53300` (no free slots).
+- Pool usage is exported on `/metrics` as `go_sql_*{db_name="swarm_api"}`; a growing
+  `go_sql_wait_count_total` means requests are queuing for a connection.
+
+Queries use pgx's `exec` mode (no named prepared statements), so `db_dsn` can point either
+at the cluster directly or at a DigitalOcean connection pool (PgBouncer, transaction mode,
+port 25061). Migrations (`db_dsn_migrate`) should keep connecting directly (port 25060).
+
+Database and network errors are logged server-side and returned to GraphQL clients only as
+`Database is temporarily unavailable, please retry` / `Internal server error`.
+
 ## Building
 ```
 just build

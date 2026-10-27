@@ -42,13 +42,17 @@ func (r *Resolver) ConnectToDB() {
 	}
 
 	// The managed Postgres cluster is shared by several services and has a small
-	// max_connections, so the pool is sized by config instead of a fixed 25
-	viper.SetDefault("db_max_open_conns", 8)
-	viper.SetDefault("db_max_idle_conns", 2)
-	db.SetMaxOpenConns(viper.GetInt("db_max_open_conns"))
+	// max_connections, so this single pool is the whole connection budget of the service.
+	// When all connections are busy, parallel GraphQL requests wait for a free one
+	// instead of opening more. Idle connections are kept up to the cap so bursts reuse
+	// warm connections instead of reconnecting (each reconnect can hit a full server).
+	viper.SetDefault("db_max_open_conns", 14)
+	maxOpenConns := viper.GetInt("db_max_open_conns")
+	viper.SetDefault("db_max_idle_conns", maxOpenConns)
+	db.SetMaxOpenConns(maxOpenConns)
 	db.SetMaxIdleConns(viper.GetInt("db_max_idle_conns"))
-	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetConnMaxIdleTime(2 * time.Minute)
+	db.SetConnMaxLifetime(30 * time.Minute)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	r.Db = db
 }
