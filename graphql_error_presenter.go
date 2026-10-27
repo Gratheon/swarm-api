@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/Gratheon/log-lib-go"
+	logger "github.com/Gratheon/log-lib-go"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
