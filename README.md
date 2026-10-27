@@ -100,7 +100,7 @@ The production Postgres is a DigitalOcean managed cluster shared by several serv
 `max_connections` is small (25 on the smallest plan, 3 of them reserved for superusers).
 swarm-api keeps one shared pool for the whole process:
 
-- `db_max_open_conns` (default 8) caps open connections. Parallel GraphQL requests beyond
+- `db_max_open_conns` (default 14) caps open connections. Parallel GraphQL requests beyond
   that wait for a free connection instead of opening new ones.
 - `db_max_idle_conns` (default = `db_max_open_conns`) keeps connections warm between requests.
 - Opening a connection is retried for ~1s on `SQLSTATE 53300` (no free slots).

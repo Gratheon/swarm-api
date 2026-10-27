@@ -46,7 +46,7 @@ func (r *Resolver) ConnectToDB() {
 	// When all connections are busy, parallel GraphQL requests wait for a free one
 	// instead of opening more. Idle connections are kept up to the cap so bursts reuse
 	// warm connections instead of reconnecting (each reconnect can hit a full server).
-	viper.SetDefault("db_max_open_conns", 8)
+	viper.SetDefault("db_max_open_conns", 14)
 	maxOpenConns := viper.GetInt("db_max_open_conns")
 	viper.SetDefault("db_max_idle_conns", maxOpenConns)
 	db.SetMaxOpenConns(maxOpenConns)
